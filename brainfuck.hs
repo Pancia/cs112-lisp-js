@@ -79,8 +79,8 @@ parseBF input =
 
                   <|> (\[n, fn] -> Defn n fn)
                         <$> splitOn ":"
-                        <$> between (char '#' *> char '(') (char ')' <* spaces)
-                            (manyTill (choice [alphaNum, oneOf ":[]<>+-,."]) $ lookAhead (char ')'))
+                        <$> between (string "#(") (char ')' <* spaces)
+                            (many (alphaNum <|> oneOf ":[]-<,.>+"))
                   <|> Fn      <$> between (char '(') (char ')' <* spaces)
                                   (many alphaNum)
                   <|> Loop    <$> between (char '[' <* spaces) (char ']' <* spaces)
