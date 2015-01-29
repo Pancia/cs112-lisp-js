@@ -42,7 +42,7 @@ initFnState = M.fromList [("clear", "[-]"),
 
 testBFInput :: String
 testBFInput = "#(hello:72.101.108+..111.58.[-]) {def hello => prints out 'hello'}" ++
-              "(hello)(nl) {println 'hello'}" ++
+              "(hello)(nl) {println 'hello\n'}" ++
               ">10+< {set c[1] to \n, goto c[0]} " ++
               "+[,.  {enter echo loop} " ++
               ">.<]  {print newline after each echo} "
@@ -75,7 +75,6 @@ parseBF input =
                   <|> (Print   . readOr 1) <$> try (numsAndChar '.')
                   <|> (Debug   . readOr 1) <$> try (numsAndChar '?')
                   <|> (Goto    . readOr 1) <$> try (numsAndChar '@')
-                  <|> (Number  . readOr 1) <$> (many1 digit <* spaces)
                   <|> const Read           <$> (char ',' <* spaces)
 
                   <|> (\[n, fn] -> Defn n fn)
@@ -83,12 +82,12 @@ parseBF input =
                         <$> between (char '#' *> char '(') (char ')' <* spaces)
                             (manyTill (choice [alphaNum, oneOf ":[]<>+-,."]) $ lookAhead (char ')'))
                   <|> Fn      <$> between (char '(') (char ')' <* spaces)
-                                  (manyTill alphaNum $ lookAhead (char ')'))
+                                  (many alphaNum)
                   <|> Loop    <$> between (char '[' <* spaces) (char ']' <* spaces)
                                   bfTokens
 
                   <|> Comment <$> between (char '{' <* spaces) (char '}' <* spaces)
-                                  (manyTill anyChar $ lookAhead (char '}'))
+                                  (many $ noneOf "}")
                   <|> Comment <$> between (char ';') newline
                                   (manyTill anyChar $ lookAhead newline)
 
@@ -142,18 +141,16 @@ run fns cells@(Tape l p r) prg@(Tape _ instr _) =
                                 advance fns cells prg
             Read          -> do c <- getChar
                                 advance fns (Tape l (ord c) r) prg
-            (Number _)    -> advance fns cells prg
-            (Comment _)   -> advance fns cells prg
             (Defn name f) -> advance (M.insert name f fns) cells prg
             (Fn name)     -> let (x:xs) = maybe (error $ "invalid fn:" ++ name) parseBF
                                           $ M.lookup name fns
                              in do cells' <- run fns cells $ Tape [] x xs
                                    advance fns cells' prg
-            (Loop [])     -> advance fns cells prg
             (Loop (x:xs)) -> do cells'@(Tape _ p' _) <- run fns cells $ Tape [] x xs
                                 if p' == 0
                                     then advance fns cells' prg
                                     else run fns cells' prg
+            _ -> advance fns cells prg
 
 --Move the instruction tape to the next instruction
 advance :: Defns -> Cells -> Program -> IO Cells
