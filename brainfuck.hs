@@ -14,19 +14,19 @@ import Control.Applicative hiding ((<|>), many)
 --      arg syntax, eg: "#(do:[>&1<-]) 3+(do!nl)",
 --          will execute &1 (1st arg) c[p] (eg: 3) times
 --      stdlib?
-data BFCmd = GoRight Int        -- >
-           | GoLeft Int         -- <
-           | Inc Int            -- +
-           | Dec Int            -- -
-           | Print Int          -- .
-           | Read               -- ,
-           | Debug Int          -- ?
-           | Goto Int           -- @
-           | Loop [BFCmd]       -- [..]
-           | Comment String     -- {..} or ;..\n or eof
-           | Number Int         -- [0-9]+
-           | Fn String          -- (clear)
-           | Defn String String -- #(clear:[-])
+data BFCmd = GoRight Int           -- >
+           | GoLeft Int            -- <
+           | Inc Int               -- +
+           | Dec Int               -- -
+           | Print Int             -- .
+           | Read                  -- ,
+           | Debug Int             -- ?
+           | Goto Int              -- @
+           | Loop BFSrc            -- [..]
+           | Comment String        -- {..} or ;..\n or eof
+           | Number Int            -- [0-9]+
+           | Fn String             -- (clear)
+           | Defn (String, BFSrc) -- #(clear:[-])
            deriving (Show)
 type BFSrc = [BFCmd]
 
@@ -34,11 +34,11 @@ data Tape a  = Tape [a] a [a]
 type Cells   = Tape Int
 type Program = Tape BFCmd
 
-type Defns = M.Map String String
+type Defns = M.Map String BFSrc
 initFnState :: Defns
-initFnState = M.fromList [("clear", "[-]"),
-                          ("nl",    "10."),
-                          ("bang",  "33.")]
+initFnState = M.fromList [("clear", parseBF "[-]"),
+                          ("nl",    parseBF "10."),
+                          ("bang",  parseBF "33.")]
 
 testBFInput :: String
 testBFInput = "#(hello:72.101.108+..111.58.[-]) {def hello => prints out 'hello'}" ++
@@ -60,13 +60,22 @@ parseBF input =
         $ runParser bfTokens () "" (input ++ "\n") --fix for eof
         where
             bfTokens :: Parser BFSrc
-            bfTokens = spaces *> many bfToken
+            bfTokens = spaces *> many (bfToken <|> bfDefnToken <|> bfFnToken)
             numsAndChar c = do n <- many digit
                                _ <- char c
                                spaces
                                return n
             readOr :: Int -> String -> Int
             readOr n = fromMaybe n . readMaybe
+            bfDefnToken :: Parser BFCmd
+            bfDefnToken = Defn <$> between (string "#(") (char ')' <* spaces)
+                                   (do n <- (manyTill (alphaNum <|> oneOf "[]-<,.>+") $ lookAhead (char ':'))
+                                       _ <- (char ':')
+                                       f <- many bfToken
+                                       return (n, f))
+            bfFnToken :: Parser BFCmd
+            bfFnToken = Fn <$> between (char '(') (char ')' <* spaces)
+                               (many alphaNum)
             bfToken :: Parser BFCmd
             bfToken = (Inc     . readOr 1) <$> try (numsAndChar '+')
                   <|> (Dec     . readOr 1) <$> try (numsAndChar '-')
@@ -77,12 +86,6 @@ parseBF input =
                   <|> (Goto    . readOr 1) <$> try (numsAndChar '@')
                   <|> const Read           <$> (char ',' <* spaces)
 
-                  <|> (\[n, fn] -> Defn n fn)
-                        <$> splitOn ":"
-                        <$> between (string "#(") (char ')' <* spaces)
-                            (many (alphaNum <|> oneOf ":[]-<,.>+"))
-                  <|> Fn      <$> between (char '(') (char ')' <* spaces)
-                                  (many alphaNum)
                   <|> Loop    <$> between (char '[' <* spaces) (char ']' <* spaces)
                                   bfTokens
 
@@ -141,8 +144,8 @@ run fns cells@(Tape l p r) prg@(Tape _ instr _) =
                                 advance fns cells prg
             Read          -> do c <- getChar
                                 advance fns (Tape l (ord c) r) prg
-            (Defn name f) -> advance (M.insert name f fns) cells prg
-            (Fn name)     -> let (x:xs) = maybe (error $ "invalid fn:" ++ name) parseBF
+            (Defn (nm,f)) -> advance (M.insert nm f fns) cells prg
+            (Fn name)     -> let (x:xs) = maybe (error $ "invalid fn:" ++ name) id
                                           $ M.lookup name fns
                              in do cells' <- run fns cells $ Tape [] x xs
                                    advance fns cells' prg
