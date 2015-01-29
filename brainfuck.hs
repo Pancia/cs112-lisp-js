@@ -14,37 +14,20 @@ import Control.Applicative hiding ((<|>), many)
 --      arg syntax, eg: "#(do:[>&1<-]) 3+(do!nl)",
 --          will execute &1 (1st arg) c[p] (eg: 3) times
 --      stdlib?
-data BFCommand a = GoRight a          -- >
-                 | GoLeft a           -- <
-                 | Inc a              -- +
-                 | Dec a              -- -
-                 | Print a            -- .
-                 | Read               -- ,
-                 | Debug a            -- ?
-                 | Goto a             -- @
-                 | Loop [BFCommand a] -- [..]
-                 | Comment String     -- {..} or ;..\n or eof
-                 | Number a           -- [0-9]+
-                 | Fn String          -- (clear)
-                 | Defn String String -- #(clear:[-])
-                 deriving (Show)
-
-instance Functor BFCommand where
-        fmap f (GoRight n) = GoRight (f n)
-        fmap f (GoLeft n)  = GoLeft (f n)
-        fmap f (Inc n)     = Inc (f n)
-        fmap f (Dec n)     = Dec (f n)
-        fmap f (Number n)  = Number (f n)
-        fmap f (Loop x)    = Loop $ (fmap . fmap) f x
-        fmap f (Print n)   = Print (f n)
-        fmap f (Debug n)   = Debug (f n)
-        fmap f (Goto n)    = Goto (f n)
-        fmap _ (Comment c) = Comment c
-        fmap _ (Fn f)      = Fn f
-        fmap _ (Defn n f)  = Defn n f
-        fmap _ Read        = Read
-
-type BFCmd = BFCommand Int
+data BFCmd = GoRight Int        -- >
+           | GoLeft Int         -- <
+           | Inc Int            -- +
+           | Dec Int            -- -
+           | Print Int          -- .
+           | Read               -- ,
+           | Debug Int          -- ?
+           | Goto Int           -- @
+           | Loop [BFCmd]       -- [..]
+           | Comment String     -- {..} or ;..\n or eof
+           | Number Int         -- [0-9]+
+           | Fn String          -- (clear)
+           | Defn String String -- #(clear:[-])
+           deriving (Show)
 type BFSrc = [BFCmd]
 
 data Tape a  = Tape [a] a [a]
