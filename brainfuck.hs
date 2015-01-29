@@ -1,6 +1,8 @@
 import Data.Char
 import Data.List.Split hiding (oneOf)
 import qualified Data.Map as M
+import Text.Read (readMaybe)
+import Data.Maybe (fromMaybe)
 
 import System.IO (hFlush, stdout)
 import Text.Parsec
@@ -71,21 +73,27 @@ type Parser a = ParsecT String () Identity a
 parseBF :: String -> BFSrc
 parseBF []    = []
 parseBF input =
-        either (error . show) mergeWithNumbers
+        either (error . show) id
         $ runParser bfTokens () "" (input ++ "\n") --fix for eof
         where
             bfTokens :: Parser BFSrc
             bfTokens = spaces *> many bfToken
+            numsAndChar c = do n <- many digit
+                               _ <- char c
+                               spaces
+                               return n
+            readOr :: Int -> String -> Int
+            readOr n = fromMaybe n . readMaybe
             bfToken :: Parser BFCmd
-            bfToken = const (Inc 1)     <$> (char '+' <* spaces)
-                  <|> const (Dec 1)     <$> (char '-' <* spaces)
-                  <|> const (GoLeft 1)  <$> (char '<' <* spaces)
-                  <|> const (GoRight 1) <$> (char '>' <* spaces)
-                  <|> const (Print 1)   <$> (char '.' <* spaces)
-                  <|> const (Debug 1)   <$> (char '?' <* spaces)
-                  <|> const (Goto 1)    <$> (char '@' <* spaces)
-                  <|> const Read        <$> (char ',' <* spaces)
-                  <|> (Number . read)   <$> (many1 digit <* spaces)
+            bfToken = (Inc     . readOr 1) <$> try (numsAndChar '+')
+                  <|> (Dec     . readOr 1) <$> try (numsAndChar '-')
+                  <|> (GoLeft  . readOr 1) <$> try (numsAndChar '<')
+                  <|> (GoRight . readOr 1) <$> try (numsAndChar '>')
+                  <|> (Print   . readOr 1) <$> try (numsAndChar '.')
+                  <|> (Debug   . readOr 1) <$> try (numsAndChar '?')
+                  <|> (Goto    . readOr 1) <$> try (numsAndChar '@')
+                  <|> (Number  . readOr 1) <$> (many1 digit <* spaces)
+                  <|> const Read           <$> (char ',' <* spaces)
 
                   <|> (\[n, fn] -> Defn n fn)
                         <$> splitOn ":"
@@ -105,15 +113,6 @@ runBF :: BFSrc -> IO Cells
 runBF = run initFnState emptyTape . bfSource2Tape
         where bfSource2Tape [] = error "empty prg tape"
               bfSource2Tape (b:bs) = Tape [] b bs
-
-mergeWithNumbers :: BFSrc -> BFSrc
-mergeWithNumbers [] = []
-mergeWithNumbers [c] = [c]
-mergeWithNumbers (c:c':cs) =
-        case c of
-            Number n -> fmap (const n) c' : mergeWithNumbers cs
-            Loop l   -> Loop (mergeWithNumbers l) : mergeWithNumbers (c':cs)
-            _        -> c : mergeWithNumbers (c':cs)
 
 emptyTape :: Cells
 emptyTape = Tape [] 0 zeros
