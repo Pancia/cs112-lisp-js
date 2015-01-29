@@ -1,5 +1,4 @@
 import Data.Char
-import Data.List.Split hiding (oneOf)
 import qualified Data.Map as M
 import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe)
@@ -69,8 +68,8 @@ parseBF input =
             readOr n = fromMaybe n . readMaybe
             bfDefnToken :: Parser BFCmd
             bfDefnToken = Defn <$> between (string "#(") (char ')' <* spaces)
-                                   (do n <- (manyTill (alphaNum <|> oneOf "[]-<,.>+") $ lookAhead (char ':'))
-                                       _ <- (char ':')
+                                   (do n <- manyTill (alphaNum <|> oneOf "[]-<,.>+") $ lookAhead (char ':')
+                                       _ <- char ':'
                                        f <- many bfToken
                                        return (n, f))
             bfFnToken :: Parser BFCmd
@@ -145,7 +144,7 @@ run fns cells@(Tape l p r) prg@(Tape _ instr _) =
             Read          -> do c <- getChar
                                 advance fns (Tape l (ord c) r) prg
             (Defn (nm,f)) -> advance (M.insert nm f fns) cells prg
-            (Fn name)     -> let (x:xs) = maybe (error $ "invalid fn:" ++ name) id
+            (Fn name)     -> let (x:xs) = fromMaybe (error $ "invalid fn:" ++ name)
                                           $ M.lookup name fns
                              in do cells' <- run fns cells $ Tape [] x xs
                                    advance fns cells' prg
