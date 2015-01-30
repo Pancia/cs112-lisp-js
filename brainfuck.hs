@@ -40,8 +40,8 @@ initFnState = M.fromList [("clear", parseBF "[-]"),
                           ("bang",  parseBF "33.")]
 
 testBFInput :: String
-testBFInput = "#(hello:72.101.108+..111.58.[-]) {def hello => prints out 'hello'}" ++
-              "(hello)(nl) {println 'hello\n'}" ++
+testBFInput = "#(hello:72.101.108+..111.58.[-]) {def hello => prints out 'Hello:'}" ++
+              "(hello)(nl) {println 'Hello:\n'}" ++
               ">10+< {set c[1] to \n, goto c[0]} " ++
               "+[,.  {enter echo loop} " ++
               ">.<]  {print newline after each echo} "
@@ -60,6 +60,7 @@ parseBF input =
         where
             bfTokens :: Parser BFSrc
             bfTokens = spaces *> many (bfToken <|> bfDefnToken <|> bfFnToken)
+            --numsAndChar :: Parser String
             numsAndChar c = do n <- many digit
                                _ <- char c
                                spaces
