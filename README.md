@@ -15,3 +15,7 @@ Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation
 * [Haskell.org cabal guide](https://www.haskell.org/cabal/users-guide/installing-packages.html)
 * [Intro to cabal sandboxes](https://www.fpcomplete.com/school/to-infinity-and-beyond/older-but-still-interesting/an-introduction-to-cabal-sandboxes-copy)
 * [Cabal sandbox workflow](http://chromaticleaves.com/posts/cabal-sandbox-workflow.html)
+* TLDR: `>? cabal sandbox init` -> `>? cabal install` -> `>? cabal run $args`
+
+#### Exec JS on cmdl
+http://www.phpied.com/javascript-shell-scripting/
