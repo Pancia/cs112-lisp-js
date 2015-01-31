@@ -16,7 +16,16 @@ main :: IO ()
 main = do args <- getArgs
           let expr = readExpr (head args)
           print . extractValue . liftM show $ expr
-          print . extractValue . trapError . liftM show $ eval =<< expr
+          liftM (writeFile "out.js") $ lispToJS =<< expr
+
+lispToJS :: LispVal -> String
+--traverse lispVal and convert
+lispToJS lv = case lv of
+                  (Atom a) -> a
+                  (Number n) -> show n
+                  (String s) -> s
+                  (Bool b) -> show b
+                  (List l) -> show l
 
 readExpr :: String -> ThrowsError LispVal
 readExpr input = case parse parseExpr "lisp-js" input of
