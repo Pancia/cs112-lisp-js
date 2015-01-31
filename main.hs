@@ -30,7 +30,7 @@ main = do args <- getArgs
           let js = catch . liftM lisp2js $ expr
           writeFile "out.js" $ js ++ "\n"
           putStrLn $ "out.js: " ++ show js
-          (waitForProcess =<< runCommand "jsc out.js") >> return ()
+          void $ waitForProcess =<< runCommand "jsc out.js"
 
 lisp2js :: LispVal -> String
 lisp2js lv = case lv of
