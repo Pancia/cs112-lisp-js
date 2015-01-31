@@ -1,10 +1,15 @@
 import Text.Parsec hiding (spaces)
 import System.Environment
+import System.Process
 
 import Data.Functor.Identity (Identity)
 import Control.Monad
 import Control.Applicative hiding (many, (<|>))
 import Control.Monad.Except
+
+import qualified Data.List as L
+import Data.Maybe
+import qualified Data.Map as M
 
 data LispVal = Atom String
              | List [LispVal]
@@ -12,27 +17,40 @@ data LispVal = Atom String
              | String String
              | Bool Bool
 
+primitives :: M.Map String String
+primitives = M.fromList [("log.", "print")]
+
+lookupFn :: String -> String
+lookupFn f = fromMaybe f $ M.lookup f primitives
+
 main :: IO ()
 main = do args <- getArgs
           let expr = readExpr (head args)
-          print . extractValue . liftM show $ expr
-          print . extractValue . trapError . liftM show $ eval =<< expr
+          putStrLn . ("show: " ++) . show . extractValue . liftM show $ expr
+          let js = catch . liftM lisp2js $ expr
+          writeFile "out.js" $ js ++ "\n"
+          putStrLn $ "out.js: " ++ show js
+          (waitForProcess =<< runCommand "jsc out.js") >> return ()
 
-readExpr :: String -> ThrowsError LispVal
+lisp2js :: LispVal -> String
+lisp2js lv = case lv of
+                 (Atom a) -> a
+                 (Number n) -> show n
+                 (String _) -> show lv
+                 (Bool x) -> show x
+                 list@(List _) -> list2js list
+
+list2js :: LispVal -> String
+list2js l = case l of
+                (List [Atom "quote", List ql]) -> show ql
+                (List (Atom a:args)) -> lookupFn a ++ "(" ++ L.intercalate ", " (fmap lisp2js args) ++ ")"
+                (List xs) -> "[" ++ unwords (fmap lisp2js xs) ++ "]"
+                x -> catch . throwError $ TypeMismatch "List" x
+
+readExpr :: String -> Either LispError LispVal
 readExpr input = case parse parseExpr "lisp-js" input of
                      Left err -> throwError $ ParserErr err
                      Right val -> return val
-
-eval :: LispVal -> ThrowsError LispVal
-eval lv = case lv of
-              (List [Atom "quote", ql]) -> return ql
-              (List (Atom f : args)) -> mapM eval args >>= apply f
-              (Atom _)   -> return lv
-              (String _) -> return lv
-              (Number _) -> return lv
-              (Bool _)   -> return lv
-              (List [])  -> return lv
-              (List _)   -> return lv
 
 type Parser a = ParsecT String () Identity a
 parseExpr :: Parser LispVal
@@ -74,46 +92,25 @@ parseList = List <$> between (char '(') (char ')')
                      (sepBy parseExpr spaces)
 
 symbol :: Parser Char
-symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
+symbol = oneOf ".!#$%&|*+-/:<=>?@^_~"
 
 spaces :: Parser ()
 spaces = skipMany1 space
+
+instance Show LispVal where
+        show = showVal
 
 showVal :: LispVal -> String
 showVal lv = case lv of
                  (String s)   -> "\"" ++ s ++ "\""
                  (Atom a)     -> a
                  (Number n)   -> show n
-                 (List l)     -> "(" ++ unwordsList l ++ ")"
+                 (List l)     -> "[" ++ unwordsList l ++ "]"
                  (Bool True)  -> "#t"
                  (Bool False) -> "#f"
 
-instance Show LispVal where
-        show = showVal
-
 unwordsList :: [LispVal] -> String
-unwordsList = unwords . map showVal
-
-apply :: String -> [LispVal] -> ThrowsError LispVal
-apply f xs = maybe (throwError $ NotFunction "Not args for a func" f)
-                   ($ xs)
-                   (lookup f primitives)
-
-primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
-primitives = [("+", numericBinop (+)),
-              ("-", numericBinop (-)),
-              ("*", numericBinop (*)),
-              ("/", numericBinop div),
-              ("mod", numericBinop mod),
-              ("quot", numericBinop quot),
-              ("rem", numericBinop rem)]
-
-numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
-numericBinop op xs = mapM unpackNum xs >>= return . Number . foldl1 op
-
-unpackNum :: LispVal -> ThrowsError Integer
-unpackNum (Number n) = return n
-unpackNum notNum = Left $ TypeMismatch "number" notNum
+unwordsList = unwords . fmap showVal
 
 data LispError = NumArgs        Integer [LispVal]
                | TypeMismatch   String LispVal
@@ -122,8 +119,6 @@ data LispError = NumArgs        Integer [LispVal]
                | NotFunction    String String
                | UnboundVar     String String
                | Default        String
-
-type ThrowsError = Either LispError
 
 instance Show LispError where
         show = showError
@@ -141,7 +136,10 @@ showError (TypeMismatch expctd fnd) =
 showError (ParserErr parseErr) = "ParseErr at " ++ show parseErr
 showError (Default err) = err
 
-trapError = flip catchError (return . show)
+catch :: Either LispError String -> String
+catch = extractValue . trapError
+        where trapError = flip catchError (return . show)
 
-extractValue :: ThrowsError a -> a
+extractValue :: Either LispError a -> a
 extractValue (Right val) = val
+extractValue (Left err) = error . show $ err
