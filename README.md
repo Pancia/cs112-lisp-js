@@ -19,3 +19,11 @@ Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation
 
 #### Exec JS on cmdl
 http://www.phpied.com/javascript-shell-scripting/
+
+### Functional JS
+* [Overview of how js is functional](http://www.hunlock.com/blogs/Functional_Javascript)
+* [Curry fn in js](http://www.crockford.com/javascript/www_svendtofte_com/code/curried_javascript/index.html)
+* [Top choice: mori, ~cljs~ in js](http://swannodette.github.io/mori/)
+* [underscore.js](http://underscorejs.org/)
+* [functional.js](http://functionaljs.com/)
+* [immutable.js](http://facebook.github.io/immutable-js/)
