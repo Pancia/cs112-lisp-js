@@ -16,6 +16,7 @@ data LispVal = Atom String
              | Number Integer
              | String String
              | Bool Bool
+             deriving (Eq)
 
 primitives :: M.Map String String
 primitives = M.fromList [("log.", "print")]
@@ -127,10 +128,9 @@ showError (TypeMismatch expctd fnd) =
 showError (ParserErr parseErr) = "ParseErr at " ++ show parseErr
 showError (Default err) = err
 
-catch :: Either LispError String -> String
-catch = extractValue . trapError
-        where trapError = flip catchError (return . show)
+hError :: Either LispError String -> Either LispError String
+hError = flip catchError (return . show)
 
-extractValue :: Either LispError a -> a
-extractValue (Right val) = val
-extractValue (Left err) = error . show $ err
+catch :: Either LispError a -> a
+catch (Right val) = val
+catch (Left err) = error . show $ err
