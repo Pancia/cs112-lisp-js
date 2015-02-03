@@ -17,7 +17,7 @@ data LispVal = Atom String
              | String String
              | Bool Bool
              | Def String LispVal
-             | Fn [String] LispVal
+             | Fn [String] [LispVal]
              deriving (Eq)
 
 primitives :: M.Map String String
@@ -75,7 +75,7 @@ parseFn = between (char '(') (char ')') $ do
         params <- between (char '[') (char ']')
                   (manyTill (many1 letter <* skipMany space)
                             (lookAhead (char ']'))) <* spaces
-        body <- parseExpr1
+        body <- parseExpr
         return $ Fn params body
 
 parseDef :: Parser LispVal
@@ -138,10 +138,16 @@ showVal lv = case lv of
                  fn@(Fn _ _)  -> showFn fn
 
 showFn :: LispVal -> String
-showFn (Fn params body) = "function (" ++ L.intercalate ", " params ++ ") {" ++ showBody body ++ "}"
-    where showBody b = case b of
-                           l@(List _) -> "return " ++ lisp2js l
-                           _ -> "return " ++ show b
+showFn (Fn params body) = "function (" ++ L.intercalate ", " params ++ ") {\n" ++ showBody body ++ "\n}"
+    where showBody [] = []
+          showBody (b:q:bs) = "    " ++ b' ++ ";\n" ++ showBody (q:bs)
+                where b' = case b of
+                                   l@(List _) -> lisp2js l
+                                   _ -> show b
+          showBody [b] = "    " ++ b'
+                where b' = case b of
+                               l@(List _) -> "return " ++ lisp2js l
+                               _ -> "return " ++ show b
 showFn nonFn = error "called showFn on a non-fn value: " ++ show nonFn
 
 showDef :: LispVal -> String
