@@ -9,8 +9,10 @@ import qualified LispJs as L
 
 main :: IO ()
 main = do args <- getArgs
+          expr <- if head args == "f"
+                      then liftM L.readExpr $ readFile (args !! 1)
+                      else return $ L.readExpr (head args)
           let out = "out.js"
-              expr = L.readExpr (head args)
           --Show lisp after parsing
           putStrLn . ("show: " ++) . show . L.catch . liftM show $ expr
           --Convert to js, write to out, and print

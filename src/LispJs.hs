@@ -24,10 +24,22 @@ primitives :: M.Map String String
 primitives = M.fromList [("log.", "print")
                         ,("+", "plus")
                         ,("-", "minus")
-                        ,("=", "eq")]
+                        ,("=", "eq")
+                        ,("*", "mult")]
+
+type SpecialForm = ([LispVal] -> String)
+specialForms :: M.Map String SpecialForm
+specialForms = M.fromList [("if", if_)]
+    where
+        if_ :: SpecialForm
+        if_ [cond_, then_, else_] = "(" ++ lisp2js cond_ ++ " ? " ++ lisp2js then_ ++ " : " ++ lisp2js else_ ++ ")"
+        if_ _ = error "wrong args to if"
 
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
+
+lookupSpecForm :: String -> Maybe SpecialForm
+lookupSpecForm s = M.lookup s specialForms
 
 formatJs :: [String] -> IO String
 formatJs js = do helperFns <- readFile "helperFunctions.js"
@@ -47,7 +59,9 @@ lisp2js l = case l of
 list2js :: LispVal -> String
 list2js l = case l of
                 (List [Atom "quote", List ql]) -> show ql
-                (List (Atom a:args)) -> lookupFn a ++ "(" ++ L.intercalate ", " (fmap lisp2js args) ++ ")"
+                (List (Atom a:args))
+                    | isJust $ lookupSpecForm a -> (fromJust $ lookupSpecForm a) args ++ ";"
+                    | otherwise -> lookupFn a ++ "(" ++ L.intercalate ", " (fmap lisp2js args) ++ ")"
                 (List xs) -> "[" ++ L.intercalate ", " (fmap lisp2js xs) ++ "]"
                 x -> catch . throwError $ TypeMismatch "List" x
 
