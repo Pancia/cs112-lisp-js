@@ -3,4 +3,4 @@ dist/
 cabal.sandbox.config
 node_modules/
 out.js
-.*
+test-out/

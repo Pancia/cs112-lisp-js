@@ -47,9 +47,10 @@ testJsLisp = fmap (\(name, (l, r)) -> do r' <- lisp2jsOutput r name; return $ te
                 ,("defn+&call", ("5\n", "(def f (fn [] (+ 2 3))) (log. (f))"))
                 ,("defn+args&call", ("10\n", "(def f (fn [x] (+ x 1))) (log. (f 9))"))]
         lisp2jsOutput lisp fn = do
+            _ <- createProcess $ proc "mkdir" ["test-out"]
             let js = L.catch . liftM (map L.lisp2js) . L.readExpr $ lisp
             helperFns <- readFile "helperFunctions.js"
-            let filename = "." ++ fn
+            let filename = "test-out/" ++ fn
             writeFile filename $ helperFns ++ intercalate ";\n" js ++ ";"
             (_, Just hout, _, _) <- createProcess $ (proc "jsc" [filename]) { std_out = CreatePipe }
             hGetContents hout
