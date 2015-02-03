@@ -139,6 +139,7 @@ showVal lv = case lv of
 
 showFn :: LispVal -> String
 showFn (Fn params body) = "function (" ++ L.intercalate ", " params ++ ") {\n" ++ showBody body ++ "\n}"
+    --TODO: Add indentation param, so its: (" "*4*indent) ++ ...
     where showBody [] = []
           showBody (b:q:bs) = "    " ++ b' ++ ";\n" ++ showBody (q:bs)
                 where b' = case b of
