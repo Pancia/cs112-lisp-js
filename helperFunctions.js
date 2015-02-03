@@ -2,6 +2,7 @@ load("functional.js");
 
 var plus = fjs.curry(function(x, y) {return x + y});
 var minus = fjs.curry(function(x, y) {return x - y});
+// TODO: Add div and mult
 
 var log = function() {
     var _log = function(x) {print(x)}

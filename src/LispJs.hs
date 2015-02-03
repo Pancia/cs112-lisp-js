@@ -17,6 +17,7 @@ data LispVal = Atom String
              | String String
              | Bool Bool
              | Def String LispVal
+             | Fn [String] LispVal
              deriving (Eq)
 
 primitives :: M.Map String String
@@ -36,6 +37,7 @@ lisp2js l = case l of
                 (Bool x) -> show x
                 list@(List _) -> list2js list
                 def@(Def _ _) -> show def
+                fn@(Fn _ _) -> show fn
 
 list2js :: LispVal -> String
 list2js l = case l of
@@ -59,7 +61,17 @@ parseExpr1 = parseAtom
              <|> try parseNumber
              <|> try parseQuoted
              <|> try parseDef
+             <|> try parseFn
              <|> try parseList
+
+parseFn :: Parser LispVal
+parseFn = between (char '(') (char ')') $ do
+        _ <- string "fn" >> spaces
+        params <- between (char '[') (char ']')
+                  (manyTill (many1 letter <* skipMany space)
+                            (lookAhead (char ']'))) <* spaces
+        body <- parseExpr1
+        return $ Fn params body
 
 parseDef :: Parser LispVal
 parseDef = between (char '(') (char ')') $ do
@@ -115,9 +127,17 @@ showVal lv = case lv of
                  (Atom a)     -> a
                  (Number n)   -> show n
                  (List l)     -> "[" ++ unwordsList l ++ "]"
-                 (Bool True)  -> "#t"
-                 (Bool False) -> "#f"
+                 (Bool True)  -> "true"
+                 (Bool False) -> "false"
                  def@(Def _ _)    -> showDef def
+                 fn@(Fn _ _)  -> showFn fn
+
+showFn :: LispVal -> String
+showFn (Fn params body) = "function (" ++ L.intercalate ", " params ++ ") {" ++ showBody body ++ "}"
+    where showBody b = case b of
+                           l@(List _) -> "return " ++ lisp2js l
+                           _ -> "return " ++ show b
+showFn nonFn = error "called showFn on a non-fn value: " ++ show nonFn
 
 showDef :: LispVal -> String
 showDef (Def name body) = "var " ++ name ++ " = " ++ lisp2js body
