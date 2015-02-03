@@ -29,6 +29,11 @@ primitives = M.fromList [("log.", "print")
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
 
+formatJs :: [String] -> IO String
+formatJs js = do helperFns <- readFile "helperFunctions.js"
+                 let js' = (++ ";") . L.intercalate ";\n" $ js
+                 return $ helperFns ++ js'
+
 lisp2js :: LispVal -> String
 lisp2js l = case l of
                 (Atom a) -> a

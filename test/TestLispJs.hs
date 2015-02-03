@@ -1,5 +1,4 @@
 import Data.Monoid
-import Data.List
 import Control.Monad
 
 import System.Process
@@ -48,9 +47,11 @@ testJsLisp = fmap (\(name, (l, r)) -> do r' <- lisp2jsOutput r name; return $ te
                 ,("defn+args&call", ("10\n", "(def f (fn [x] (+ x 1))) (log. (f 9))"))]
         lisp2jsOutput lisp fn = do
             _ <- createProcess $ proc "mkdir" ["test-out"]
-            let js = L.catch . liftM (map L.lisp2js) . L.readExpr $ lisp
-            helperFns <- readFile "helperFunctions.js"
+            js <- L.formatJs . L.catch . liftM (map L.lisp2js) . L.readExpr $ lisp
             let filename = "test-out/" ++ fn
-            writeFile filename $ helperFns ++ intercalate ";\n" js ++ ";"
-            (_, Just hout, _, _) <- createProcess $ (proc "jsc" [filename]) { std_out = CreatePipe }
-            hGetContents hout
+            writeFile filename js
+            execJs filename
+
+execJs :: String -> IO String
+execJs file = do (_, Just hout, _, _) <- createProcess $ (proc "jsc" [file]) { std_out = CreatePipe }
+                 hGetContents hout

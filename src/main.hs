@@ -1,7 +1,6 @@
 module Main where
 
 import Control.Monad
-import Data.List
 import System.Environment
 import System.IO
 import System.Process
@@ -10,12 +9,18 @@ import qualified LispJs as L
 
 main :: IO ()
 main = do args <- getArgs
-          let expr = L.readExpr (head args)
+          let out = "out.js"
+              expr = L.readExpr (head args)
+          --Show lisp after parsing
           putStrLn . ("show: " ++) . show . L.catch . liftM show $ expr
-          let js = L.catch . liftM (map L.lisp2js) $ expr
-          helperFns <- readFile "helperFunctions.js"
-          writeFile "out.js" $ helperFns ++ "\n" ++ intercalate ";\n" js ++ ";"
-          putStrLn $ "out.js: " ++ show js
-          (_, Just hout, _, _) <- createProcess $ (proc "jsc" ["out.js"]) { std_out = CreatePipe }
-          jsOutput <- hGetContents hout
+          --Convert to js, write to out, and print
+          js <- L.formatJs . L.catch . liftM (map L.lisp2js) $ expr
+          writeFile out js
+          putStrLn $ out ++ ": " ++ show js
+          --Execute js, print its result
+          jsOutput <- execJs out
           print $ "jsOutput: " ++ jsOutput
+
+execJs :: String -> IO String
+execJs file = do (_, Just hout, _, _) <- createProcess $ (proc "jsc" [file]) { std_out = CreatePipe }
+                 hGetContents hout
