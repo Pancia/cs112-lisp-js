@@ -19,14 +19,14 @@ main = do tests' <- sequence testJsLisp
         tests = testLisp2js ++ testReadExpr
 
 testReadExpr :: [T.Test]
-testReadExpr = fmap (\(name, (l, r)) -> testCase name (l @?= readExpr r)) tests
+testReadExpr = fmap (\(name, (l, r)) -> testCase name (l @=? readExpr r)) tests
     where
         tests = [("list of numbers", ([L.List [L.Number 3, L.Number 4]], "(3 4)"))
                 ,("list of atoms", ([L.List [L.Atom "foo", L.Atom "bar"]], "(foo bar)"))]
         readExpr = L.catch . L.readExpr
 
 testLisp2js :: [T.Test]
-testLisp2js = fmap (\(name, (l, r)) -> testCase name (l @?= lisp2js r)) tests
+testLisp2js = fmap (\(name, (l, r)) -> testCase name (l @=? lisp2js r)) tests
     where
         tests = [("log.", (["print(5)"], "(log. 5)"))
                 ,("plus", (["plus(1, [2,3])"], "(+ 1 '(2 3))"))
