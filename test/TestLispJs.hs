@@ -32,10 +32,10 @@ testLisp2js = fmap (\(name, (l, r)) -> testCase name (l @=? lisp2js r)) tests
                 ,("plus", (["plus(1, [2, 3])"], "(+ 1 '(2 3))"))
                 ,("def", (["var foo = 5"],"(def foo 5)"))
                 ,("def1", (["var foo = plus(3, 2)"],"(def foo (+ 3 2))"))
-                ,("fn", (["function () {\n    return true\n}"], "(fn [] #t)"))
-                ,("fn+", (["function (x) {\n    return plus(x, 2)\n}"], "(fn [x] (+ x 2))"))
-                ,("def&fn", (["var foo = function (x, y) {\n    return minus(x, y)\n}"], "(def foo (fn [x y] (- x y)))"))
-                ,("defn&call", (["var f = function () {\n    return true\n}", "print(f())"],"(def f (fn [] #t)) (log. (f))"))]
+                ,("fn", (["function () {\nreturn true\n}"], "(fn [] #t)"))
+                ,("fn+", (["function (x) {\nreturn plus(x, 2)\n}"], "(fn [x] (+ x 2))"))
+                ,("def&fn", (["var foo = function (x, y) {\nreturn minus(x, y)\n}"], "(def foo (fn [x y] (- x y)))"))
+                ,("defn&call", (["var f = function () {\nreturn true\n}", "print(f())"],"(def f (fn [] #t)) (log. (f))"))]
         lisp2js = L.catch . liftM (map L.lisp2js) . L.readExpr
 
 testJsLisp :: [IO T.Test]

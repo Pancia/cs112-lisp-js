@@ -34,6 +34,7 @@ specialForms = M.fromList [("if", if_)]
     where
         if_ :: SpecialForm
         if_ [cond_, then_, else_] = "(" ++ lisp2js cond_ ++ " ? " ++ lisp2js then_ ++ " : " ++ lisp2js else_ ++ ")"
+        if_ [cond_, then_] = if_ [cond_, then_, Atom "null"]
         if_ _ = error "wrong args to if"
 
 lookupFn :: String -> String
@@ -49,7 +50,7 @@ formatJs js = do helperFns <- readFile "helperFunctions.js"
 
 lisp2js :: LispVal -> String
 lisp2js l = case l of
-                (Atom a) -> a
+                a@(Atom _) -> atom2js a
                 (Number n) -> show n
                 (String s) -> "\"" ++ s ++ "\""
                 (Bool x) -> toLower <$> show x
@@ -57,23 +58,27 @@ lisp2js l = case l of
                 def@(Def _ _) -> def2js def
                 fn@(Fn _ _) -> fn2js fn
 
+atom2js :: LispVal -> String
+atom2js (Atom a) = if last a == '.'
+                       then init a
+                       else "jsp_" ++ a
+atom2js x = catch . throwError $ TypeMismatch "Def" x
+
 fn2js :: LispVal -> String
-fn2js (Fn params body) = "function (" ++ L.intercalate ", " params ++ ") {\n" ++ showBody body ++ "\n}"
+fn2js (Fn params body) = "function (" ++ params' ++ ") {\n" ++ showBody body ++ "\n}"
     --TODO: Add indentation param, so its: (" "*4*indent) ++ ...
-    where showBody [] = []
-          showBody (b:q:bs) = "    " ++ b' ++ ";\n" ++ showBody (q:bs)
-                where b' = case b of
-                                   l@(List _) -> lisp2js l
-                                   _ -> lisp2js b
-          showBody [b] = "    " ++ b'
-                where b' = case b of
-                               l@(List _) -> "return " ++ lisp2js l
-                               _ -> "return " ++ lisp2js b
-fn2js nonFn = error "called fn2js on a non-fn value: " ++ show nonFn
+    where params' = L.intercalate ", " . fmap ("jsp_" ++) $ params
+          showBody' b = case b of
+                            l@(List _) -> lisp2js l
+                            _ -> lisp2js b
+          showBody [] = []
+          showBody (b:q:bs) = showBody' b ++ ";\n" ++ showBody (q:bs)
+          showBody [b] = "return " ++ showBody' b
+fn2js x = catch . throwError $ TypeMismatch "Def" x
 
 def2js :: LispVal -> String
 def2js (Def name body) = "var " ++ name ++ " = " ++ lisp2js body
-def2js nonDef = error "called def2js on a non-def value: " ++ show nonDef
+def2js x = catch . throwError $ TypeMismatch "Def" x
 
 list2js :: LispVal -> String
 list2js l = case l of
