@@ -1,9 +1,5 @@
 module LispJs where
 
-import Text.Parsec hiding (spaces)
-
-import Data.Functor.Identity (Identity)
-import Control.Monad
 import Control.Applicative hiding (many, (<|>))
 import Control.Monad.Except
 
@@ -11,6 +7,8 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Char (toLower)
+
+import Utils
 
 data LispVal = Atom String
              | List [LispVal]
@@ -25,8 +23,10 @@ primitives :: M.Map String String
 primitives = M.fromList [("log", "print")
                         ,("+", "plus")
                         ,("-", "minus")
+                        ,("*", "mult")
+                        ,("/", "div")
                         ,("=", "eq")
-                        ,("*", "mult")]
+                        ,("!=", "neq")]
 
 type SpecialForm = [JsVal] -> String
 specialForms :: M.Map String SpecialForm
@@ -126,106 +126,3 @@ list2js l = case l of
                (JsList [JsId "quote", ql]) -> toJS ql
                (JsList xs) -> "[" ++ L.intercalate ", " (fmap toJS xs) ++ "]"
                x -> catch . throwError . TypeMismatch "JsList" $ show x
-
-readExpr :: String -> Either CompilerError [LispVal]
-readExpr input = case parse parseExpr "lisp-js" input of
-                     Left err -> throwError $ ParserErr err
-                     Right val -> return val
-
-type Parser a = ParsecT String () Identity a
-parseExpr :: Parser [LispVal]
-parseExpr = many1 $ try (parseExpr1 <* skipMany space)
-
-parseExpr1 :: Parser LispVal
-parseExpr1 = parseAtom
-             <|> try parseString
-             <|> try parseNumber
-             <|> try parseQuoted
-             <|> try parseDef
-             <|> try parseFn
-             <|> try parseList
-
-parseFn :: Parser LispVal
-parseFn = between (char '(') (char ')') $ do
-        void $ string "fn" >> spaces
-        params <- between (char '[') (char ']')
-                  (manyTill (many1 letter <* skipMany space)
-                            (lookAhead (char ']'))) <* spaces
-        body <- parseExpr
-        return $ Fn params body
-
-parseDef :: Parser LispVal
-parseDef = between (char '(') (char ')') $ do
-        void $ string "def"
-        spaces
-        name <- many1 (letter <|> digit <|> symbol) <* spaces
-        body <- parseExpr1
-        return $ Def name body
-
-parseAtom :: Parser LispVal
-parseAtom = do
-        first <- letter <|> symbol
-        rest <- many (letter <|> digit <|> symbol)
-        let atom = first:rest
-        return $ case atom of
-                     "#t" -> Bool True
-                     "#f" -> Bool False
-                     _    -> Atom atom
-
-parseString :: Parser LispVal
-parseString = do void $ char '"'
-                 x <- many (noneOf "\"")
-                 void $ char '"'
-                 return $ String x
-
-parseNumber :: Parser LispVal
-parseNumber = liftM (Number . read) $ many1 digit
-
-parseQuoted :: Parser LispVal
-parseQuoted = do void $ char '\''
-                 x <- parseExpr1
-                 let x' = case x of
-                              (List [l]) -> l
-                              _ -> x
-                 return $ List [Atom "quote", x']
-
-parseList :: Parser LispVal
-parseList = List <$> between (char '(') (char ')')
-                     (sepBy parseExpr1 spaces)
-
-symbol :: Parser Char
-symbol = oneOf ".!#$%&|*+-/:<=>?@^_~"
-
-spaces :: Parser ()
-spaces = skipMany1 space
-
-data CompilerError = NumArgs        Integer [String]
-                   | TypeMismatch   String String
-                   | ParserErr      ParseError
-                   | BadSpecialForm String String
-                   | NotFunction    String String
-                   | UnboundVar     String String
-                   | Default        String
-
-instance Show CompilerError where
-        show = showError
-
-showError :: CompilerError -> String
-showError (UnboundVar msg var)      = msg ++ ": " ++ var
-showError (BadSpecialForm msg form) = msg ++ ": " ++ show form
-showError (NotFunction msg f)       = msg ++ ": " ++ show f
-showError (NumArgs expctd found) =
-        "Expected " ++ show expctd ++
-        " args; found values " ++ unwords (show <$> found)
-showError (TypeMismatch expctd fnd) =
-        "Invalid type, expected: " ++ expctd ++
-        ", found: " ++ show fnd
-showError (ParserErr parseErr) = "ParseErr at " ++ show parseErr
-showError (Default err) = err
-
-hError :: Either CompilerError String -> Either CompilerError String
-hError = flip catchError (return . show)
-
-catch :: Either CompilerError a -> a
-catch (Right val) = val
-catch (Left err) = error . show $ err
