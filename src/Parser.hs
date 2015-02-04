@@ -1,16 +1,18 @@
 module Parser where
 
-import Text.Parsec as P hiding (spaces)
 import Control.Applicative hiding ((<|>), many)
 import Control.Monad.Identity
 
-import LispJs
+import Text.Parsec
+
+import qualified LispJs as L
 
 type Parser a = ParsecT String () Identity a
-parseExpr :: Parser [LispVal]
-parseExpr = many1 $ try (parseExpr1 <* skipMany space)
 
-parseExpr1 :: Parser LispVal
+parseExpr :: Parser [L.LispVal]
+parseExpr = many1 $ try (parseExpr1 <* spaces)
+
+parseExpr1 :: Parser L.LispVal
 parseExpr1 = parseAtom
              <|> try parseString
              <|> try parseNumber
@@ -19,56 +21,60 @@ parseExpr1 = parseAtom
              <|> try parseFn
              <|> try parseList
 
-parseFn :: Parser LispVal
+parseFn :: Parser L.LispVal
 parseFn = between (char '(') (char ')') $ do
-        void $ string "fn" >> spaces
+        string "fn" >> spaces1
         params <- between (char '[') (char ']')
-                  (manyTill (many1 letter <* skipMany space)
-                            (lookAhead (char ']'))) <* spaces
+                  (manyTill (ident <* spaces)
+                            (lookAhead (char ']'))) <* spaces1
         body <- parseExpr
-        return $ Fn params body
+        return $ L.Fn params body
 
-parseDef :: Parser LispVal
+parseDef :: Parser L.LispVal
 parseDef = between (char '(') (char ')') $ do
-        void $ string "def"
-        spaces
-        name <- many1 (letter <|> digit <|> symbol) <* spaces
+        string "def" >> spaces1
+        name <- ident <* spaces1
         body <- parseExpr1
-        return $ Def name body
+        return $ L.Def name body
 
-parseAtom :: Parser LispVal
+parseAtom :: Parser L.LispVal
 parseAtom = do
-        first <- letter <|> symbol
-        rest <- many (letter <|> digit <|> symbol)
-        let atom = first:rest
+        atom <- ident
         return $ case atom of
-                     "#t" -> Bool True
-                     "#f" -> Bool False
-                     _    -> Atom atom
+                     "#t" -> L.Bool True
+                     "#f" -> L.Bool False
+                     _    -> L.Atom atom
 
-parseString :: Parser LispVal
+parseString :: Parser L.LispVal
 parseString = do void $ char '"'
                  x <- many (noneOf "\"")
                  void $ char '"'
-                 return $ String x
+                 return $ L.String x
 
-parseNumber :: Parser LispVal
-parseNumber = liftM (Number . read) $ many1 digit
+parseNumber :: Parser L.LispVal
+parseNumber = liftM (L.Number . read) $ many1 digit
 
-parseQuoted :: Parser LispVal
+parseQuoted :: Parser L.LispVal
 parseQuoted = do void $ char '\''
                  x <- parseExpr1
                  let x' = case x of
-                              (List [l]) -> l
+                              (L.List [l]) -> l
                               _ -> x
-                 return $ List [Atom "quote", x']
+                 return $ L.List [L.Atom "quote", x']
 
-parseList :: Parser LispVal
-parseList = List <$> between (char '(') (char ')')
-                     (sepBy parseExpr1 spaces)
+parseList :: Parser L.LispVal
+parseList = L.List <$> between (char '(') (char ')')
+                       (sepBy parseExpr1 spaces1)
+
+--HELPER PARSERS
+
+ident :: Parser String
+ident = (:) <$> first <*> many rest
+    where first = letter <|> symbol
+          rest  = letter <|> digit <|> symbol
 
 symbol :: Parser Char
 symbol = oneOf ".!#$%&|*+-/:<=>?@^_~"
 
-spaces :: Parser ()
-spaces = skipMany1 space
+spaces1 :: Parser ()
+spaces1 = skipMany1 space

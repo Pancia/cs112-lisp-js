@@ -20,7 +20,7 @@ main = do args <- getArgs
                       else return $ readExpr (head args)
           let out = "out.js"
           --Show lisp after parsing
-          putStrLn . ("show: " ++) . show . U.catch . liftM show $ expr
+          putStrLn . ("lispVal: " ++) . U.catch . liftM show $ expr
           putStrLn . take 60 $ repeat '#'
           --Convert to js, write to out, and print
           let jsVals = liftM (L.translate <$>) expr

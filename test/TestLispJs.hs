@@ -18,6 +18,7 @@ import qualified LispJs as L
 import qualified Utils as U
 import qualified Parser as P
 
+--TODO: Refactor to different files for testing each src/ file
 main :: IO ()
 main = do tests' <- sequence testExecJS
           defaultMainWithOpts (tests ++ tests') mempty
