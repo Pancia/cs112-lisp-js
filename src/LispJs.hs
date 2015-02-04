@@ -22,19 +22,19 @@ data LispVal = Atom String
              deriving (Eq, Show)
 
 primitives :: M.Map String String
-primitives = M.fromList [("log.", "print")
+primitives = M.fromList [("log", "print")
                         ,("+", "plus")
                         ,("-", "minus")
                         ,("=", "eq")
                         ,("*", "mult")]
 
-type SpecialForm = ([LispVal] -> String)
+type SpecialForm = [JsVal] -> String
 specialForms :: M.Map String SpecialForm
 specialForms = M.fromList [("if", if_)]
     where
         if_ :: SpecialForm
-        if_ [cond_, then_, else_] = "(" ++ lisp2js cond_ ++ " ? " ++ lisp2js then_ ++ " : " ++ lisp2js else_ ++ ")"
-        if_ [cond_, then_] = if_ [cond_, then_, Atom "null"]
+        if_ [cond_, then_, else_] = "(" ++ toJS cond_ ++ " ? " ++ toJS then_ ++ " : " ++ toJS else_ ++ ")"
+        if_ [cond_, then_] = if_ [cond_, then_, JsId "null"]
         if_ _ = error "wrong args to if"
 
 lookupFn :: String -> String
@@ -48,48 +48,86 @@ formatJs js = do helperFns <- readFile "helperFunctions.js"
                  let js' = (++ ";") . L.intercalate ";\n" $ js
                  return $ helperFns ++ js'
 
-lisp2js :: LispVal -> String
-lisp2js l = case l of
-                a@(Atom _) -> atom2js a
-                (Number n) -> show n
-                (String s) -> "\"" ++ s ++ "\""
-                (Bool x) -> toLower <$> show x
-                list@(List _) -> list2js list
-                def@(Def _ _) -> def2js def
-                fn@(Fn _ _) -> fn2js fn
+data JsVal = JsVar String JsVal                -- var x = ...
+           | JsFn [String] [JsVal]             -- function(...){...}
+           | JsStr String                      -- "..."
+           | JsBool Bool                       -- true|false
+           | JsNum Integer                     -- ..-1,0,1..
+           | JsId String                       -- x, foo, ...
+           | JsObjCall String [String] [JsVal] -- x.foo.bar(...)
+           | JsFnCall String [JsVal]           -- foo(...)
+           | JsList [JsVal]                    -- [...]
+           | JsThing String                    -- ???
+           deriving (Eq, Show)
 
-atom2js :: LispVal -> String
-atom2js (Atom a) = if last a == '.'
-                       then init a
-                       else "jsp_" ++ a
-atom2js x = catch . throwError $ TypeMismatch "Def" x
+translate :: LispVal -> JsVal
+translate v = case v of
+                  (Atom a) -> JsId a
+                  (Bool b) -> JsBool b
+                  (Def n b) -> JsVar n (translate b)
+                  (Fn xs b) -> JsFn xs (translate <$> b)
+                  l@(List _) -> list2jsVal l
+                  (Number n) -> JsNum n
+                  (String s) -> JsStr s
+    where
+        list2jsVal :: LispVal -> JsVal
+        list2jsVal l = case l of
+                        (List [Atom "quote", ql]) -> translate ql
+                        (List [Atom a]) -> JsFnCall a []
+                        (List (Atom a:(arg:args)))
+                            | last a == '.' -> JsObjCall a [show $ translate arg] $ translate <$> args
+                            | otherwise     -> JsFnCall a $ translate <$> (arg:args)
+                        (List xs) -> JsList $ translate <$> xs
+                        x -> catch . throwError $ TypeMismatch "List" $ show x
 
-fn2js :: LispVal -> String
-fn2js (Fn params body) = "function (" ++ params' ++ ") {\n" ++ showBody body ++ "\n}"
-    --TODO: Add indentation param, so its: (" "*4*indent) ++ ...
-    where params' = L.intercalate ", " . fmap ("jsp_" ++) $ params
-          showBody' b = case b of
-                            l@(List _) -> lisp2js l
-                            _ -> lisp2js b
+toJS :: JsVal -> String
+toJS jv = case jv of
+              a@(JsId{})      -> id2js a
+              (JsNum n)       -> show n
+              (JsStr s)       -> "\"" ++ s ++ "\""
+              (JsBool x)      -> toLower <$> show x
+              l@(JsList{})    -> list2js l
+              v@(JsVar{})     -> var2js v
+              f@(JsFn{})      -> fn2js f
+              x@(JsObjCall{}) -> objCall2js x
+              f@(JsFnCall{})  -> fnCall2js f
+              (JsThing x)     -> x
+
+objCall2js :: JsVal -> String
+objCall2js (JsObjCall _obj _props _args) = undefined
+objCall2js x = catch . throwError . TypeMismatch "JsObjCall" $ show x
+
+fnCall2js :: JsVal -> String
+fnCall2js (JsFnCall fn args)
+        | isJust specForm = fromJust specForm args
+        | otherwise = lookupFn fn ++ "(" ++ args' ++ ")"
+    where args' = L.intercalate ", " $ toJS <$> args
+          specForm = lookupSpecForm fn
+fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
+
+id2js :: JsVal -> String
+id2js (JsId a) = a
+id2js x = catch . throwError . TypeMismatch "JsId" $ show x
+
+fn2js :: JsVal -> String
+fn2js (JsFn params body) = "function (" ++ params' ++ ") {\n" ++ showBody body ++ "\n}"
+    where params' = L.intercalate ", " params
           showBody [] = []
-          showBody (b:q:bs) = showBody' b ++ ";\n" ++ showBody (q:bs)
-          showBody [b] = "return " ++ showBody' b
-fn2js x = catch . throwError $ TypeMismatch "Def" x
+          showBody (b:q:bs) = toJS b ++ ";\n" ++ showBody (q:bs)
+          showBody [b] = "return " ++ toJS b
+fn2js x = catch . throwError . TypeMismatch "JsFn" $ show x
 
-def2js :: LispVal -> String
-def2js (Def name body) = "var " ++ name ++ " = " ++ lisp2js body
-def2js x = catch . throwError $ TypeMismatch "Def" x
+var2js :: JsVal -> String
+var2js (JsVar name body) = "var " ++ name ++ " = " ++ toJS body
+var2js x = catch . throwError . TypeMismatch "JsVar" $ show x
 
-list2js :: LispVal -> String
+list2js :: JsVal -> String
 list2js l = case l of
-                (List [Atom "quote", ql]) -> lisp2js ql
-                (List (Atom a:args))
-                    | isJust $ lookupSpecForm a -> (fromJust $ lookupSpecForm a) args ++ ";"
-                    | otherwise -> lookupFn a ++ "(" ++ L.intercalate ", " (fmap lisp2js args) ++ ")"
-                (List xs) -> "[" ++ L.intercalate ", " (fmap lisp2js xs) ++ "]"
-                x -> catch . throwError $ TypeMismatch "List" x
+               (JsList [JsId "quote", ql]) -> toJS ql
+               (JsList xs) -> "[" ++ L.intercalate ", " (fmap toJS xs) ++ "]"
+               x -> catch . throwError . TypeMismatch "JsList" $ show x
 
-readExpr :: String -> Either LispError [LispVal]
+readExpr :: String -> Either CompilerError [LispVal]
 readExpr input = case parse parseExpr "lisp-js" input of
                      Left err -> throwError $ ParserErr err
                      Right val -> return val
@@ -109,7 +147,7 @@ parseExpr1 = parseAtom
 
 parseFn :: Parser LispVal
 parseFn = between (char '(') (char ')') $ do
-        _ <- string "fn" >> spaces
+        void $ string "fn" >> spaces
         params <- between (char '[') (char ']')
                   (manyTill (many1 letter <* skipMany space)
                             (lookAhead (char ']'))) <* spaces
@@ -118,7 +156,7 @@ parseFn = between (char '(') (char ')') $ do
 
 parseDef :: Parser LispVal
 parseDef = between (char '(') (char ')') $ do
-        _ <- string "def"
+        void $ string "def"
         spaces
         name <- many1 (letter <|> digit <|> symbol) <* spaces
         body <- parseExpr1
@@ -135,16 +173,16 @@ parseAtom = do
                      _    -> Atom atom
 
 parseString :: Parser LispVal
-parseString = do _ <- char '"'
+parseString = do void $ char '"'
                  x <- many (noneOf "\"")
-                 _ <- char '"'
+                 void $ char '"'
                  return $ String x
 
 parseNumber :: Parser LispVal
 parseNumber = liftM (Number . read) $ many1 digit
 
 parseQuoted :: Parser LispVal
-parseQuoted = do _ <- char '\''
+parseQuoted = do void $ char '\''
                  x <- parseExpr1
                  let x' = case x of
                               (List [l]) -> l
@@ -161,36 +199,33 @@ symbol = oneOf ".!#$%&|*+-/:<=>?@^_~"
 spaces :: Parser ()
 spaces = skipMany1 space
 
-unwordsList :: [LispVal] -> String
-unwordsList = unwords . fmap show
+data CompilerError = NumArgs        Integer [String]
+                   | TypeMismatch   String String
+                   | ParserErr      ParseError
+                   | BadSpecialForm String String
+                   | NotFunction    String String
+                   | UnboundVar     String String
+                   | Default        String
 
-data LispError = NumArgs        Integer [LispVal]
-               | TypeMismatch   String LispVal
-               | ParserErr      ParseError
-               | BadSpecialForm String LispVal
-               | NotFunction    String String
-               | UnboundVar     String String
-               | Default        String
-
-instance Show LispError where
+instance Show CompilerError where
         show = showError
 
-showError :: LispError -> String
+showError :: CompilerError -> String
 showError (UnboundVar msg var)      = msg ++ ": " ++ var
 showError (BadSpecialForm msg form) = msg ++ ": " ++ show form
 showError (NotFunction msg f)       = msg ++ ": " ++ show f
 showError (NumArgs expctd found) =
         "Expected " ++ show expctd ++
-        " args; found values " ++ unwordsList found
+        " args; found values " ++ unwords (show <$> found)
 showError (TypeMismatch expctd fnd) =
         "Invalid type, expected: " ++ expctd ++
         ", found: " ++ show fnd
 showError (ParserErr parseErr) = "ParseErr at " ++ show parseErr
 showError (Default err) = err
 
-hError :: Either LispError String -> Either LispError String
+hError :: Either CompilerError String -> Either CompilerError String
 hError = flip catchError (return . show)
 
-catch :: Either LispError a -> a
+catch :: Either CompilerError a -> a
 catch (Right val) = val
 catch (Left err) = error . show $ err

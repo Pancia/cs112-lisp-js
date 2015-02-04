@@ -4,4 +4,4 @@
       (* n (fac (- n 1)))
       n)))
 
-(log. (fac 5))
+(log (fac 5))

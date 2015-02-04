@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Applicative
 import Control.Monad
 import System.Environment
 import System.IO
@@ -15,14 +16,20 @@ main = do args <- getArgs
           let out = "out.js"
           --Show lisp after parsing
           putStrLn . ("show: " ++) . show . L.catch . liftM show $ expr
+          putStrLn . take 60 $ repeat '#'
           --Convert to js, write to out, and print
-          js <- L.formatJs . L.catch . liftM (map L.lisp2js) $ expr
+          let jsVals = liftM (L.translate <$>) expr
+          print . ("jsVal: " ++) . show $ jsVals
+          putStrLn . take 60 $ repeat '#'
+          js <- L.formatJs . L.catch . liftM (L.toJS <$>) $ jsVals
+          print . ("js: " ++) $ js
+          putStrLn . take 60 $ repeat '#'
           writeFile out js
           putStrLn $ out ++ ": " ++ show js
           --Execute js, print its result
-          jsOutput <- execJs out
+          jsOutput <- execJS out
           print $ "jsOutput: " ++ jsOutput
 
-execJs :: String -> IO String
-execJs file = do (_, Just hout, _, _) <- createProcess $ (proc "jsc" [file]) { std_out = CreatePipe }
+execJS :: String -> IO String
+execJS file = do (_, Just hout, _, _) <- createProcess $ (proc "jsc" [file]) { std_out = CreatePipe }
                  hGetContents hout
