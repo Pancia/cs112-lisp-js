@@ -8,8 +8,9 @@ import Control.Applicative hiding (many, (<|>))
 import Control.Monad.Except
 
 import qualified Data.List as L
-import Data.Maybe
 import qualified Data.Map as M
+import Data.Maybe
+import Data.Char (toLower)
 
 data LispVal = Atom String
              | List [LispVal]
@@ -18,7 +19,7 @@ data LispVal = Atom String
              | Bool Bool
              | Def String LispVal
              | Fn [String] [LispVal]
-             deriving (Eq)
+             deriving (Eq, Show)
 
 primitives :: M.Map String String
 primitives = M.fromList [("log.", "print")
@@ -50,15 +51,33 @@ lisp2js :: LispVal -> String
 lisp2js l = case l of
                 (Atom a) -> a
                 (Number n) -> show n
-                (String _) -> show l
-                (Bool x) -> show x
+                (String s) -> "\"" ++ s ++ "\""
+                (Bool x) -> toLower <$> show x
                 list@(List _) -> list2js list
-                def@(Def _ _) -> show def
-                fn@(Fn _ _) -> show fn
+                def@(Def _ _) -> def2js def
+                fn@(Fn _ _) -> fn2js fn
+
+fn2js :: LispVal -> String
+fn2js (Fn params body) = "function (" ++ L.intercalate ", " params ++ ") {\n" ++ showBody body ++ "\n}"
+    --TODO: Add indentation param, so its: (" "*4*indent) ++ ...
+    where showBody [] = []
+          showBody (b:q:bs) = "    " ++ b' ++ ";\n" ++ showBody (q:bs)
+                where b' = case b of
+                                   l@(List _) -> lisp2js l
+                                   _ -> lisp2js b
+          showBody [b] = "    " ++ b'
+                where b' = case b of
+                               l@(List _) -> "return " ++ lisp2js l
+                               _ -> "return " ++ lisp2js b
+fn2js nonFn = error "called fn2js on a non-fn value: " ++ show nonFn
+
+def2js :: LispVal -> String
+def2js (Def name body) = "var " ++ name ++ " = " ++ lisp2js body
+def2js nonDef = error "called def2js on a non-def value: " ++ show nonDef
 
 list2js :: LispVal -> String
 list2js l = case l of
-                (List [Atom "quote", List ql]) -> show ql
+                (List [Atom "quote", ql]) -> lisp2js ql
                 (List (Atom a:args))
                     | isJust $ lookupSpecForm a -> (fromJust $ lookupSpecForm a) args ++ ";"
                     | otherwise -> lookupFn a ++ "(" ++ L.intercalate ", " (fmap lisp2js args) ++ ")"
@@ -137,40 +156,8 @@ symbol = oneOf ".!#$%&|*+-/:<=>?@^_~"
 spaces :: Parser ()
 spaces = skipMany1 space
 
-instance Show LispVal where
-       show = showVal
-
-showVal :: LispVal -> String
-showVal lv = case lv of
-                 (String s)   -> "\"" ++ s ++ "\""
-                 (Atom a)     -> a
-                 (Number n)   -> show n
-                 (List l)     -> "[" ++ unwordsList l ++ "]"
-                 (Bool True)  -> "true"
-                 (Bool False) -> "false"
-                 def@(Def _ _)    -> showDef def
-                 fn@(Fn _ _)  -> showFn fn
-
-showFn :: LispVal -> String
-showFn (Fn params body) = "function (" ++ L.intercalate ", " params ++ ") {\n" ++ showBody body ++ "\n}"
-    --TODO: Add indentation param, so its: (" "*4*indent) ++ ...
-    where showBody [] = []
-          showBody (b:q:bs) = "    " ++ b' ++ ";\n" ++ showBody (q:bs)
-                where b' = case b of
-                                   l@(List _) -> lisp2js l
-                                   _ -> show b
-          showBody [b] = "    " ++ b'
-                where b' = case b of
-                               l@(List _) -> "return " ++ lisp2js l
-                               _ -> "return " ++ show b
-showFn nonFn = error "called showFn on a non-fn value: " ++ show nonFn
-
-showDef :: LispVal -> String
-showDef (Def name body) = "var " ++ name ++ " = " ++ lisp2js body
-showDef nonDef = error "called showDef on a non-def value: " ++ show nonDef
-
 unwordsList :: [LispVal] -> String
-unwordsList = unwords . fmap showVal
+unwordsList = unwords . fmap show
 
 data LispError = NumArgs        Integer [LispVal]
                | TypeMismatch   String LispVal

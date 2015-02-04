@@ -29,7 +29,7 @@ testLisp2js :: [T.Test]
 testLisp2js = fmap (\(name, (l, r)) -> testCase name (l @=? lisp2js r)) tests
     where
         tests = [("log.", (["print(5)"], "(log. 5)"))
-                ,("plus", (["plus(1, [2,3])"], "(+ 1 '(2 3))"))
+                ,("plus", (["plus(1, [2, 3])"], "(+ 1 '(2 3))"))
                 ,("def", (["var foo = 5"],"(def foo 5)"))
                 ,("def1", (["var foo = plus(3, 2)"],"(def foo (+ 3 2))"))
                 ,("fn", (["function () {\n    return true\n}"], "(fn [] #t)"))
