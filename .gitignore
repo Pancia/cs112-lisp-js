@@ -3,3 +3,7 @@ dist/
 cabal.sandbox.config
 *.lkshs
 *.lkshw
+node_modules/
+out.js
+test-out/
+.*
