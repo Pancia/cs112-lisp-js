@@ -26,7 +26,11 @@ primitives = M.fromList [("log", "print")
                         ,("*", "mult")
                         ,("/", "div")
                         ,("=", "eq")
-                        ,("!=", "neq")]
+                        ,("!=", "neq")
+                        ,("<", "lt")
+                        ,("<=", "lte")
+                        ,(">", "gt")
+                        ,(">=", "gte")]
 
 type SpecialForm = [JsVal] -> String
 specialForms :: M.Map String SpecialForm
