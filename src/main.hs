@@ -11,27 +11,41 @@ import System.Console.GetOpt
 import Text.Parsec (parse)
 import Control.Monad.Except (throwError)
 
+import Data.Char (toLower)
+
 import qualified LispJs as L
 import qualified Utils as U
 import qualified Parser as P
 
+data OutputType = JS | PY
+                deriving (Show)
+
 data Options = Options  {
     optInput  :: String,
     optOutput :: String,
-    optLisp :: String
+    optLisp :: String,
+    optType :: OutputType
     } deriving (Show)
 
 defaultOptions :: Options
 defaultOptions = Options {
     optInput  = "in.jsp",
     optOutput = "out.jsp",
-    optLisp = ""
-    }
+    optLisp = "",
+    optType = JS}
 
 options :: [OptDescr (Options -> Options)]
 options = [Option "i" ["input"]     (ReqArg readInput "FILE")     "input file"
           ,Option "o" ["output"]    (ReqArg readOutput "FILE")    "output file"
-          ,Option "l" ["lisp-expr"] (ReqArg readLispExpr "stdin") "input lisp s-exprs"]
+          ,Option "l" ["lisp-expr"] (ReqArg readLispExpr "stdin") "input lisp s-exprs"
+          ,Option "t" ["type"]      (ReqArg readOutputType "type") "output file type"]
+
+readOutputType :: String -> Options -> Options
+readOutputType arg opts = opts {optType = type_}
+        where type_ = case toLower <$> arg of
+                          "js" -> JS
+                          "py" -> PY
+                          _ -> error $ "invalid outputType: " ++ arg
 
 readLispExpr :: String -> Options -> Options
 readLispExpr arg opts = opts {optLisp = arg}
@@ -45,7 +59,8 @@ readOutput arg opts = opts {optOutput = arg}
 main :: IO ()
 main = do args <- getArgs
           let (actions, nonOpts, msgs) = getOpt RequireOrder options args
-              opts = foldl (\dflt act -> act dflt) defaultOptions actions
+              opts = foldl (flip id) defaultOptions actions
+              outType = optType opts
           print $ "opts: " ++ show opts
           print $ "nonOpts: " ++ show nonOpts
           print $ "msgs: " ++ show msgs
@@ -58,11 +73,11 @@ main = do args <- getArgs
           putStrLn . ("lispVal: " ++) . U.catch . liftM show $ expr
           putStrLn . take 60 $ repeat '#'
 
-          --Convert to js, write to out, and print
-          let jsVals = liftM (L.translate <$>) expr
-          print . ("jsVal: " ++) . show $ jsVals
+          --Convert to outType, write to out, and print
+          let translated = liftM (traslateTo outType <$>) expr
+          print . ("jsVal: " ++) . show $ translated
           putStrLn . take 60 $ repeat '#'
-          js <- L.formatJs . U.catch . liftM (L.toJS <$>) $ jsVals
+          js <- L.formatJs . U.catch . liftM (L.toJS <$>) $ translated
           print . ("js: " ++) $ js
           putStrLn . take 60 $ repeat '#'
           writeFile out js
@@ -71,6 +86,10 @@ main = do args <- getArgs
           --Execute js, print its result
           jsOutput <- execJS out
           print $ "jsOutput: " ++ jsOutput
+    where
+        traslateTo outType = case outType of
+                                 JS -> L.translate
+                                 PY -> undefined
 
 execJS :: String -> IO String
 execJS file = do (_, Just hout, _, _) <- createProcess $ (proc "jsc" [file]) { std_out = CreatePipe }
