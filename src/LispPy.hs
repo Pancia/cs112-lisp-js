@@ -4,8 +4,6 @@ import Control.Applicative hiding (many, (<|>))
 import Control.Monad.Except
 
 import qualified Data.List as L
-import qualified Data.Map as M
-import Data.Maybe
 import Data.Char (toLower)
 
 import Utils
@@ -45,7 +43,7 @@ toPY pv = case pv of
               (PyBool b)      -> toLower <$> show b
               (PyVar n b)     -> n ++ " = " ++ toPY b
               _ -> show pv
-             
+
 id2py :: PyVal -> String
 id2py (PyId pv) = pv
 id2py x = catch . throwError . TypeMismatch "PyId" $ show x

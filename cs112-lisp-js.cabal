@@ -32,5 +32,5 @@ Test-suite test-lisp-js
                           transformers == 0.4.*,
                           containers == 0.5.*,
                           process == 1.*,
-                          mtl == 2.*
+                          mtl == 2.*, turtle, system-filepath, text, foldl
     default-language: Haskell2010
