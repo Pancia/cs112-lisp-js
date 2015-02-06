@@ -31,7 +31,7 @@ defaultOptions = Options {
 options :: [OptDescr (Options -> Options)]
 options = [Option "i" ["input"]     (ReqArg readInput "FILE")     "input file"
           ,Option "o" ["output"]    (ReqArg readOutput "FILE")    "output file"
-          ,Option "l" ["lisp expr"] (ReqArg readLispExpr "stdin") "input stream"]
+          ,Option "l" ["lisp-expr"] (ReqArg readLispExpr "stdin") "input lisp s-exprs"]
 
 readLispExpr :: String -> Options -> Options
 readLispExpr arg opts = opts {optLisp = arg}
