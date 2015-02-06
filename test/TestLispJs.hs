@@ -17,13 +17,14 @@ import Test.QuickCheck()
 import qualified LispJs as L
 import qualified Utils as U
 import qualified Parser as P
+import qualified TestLispPy as PY
 
 --TODO: Refactor to different files for testing each src/ file
 main :: IO ()
 main = do tests' <- sequence testExecJS
           defaultMainWithOpts (tests ++ tests') mempty
     where
-        tests = testToJS ++ testReadExpr
+        tests = testToJS ++ testReadExpr ++ PY.tests
 
 testReadExpr :: [T.Test]
 testReadExpr = fmap (\(name, (l, r)) -> testCase name (l @=? readExpr' r)) tests

@@ -1,4 +1,4 @@
-module LispJs where
+module LispPy where
 
 import Control.Applicative hiding (many, (<|>))
 import Control.Monad.Except
@@ -9,124 +9,43 @@ import Data.Maybe
 import Data.Char (toLower)
 
 import Utils
+import qualified LispJs as JS
 
-data LispVal = Atom String
-             | List [LispVal]
-             | Number Integer
-             | String String
-             | Bool Bool
-             | Def String LispVal
-             | Fn [String] [LispVal]
-             deriving (Eq, Show)
+formatPy :: [String] -> IO String
+formatPy py = do helperFns <- readFile "helperFunctions.py"
+                 let py' = L.intercalate "\n" py
+                 return $ helperFns ++ py'
 
-primitives :: M.Map String String
-primitives = M.fromList [("log", "print")
-                        ,("+", "plus")
-                        ,("-", "minus")
-                        ,("*", "mult")
-                        ,("/", "div")
-                        ,("=", "eq")
-                        ,("!=", "neq")
-                        ,("<", "lt")
-                        ,("<=", "lte")
-                        ,(">", "gt")
-                        ,(">=", "gte")]
-
-type SpecialForm = [JsVal] -> String
-specialForms :: M.Map String SpecialForm
-specialForms = M.fromList [("if", if_)]
-    where
-        if_ :: SpecialForm
-        if_ [cond_, then_, else_] = "(" ++ toJS cond_ ++ " ? " ++ toJS then_ ++ " : " ++ toJS else_ ++ ")"
-        if_ [cond_, then_] = if_ [cond_, then_, JsId "null"]
-        if_ _ = error "wrong args to if"
-
-lookupFn :: String -> String
-lookupFn f = fromMaybe f $ M.lookup f primitives
-
-lookupSpecForm :: String -> Maybe SpecialForm
-lookupSpecForm s = M.lookup s specialForms
-
-formatJs :: [String] -> IO String
-formatJs js = do helperFns <- readFile "helperFunctions.js"
-                 let js' = (++ ";") . L.intercalate ";\n" $ js
-                 return $ helperFns ++ js'
-
-data JsVal = JsVar String JsVal                -- var x = ...
-           | JsFn [String] [JsVal]             -- function(...){...}
-           | JsStr String                      -- "..."
-           | JsBool Bool                       -- true|false
-           | JsNum Integer                     -- ..-1,0,1..
-           | JsId String                       -- x, foo, ...
-           | JsObjCall String [String] [JsVal] -- x.foo.bar(...)
-           | JsFnCall String [JsVal]           -- foo(...)
-           | JsList [JsVal]                    -- [...]
-           | JsThing String                    -- ???
+data PyVal = PyVar String PyVal                -- var x = ...
+           | PyFn [String] [PyVal]             -- function(...){...}
+           | PyStr String                      -- "..."
+           | PyBool Bool                       -- true|false
+           | PyNum Integer                     -- ..-1,0,1..
+           | PyId String                       -- x, foo, ...
+           | PyObjCall String [String] [PyVal] -- x.foo.bar(...)
+           | PyFnCall String [PyVal]           -- foo(...)
+           | PyList [PyVal]                    -- [...]
+           | PyThing String                    -- ???
            deriving (Eq, Show)
 
-translate :: LispVal -> JsVal
+translate :: JS.LispVal -> PyVal
 translate v = case v of
-                  (Atom a) -> JsId a
-                  (Bool b) -> JsBool b
-                  (Def n b) -> JsVar n (translate b)
-                  (Fn xs b) -> JsFn xs (translate <$> b)
-                  l@(List _) -> list2jsVal l
-                  (Number n) -> JsNum n
-                  (String s) -> JsStr s
-    where
-        list2jsVal :: LispVal -> JsVal
-        list2jsVal l = case l of
-                        (List [Atom "quote", ql]) -> translate ql
-                        (List [Atom a]) -> JsFnCall a []
-                        (List (Atom a:(arg:args)))
-                            | last a == '.' -> JsObjCall a [show $ translate arg] $ translate <$> args
-                            | otherwise     -> JsFnCall a $ translate <$> (arg:args)
-                        (List xs) -> JsList $ translate <$> xs
-                        x -> catch . throwError $ TypeMismatch "List" $ show x
+                  (JS.Atom a) -> PyId a
+                  (JS.Number n) -> PyNum n
+                  (JS.String s) -> PyStr s
+                  (JS.Bool b) -> PyBool b
+                  (JS.Def n b) -> PyVar n (translate b)
+                  _ -> PyThing $ show v
 
-toJS :: JsVal -> String
-toJS jv = case jv of
-              a@(JsId{})      -> id2js a
-              (JsNum n)       -> show n
-              (JsStr s)       -> "\"" ++ s ++ "\""
-              (JsBool x)      -> toLower <$> show x
-              l@(JsList{})    -> list2js l
-              v@(JsVar{})     -> var2js v
-              f@(JsFn{})      -> fn2js f
-              x@(JsObjCall{}) -> objCall2js x
-              f@(JsFnCall{})  -> fnCall2js f
-              (JsThing x)     -> x
-
-objCall2js :: JsVal -> String
-objCall2js (JsObjCall _obj _props _args) = undefined
-objCall2js x = catch . throwError . TypeMismatch "JsObjCall" $ show x
-
-fnCall2js :: JsVal -> String
-fnCall2js (JsFnCall fn args)
-        | isJust specForm = fromJust specForm args
-        | otherwise = lookupFn fn ++ "(" ++ args' ++ ")"
-    where args' = L.intercalate ", " $ toJS <$> args
-          specForm = lookupSpecForm fn
-fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
-
-id2js :: JsVal -> String
-id2js (JsId a) = a
-id2js x = catch . throwError . TypeMismatch "JsId" $ show x
-
-fn2js :: JsVal -> String
-fn2js (JsFn params body) = "function (" ++ params' ++ ") {\n" ++ showBody body ++ "\n}"
-    where params' = L.intercalate ", " params
-          showBody [] = []
-          showBody (b:q:bs) = toJS b ++ ";\n" ++ showBody (q:bs)
-          showBody [b] = "return " ++ toJS b
-fn2js x = catch . throwError . TypeMismatch "JsFn" $ show x
-
-var2js :: JsVal -> String
-var2js (JsVar name body) = "var " ++ name ++ " = " ++ toJS body
-var2js x = catch . throwError . TypeMismatch "JsVar" $ show x
-
-list2js :: JsVal -> String
-list2js l = case l of
-               (JsList [JsId "quote", ql]) -> toJS ql
-               (JsList xs) -> "[" ++ L.intercalate ", " (fmap toJS xs) ++ "]"
-               x -> catch . throwError . TypeMismatch "JsList" $ show x
+toPY :: PyVal -> String
+toPY pv = case pv of
+              a@(PyId{})      -> id2py a
+              (PyNum n)       -> show n
+              (PyStr s)       -> "\"" ++ s ++ "\""
+              (PyBool b)      -> toLower <$> show b
+              (PyVar n b)     -> n ++ " = " ++ toPY b
+              _ -> show pv
+             
+id2py :: PyVal -> String
+id2py (PyId pv) = pv
+id2py x = catch . throwError . TypeMismatch "PyId" $ show x
