@@ -11,9 +11,10 @@ import System.Console.GetOpt
 import Text.Parsec (parse)
 import Control.Monad.Except (throwError)
 
-import qualified LispJs as L
+import qualified LispPy as L
 import qualified Utils as U
 import qualified Parser as P
+import qualified LispJs as JS
 
 data Options = Options  {
     optInput  :: String,
@@ -62,7 +63,7 @@ main = do args <- getArgs
           let jsVals = liftM (L.translate <$>) expr
           print . ("jsVal: " ++) . show $ jsVals
           putStrLn . take 60 $ repeat '#'
-          js <- L.formatJs . U.catch . liftM (L.toJS <$>) $ jsVals
+          js <- L.formatPy . U.catch . liftM (L.toPY <$>) $ jsVals
           print . ("js: " ++) $ js
           putStrLn . take 60 $ repeat '#'
           writeFile out js
@@ -73,10 +74,10 @@ main = do args <- getArgs
           print $ "jsOutput: " ++ jsOutput
 
 execJS :: String -> IO String
-execJS file = do (_, Just hout, _, _) <- createProcess $ (proc "jsc" [file]) { std_out = CreatePipe }
+execJS file = do (_, Just hout, _, _) <- createProcess $ (proc "python" [file]) { std_out = CreatePipe }
                  hGetContents hout
 
-readExpr :: String -> Either U.CompilerError [L.LispVal]
+readExpr :: String -> Either U.CompilerError [JS.LispVal]
 readExpr input = case parse P.parseExpr "lisp-js" input of
                      Left err -> throwError $ U.ParserErr err
                      Right val -> return val
