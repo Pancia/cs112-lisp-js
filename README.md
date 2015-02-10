@@ -29,17 +29,21 @@ http://www.phpied.com/javascript-shell-scripting/
 * [immutable.js](http://facebook.github.io/immutable-js/)
 
 ### Proposed Class and Object Design
-CS112: Class and object things
-(defClass name
-  ([params]
-(fn to assign params)) Constructor must be first
-(fn Name [angs]
-(body)) ] function declaration
-(varName val)) var declaration
+```Clojure
+(defclass name
+  ([self params*]
+    (self property val)) ;Constructor must be first
+  (fn name [angs]
+    (body)) ;function declaration
+  (varName val)) ;var declaration
+  ```
 Static instances denoted by ^ So:
-^ (var Name vat) to be static
-(new Class Name params) makes new object
-(def objName (new className params*))
-(className/staticName params)
+```Clojure
+^(varName val) ;will be static
+```
+Objects can be made by:
+```Clojure
+(def objName (new className params*)) ;makes new object
+```
 
 Do we want inheritance?
