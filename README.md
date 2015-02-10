@@ -27,3 +27,19 @@ http://www.phpied.com/javascript-shell-scripting/
 * [underscore.js](http://underscorejs.org/)
 * [functional.js](http://functionaljs.com/)
 * [immutable.js](http://facebook.github.io/immutable-js/)
+
+### Proposed Class and Object Design
+CS112: Class and object things
+(defClass name
+  ([params]
+(fn to assign params)) Constructor must be first
+(fn Name [angs]
+(body)) ] function declaration
+(varName val)) var declaration
+Static instances denoted by ^ So:
+^ (var Name vat) to be static
+(new Class Name params) makes new object
+(def objName (new className params*))
+(className/staticName params)
+
+Do we want inheritance?
