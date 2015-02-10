@@ -71,7 +71,6 @@ toPY pv = case pv of
                     args = L.intercalate ", " $ toPY <$> as
               _ -> show pv
 
-             
 id2py :: PyVal -> String
 id2py (PyId pv) = pv
 id2py x = catch . throwError . TypeMismatch "PyId" $ show x

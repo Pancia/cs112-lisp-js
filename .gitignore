@@ -5,6 +5,7 @@ cabal.sandbox.config
 *.lkshw
 node_modules/
 out.js
+*.jsp.*
 test-out/
 .*
 out.jsp

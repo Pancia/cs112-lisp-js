@@ -5,10 +5,12 @@ import Control.Applicative
 import Text.Parsec (parse)
 import Control.Monad.Except (throwError)
 
-import System.Process
-import System.IO
+import qualified Filesystem.Path.CurrentOS as FS
+import qualified Data.Text as T
+import qualified Turtle as SH
+import qualified Control.Foldl as F
 
-import Test.Framework as T
+import qualified Test.Framework as T
 import Test.Framework.Providers.HUnit
 import Test.Framework.Providers.QuickCheck2()
 import Test.HUnit
@@ -22,7 +24,7 @@ import qualified TestLispPy as PY
 --TODO: Refactor to different files for testing each src/ file
 main :: IO ()
 main = do tests' <- sequence testExecJS
-          defaultMainWithOpts (tests ++ tests') mempty
+          T.defaultMainWithOpts (tests ++ tests') mempty
     where
         tests = testToJS ++ testReadExpr ++ PY.tests
 
@@ -49,20 +51,19 @@ testToJS = fmap (\(name, (l, r)) -> testCase name (l @=? lisp2js r)) tests
 testExecJS :: [IO T.Test]
 testExecJS = fmap (\(name, (l, r)) -> do r' <- lisp2execJS r name; return $ testCase name (l @=? r')) tests
     where
-        tests = [("addition", ("9\n", "(log (+ 2 3 4))"))
-                ,("defn&call", ("true\n", "(def f (fn [] #t)) (log (f))"))
-                ,("defn+&call", ("5\n", "(def f (fn [] (+ 2 3))) (log (f))"))
-                ,("defn+args&call", ("10\n", "(def f (fn [x] (+ x 1))) (log (f 9))"))]
-        lisp2execJS lisp fn = do
-            _ <- createProcess $ proc "mkdir" ["test-out"]
+        tests = [("addition", ("9", "(log (+ 2 3 4))"))
+                ,("defn&call", ("true", "(def f (fn [] #t)) (log (f))"))
+                ,("defn+&call", ("5", "(def f (fn [] (+ 2 3))) (log (f))"))
+                ,("defn+args&call", ("10", "(def f (fn [x] (+ x 1))) (log (f 9))"))]
+        lisp2execJS :: String -> String -> IO String
+        lisp2execJS lisp filename = do
+            let outDir = FS.decodeString "test-out"
+                outFile = outDir FS.</> FS.decodeString filename
+            SH.mktree outDir
             js <- L.formatJs . fmap L.toJS . U.catch . liftM (L.translate <$>) . readExpr $ lisp
-            let filename = "test-out/" ++ fn
-            writeFile filename js
-            execJS filename
-
-execJS :: String -> IO String
-execJS file = do (_, Just hout, _, _) <- createProcess $ (proc "jsc" [file]) { std_out = CreatePipe }
-                 hGetContents hout
+            SH.output outFile $ return $ T.pack js
+            let jsOutput = SH.inproc (T.pack "cscript") [FS.encode outFile] SH.empty
+            SH.fold jsOutput (T.unpack <$> F.mconcat)
 
 readExpr :: String -> Either U.CompilerError [L.LispVal]
 readExpr input = case parse P.parseExpr "lisp-js" input of
