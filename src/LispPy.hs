@@ -4,6 +4,8 @@ import Control.Applicative hiding (many, (<|>))
 import Control.Monad.Except
 
 import qualified Data.List as L
+import qualified Data.Map as M
+import Data.Maybe
 import Data.Char (toLower)
 
 import Utils
@@ -13,6 +15,21 @@ formatPy :: [String] -> IO String
 formatPy py = do helperFns <- readFile "helperFunctions.py"
                  let py' = L.intercalate "\n" py
                  return $ helperFns ++ py'
+
+primitives :: M.Map String String
+primitives = M.fromList [("+", "plus")
+                        ,("-", "minus")
+                        ,("*", "mult")
+                        ,("/", "div")
+                        ,("=", "eq")
+                        ,("!=", "neq")
+                        ,("<", "lt")
+                        ,("<=", "lte")
+                        ,(">", "gt")
+                        ,(">=", "gte")]
+
+lookupFn :: String -> String
+lookupFn f = fromMaybe f $ M.lookup f primitives
 
 data PyVal = PyVar String PyVal                -- var x = ...
            | PyFn [String] [PyVal]             -- function(...){...}
@@ -33,15 +50,25 @@ translate v = case v of
                   (JS.String s) -> PyStr s
                   (JS.Bool b) -> PyBool b
                   (JS.Def n b) -> PyVar n (translate b)
+                  l@(JS.List _) -> list2pyVal l
                   _ -> PyThing $ show v
+      where
+        list2pyVal :: JS.LispVal -> PyVal
+        list2pyVal l = case l of
+                        (JS.List (JS.Atom a:args)) -> PyFnCall a $ translate <$> args
 
 toPY :: PyVal -> String
 toPY pv = case pv of
-              a@(PyId{})      -> id2py a
-              (PyNum n)       -> show n
-              (PyStr s)       -> "\"" ++ s ++ "\""
-              (PyBool b)      -> toLower <$> show b
-              (PyVar n b)     -> n ++ " = " ++ toPY b
+              a@(PyId{})            -> id2py a
+              (PyNum n)             -> show n
+              (PyStr s)             -> "\"" ++ s ++ "\""
+              (PyBool b)            -> toLower <$> show b
+              (PyVar n b)           -> n ++ " = " ++ toPY b
+              (PyFnCall n as)
+                  | lookupFn n /= n -> lookupFn n ++ "([" ++ args ++ "])"
+                  | otherwise       -> lookupFn n ++ "(" ++ args ++ ")"
+                  where
+                    args = L.intercalate ", " $ toPY <$> as
               _ -> show pv
 
 id2py :: PyVal -> String

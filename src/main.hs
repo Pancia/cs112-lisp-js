@@ -10,7 +10,6 @@ import System.Console.GetOpt
 
 import Text.Parsec (parse)
 import Control.Monad.Except (throwError)
-
 import Data.Char (toLower)
 
 import qualified LispJs as JS
@@ -76,7 +75,6 @@ main = do args <- getArgs
           --Show lisp after parsing
           putStrLn . (">>lispVals:\n" ++) . U.catch . liftM show $ lispVals
           putStrLn . take 60 $ repeat '#'
-
           --Convert to outType, write to out, and print
           src <- case outType of
                      JS -> do let jsVals = U.catch . liftM (JS.translate <$>) $ lispVals

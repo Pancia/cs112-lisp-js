@@ -8,3 +8,5 @@ out.js
 *.jsp.*
 test-out/
 .*
+out.jsp
+in.jsp
