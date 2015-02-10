@@ -30,7 +30,7 @@ http://www.phpied.com/javascript-shell-scripting/
 
 ### Proposed Class and Object Design
 ```Clojure
-(defclass name
+(defclass SuperClass/Name
   ([params*]
     {var val
     ,var2 val2}) ;Constructor must be first
@@ -42,5 +42,8 @@ http://www.phpied.com/javascript-shell-scripting/
   ^(varName val)) ;static var declaration
   
   (def objName (new className params*)) ;makes new object, objName, of type className
+  (.method-or-prop objName args*)
+  
+  Class/prop
+  (Class/method args*)
 ```
-Do we want inheritance?
