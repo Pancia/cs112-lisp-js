@@ -31,19 +31,16 @@ http://www.phpied.com/javascript-shell-scripting/
 ### Proposed Class and Object Design
 ```Clojure
 (defclass name
-  ([self params*]
-    (self property val)) ;Constructor must be first
-  (fn name [angs]
+  ([params*]
+    {var val
+    ,var2 val2}) ;Constructor must be first
+  (fnName [angs]
     (body)) ;function declaration
-  (varName val)) ;var declaration
-  ```
-Static instances denoted by ^ So:
-```Clojure
-^(varName val) ;will be static
+  ^(fnName [] 
+    (body)) ;static function declaration
+  (varName val) ;var declaration
+  ^(varName val)) ;static var declaration
+  
+  (def objName (new className params*)) ;makes new object, objName, of type className
 ```
-Objects can be made by:
-```Clojure
-(def objName (new className params*)) ;makes new object
-```
-
 Do we want inheritance?
