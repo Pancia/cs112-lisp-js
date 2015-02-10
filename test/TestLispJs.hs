@@ -62,7 +62,7 @@ testExecJS = fmap (\(name, (l, r)) -> do r' <- lisp2execJS r name; return $ test
             SH.mktree outDir
             js <- L.formatJs . fmap L.toJS . U.catch . liftM (L.translate <$>) . readExpr $ lisp
             SH.output outFile $ return $ T.pack js
-            let jsOutput = SH.inproc (T.pack "jsc") [FS.encode outFile] SH.empty
+            let jsOutput = SH.inproc (T.pack U.getJsExecProgName) [FS.encode outFile] SH.empty
             SH.fold jsOutput (T.unpack <$> F.mconcat)
 
 readExpr :: String -> Either U.CompilerError [L.LispVal]

@@ -4,6 +4,8 @@ import Text.Parsec
 import Control.Monad.Except
 import Control.Applicative
 
+import System.Info (os)
+
 data CompilerError = NumArgs        Integer [String]
                    | TypeMismatch   String String
                    | ParserErr      ParseError
@@ -34,3 +36,8 @@ hError = flip catchError (return . show)
 catch :: Either CompilerError a -> a
 catch (Right val) = val
 catch (Left err) = error . show $ err
+
+getJsExecProgName :: String
+getJsExecProgName = if os == "mingw32"
+                        then "cscript"
+                        else "jsc"
