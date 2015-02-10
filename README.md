@@ -34,9 +34,9 @@ http://www.phpied.com/javascript-shell-scripting/
   ([params*]
     {var val
     ,var2 val2}) ;Constructor must be first
-  (fnName [angs]
+  (fnName [args*]
     (body)) ;function declaration
-  ^(fnName [] 
+  ^(fnName [args*] 
     (body)) ;static function declaration
   (varName val) ;var declaration
   ^(varName val)) ;static var declaration
