@@ -23,22 +23,30 @@ parseExpr1 = parseAtom
              <|> try parseNew
              <|> try parseClass
              <|> try parseList
-            
+
   -- Ex:(Foo ([] 5))
 parseClass :: Parser L.LispVal
 parseClass = between (char '(') (char ')') $ do
            string "defclass" >> spaces1
            id <- ident <* spaces1 
            c <- parseConst 
-           return $ L.DefClass id c [] []
+           list2 <- many parseVars
+           return $ L.DefClass id c [] list2
            
+-- Ex: [Bar 3] 
+parseVars :: Parser L.LispVal
+parseVars = between (char '(') (char ')') ( do
+            id <- ident <* spaces1
+            body <- parseExpr1 
+            return $ L.Classvar id body ) <* spaces
+
 parseConst :: Parser L.LispVal 
-parseConst = between (char '(') (char ')') $ do
+parseConst = between (char '(') (char ')') (do
           params <- between (char '[') (char ']')
                     (manyTill (ident <* spaces)
                               (lookAhead (char ']'))) <* spaces1
           body <- parseExpr1
-          return $ L.Const params body 
+          return $ L.Const params body ) <* spaces
                       
 parseNew :: Parser L.LispVal
 parseNew =  between (char '(') (char ')') $ do
