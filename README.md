@@ -6,14 +6,14 @@ To Do:
 * Create `LispVal` constructors for class/object stuff
 * Parse new syntax
   * Parse defclass, constructor, and name
+  * Parse static declarations
   * Parse instance declarations (variables and methods)
   * Parse / syntax for static/class
 * Convert each new `LispVal` into JavaScript
 * Convert each new `LispVal` into Python
 
 In Progress:
-* Parse new syntax
-  * Parse static declarations
+* Convert each new `LispVal` into Python
 
 Finished:
 * Parse new syntax
