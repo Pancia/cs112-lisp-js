@@ -9,8 +9,6 @@ import qualified LispJs as L
 
 -- return list of lispvals 
 type Parser a = ParsecT String () Identity a
-
-
 	
 parseExpr :: Parser [L.LispVal]
 parseExpr = many1 $ try (parseExpr1 <* spaces)
@@ -22,18 +20,33 @@ parseExpr1 = parseAtom
              <|> try parseQuoted
              <|> try parseDef
              <|> try parseFn
-             <|> try parseList
              <|> try parseNew
-  
-             
+             <|> try parseClass
+             <|> try parseList
+            
+  -- Ex:(Foo ([] 5))
+parseClass :: Parser L.LispVal
+parseClass = between (char '(') (char ')') $ do
+           string "defclass" >> spaces1
+           id <- ident <* spaces1 
+           c <- parseConst 
+           return $ L.DefClass id c [] []
+           
+parseConst :: Parser L.LispVal 
+parseConst = between (char '(') (char ')') $ do
+          params <- between (char '[') (char ']')
+                    (manyTill (ident <* spaces)
+                              (lookAhead (char ']'))) <* spaces1
+          body <- parseExpr1
+          return $ L.Const params body 
+                      
 parseNew :: Parser L.LispVal
 parseNew =  between (char '(') (char ')') $ do
          string "new" >> spaces1
          idparse <- ident <* spaces1
-         body <- parseExpr1 
+         body <- parseExpr
          return $ L.New idparse body 
          	
-
 
 parseFn :: Parser L.LispVal
 parseFn = between (char '(') (char ')') $ do
