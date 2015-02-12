@@ -20,7 +20,7 @@ data LispVal = Atom String
              | New String [LispVal]
              | Dot String String [LispVal]
              | DefClass String LispVal [LispVal] [LispVal] 
-             | Const [LispVal] LispVal
+             | Const [String] LispVal
              | Classfn String [LispVal] LispVal 
              | Classvar String LispVal   
              deriving (Eq, Show)

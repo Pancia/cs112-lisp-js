@@ -20,8 +20,9 @@ parseExpr1 = parseAtom
              <|> try parseQuoted
              <|> try parseDef
              <|> try parseFn
-             <|> try parseList
              <|> try parseNew
+			 <|> try parseClass
+             <|> try parseList
 
 parseDotProp :: Parser L.LispVal
 parseDotProp = between (char '(') (char ')') $ do
@@ -37,13 +38,37 @@ parseDotFunc = between (char '(') (char ')') $ do
       objName <- ident <* spaces1
       params <- parseExpr
       return $ L.Dot funcName objName params
-	  
+             
+  -- Ex:(Foo ([] 5))
+parseClass :: Parser L.LispVal
+parseClass = between (char '(') (char ')') $ do
+           string "defclass" >> spaces1
+           id <- ident <* spaces1 
+           c <- parseConst 
+           list2 <- many parseVars
+           return $ L.DefClass id c [] list2
+           
+-- Ex: [Bar 3] 
+parseVars :: Parser L.LispVal
+parseVars = between (char '(') (char ')') ( do
+            id <- ident <* spaces1
+            body <- parseExpr1 
+            return $ L.Classvar id body ) <* spaces
+
+parseConst :: Parser L.LispVal 
+parseConst = between (char '(') (char ')') (do
+          params <- between (char '[') (char ']')
+                    (manyTill (ident <* spaces)
+                              (lookAhead (char ']'))) <* spaces1
+          body <- parseExpr1
+          return $ L.Const params body ) <* spaces
+		  
 parseNew :: Parser L.LispVal
 parseNew =  between (char '(') (char ')') $ do
          string "new" >> spaces1
          idparse <- ident <* spaces1
-         body <- parseExpr1 
-         return $ L.New idparse body
+         body <- parseExpr
+         return $ L.New idparse body 
 
 parseFn :: Parser L.LispVal
 parseFn = between (char '(') (char ')') $ do
