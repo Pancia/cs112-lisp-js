@@ -67,6 +67,7 @@ data JsVal = JsVar String JsVal                -- var x = ...
            | JsObjCall String [String] [JsVal] -- x.foo.bar(...)
            | JsFnCall String [JsVal]           -- foo(...)
            | JsList [JsVal]                    -- [...]
+           | JsDotThing String String [JsVal]  -- .function objname parameters*
            | JsThing String                    -- ???
            deriving (Eq, Show)
 
@@ -79,6 +80,7 @@ translate v = case v of
                   l@(List _) -> list2jsVal l
                   (Number n) -> JsNum n
                   (String s) -> JsStr s
+                  (Dot fp on ps) -> JsDotThing fp on (translate <$> ps)
     where
         list2jsVal :: LispVal -> JsVal
         list2jsVal l = case l of
@@ -101,6 +103,7 @@ toJS jv = case jv of
               f@(JsFn{})      -> fn2js f
               x@(JsObjCall{}) -> objCall2js x
               f@(JsFnCall{})  -> fnCall2js f
+              d@(JsDotThing{})-> dot2js d
               (JsThing x)     -> x
 
 objCall2js :: JsVal -> String
@@ -114,6 +117,12 @@ fnCall2js (JsFnCall fn args)
     where args' = L.intercalate ", " $ toJS <$> args
           specForm = lookupSpecForm fn
 fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
+
+dot2js :: JsVal -> String
+dot2js (JsDotThing fp on ps)
+        | ps /= [] = on ++ "." ++ fp ++ "(" ++ args' ++ ")"
+		| otherwise = on ++ "." ++ fp 
+     where args' = L.intercalate ", " $ toJS <$> ps
 
 id2js :: JsVal -> String
 id2js (JsId a) = a

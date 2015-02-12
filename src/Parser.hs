@@ -9,8 +9,6 @@ import qualified LispJs as L
 
 -- return list of lispvals 
 type Parser a = ParsecT String () Identity a
-
-
 	
 parseExpr :: Parser [L.LispVal]
 parseExpr = many1 $ try (parseExpr1 <* spaces)
@@ -24,16 +22,28 @@ parseExpr1 = parseAtom
              <|> try parseFn
              <|> try parseList
              <|> try parseNew
-  
-             
+
+parseDotProp :: Parser L.LispVal
+parseDotProp = between (char '(') (char ')') $ do
+      string "."
+      propName <- ident <* spaces1
+      objName <- ident <* spaces
+      return $ L.Dot propName objName []
+	  
+parseDotFunc :: Parser L.LispVal
+parseDotFunc = between (char '(') (char ')') $ do
+      string "."
+      funcName <- ident <* spaces1
+      objName <- ident <* spaces1
+      params <- parseExpr
+      return $ L.Dot funcName objName params
+	  
 parseNew :: Parser L.LispVal
 parseNew =  between (char '(') (char ')') $ do
          string "new" >> spaces1
          idparse <- ident <* spaces1
          body <- parseExpr1 
-         return $ L.New idparse body 
-         	
-
+         return $ L.New idparse body
 
 parseFn :: Parser L.LispVal
 parseFn = between (char '(') (char ')') $ do

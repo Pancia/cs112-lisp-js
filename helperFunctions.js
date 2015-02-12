@@ -1,5 +1,7 @@
 load("functional.js");
 
+var className = {type:"anything", someFunc: function(c){log c;}}
+
 var log = function() {
     var _log = function(x) {print(x)}
     var args = Array.prototype.slice.call(arguments);

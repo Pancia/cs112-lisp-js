@@ -1,1 +1,2 @@
-(print (+ 2 3))
+(log (.someFunc className 5))
+(log (.type className))
