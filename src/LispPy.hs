@@ -76,3 +76,8 @@ toPY pv = case pv of
 id2py :: PyVal -> String
 id2py (PyId pv) = pv
 id2py x = catch . throwError . TypeMismatch "PyId" $ show x
+
+--Use for: if, for, while, anything else. Make sure to pass around a weight and
+--increment and decrement accordingly
+addSpacing :: Int -> String
+addSpacing weight = replicate (weight * 4) ' '
