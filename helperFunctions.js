@@ -1,12 +1,12 @@
 load("functional.js");
 
-var className = {type:"anything", someFunc: function(c){log c;}}
+var className = {type:"anything", someFunc: function(c){print (c);}};
 
 var log = function() {
     var _log = function(x) {print(x)}
     var args = Array.prototype.slice.call(arguments);
     args.forEach(_log);
-}
+};
 
 var plus  = fjs.curry(function(x, y) {return x + y});
 var minus = fjs.curry(function(x, y) {return x - y});

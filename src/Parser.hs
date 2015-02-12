@@ -18,10 +18,12 @@ parseExpr1 = parseAtom
              <|> try parseString
              <|> try parseNumber
              <|> try parseQuoted
+             <|> try parseDotProp
+             <|> try parseDotFunc
              <|> try parseDef
              <|> try parseFn
              <|> try parseNew
-			 <|> try parseClass
+			       <|> try parseClass
              <|> try parseList
 
 parseDotProp :: Parser L.LispVal

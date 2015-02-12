@@ -1,2 +1,2 @@
 (log (.someFunc className 5))
-(log (.type className))
+(log (.type2 className))
