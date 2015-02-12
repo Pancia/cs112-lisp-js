@@ -66,6 +66,11 @@ data JsVal = JsVar String JsVal                -- var x = ...
            | JsId String                       -- x, foo, ...
            | JsObjCall String [String] [JsVal] -- x.foo.bar(...)
            | JsFnCall String [JsVal]           -- foo(...)
+           | JsNewObj String [JsVal]           -- new Foo (...)
+           | JsDefCls String JsVal [JsVal] [JsVal] -- function Class () {...}
+           | JsConst [String] JsVal     
+           | JsClassfn String [String] JsVal
+           | JsClassvar String JsVal       
            | JsList [JsVal]                    -- [...]
            | JsThing String                    -- ???
            deriving (Eq, Show)
@@ -79,6 +84,11 @@ translate v = case v of
                   l@(List _) -> list2jsVal l
                   (Number n) -> JsNum n
                   (String s) -> JsStr s
+                  (New s l) -> JsNewObj s (translate <$> l)
+                  (DefClass n c l1 l2) -> JsDefCls n (translate c) (translate <$> l1) (translate <$> l2)
+                  (LispJs.Const s b) -> JsConst s (translate b)
+                  (Classfn s p b) -> JsClassfn s p (translate b) 
+                  (Classvar s b) -> JsClassvar s (translate b)
     where
         list2jsVal :: LispVal -> JsVal
         list2jsVal l = case l of
