@@ -7,8 +7,11 @@ import Text.Parsec
 
 import qualified LispJs as L
 
+-- return list of lispvals 
 type Parser a = ParsecT String () Identity a
 
+
+	
 parseExpr :: Parser [L.LispVal]
 parseExpr = many1 $ try (parseExpr1 <* spaces)
 
@@ -20,6 +23,17 @@ parseExpr1 = parseAtom
              <|> try parseDef
              <|> try parseFn
              <|> try parseList
+             <|> try parseNew
+  
+             
+parseNew :: Parser L.LispVal
+parseNew =  between (char '(') (char ')') $ do
+         string "new" >> spaces1
+         idparse <- ident <* spaces1
+         body <- parseExpr1 
+         return $ L.New idparse body 
+         	
+
 
 parseFn :: Parser L.LispVal
 parseFn = between (char '(') (char ')') $ do

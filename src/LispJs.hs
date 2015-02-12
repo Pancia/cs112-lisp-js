@@ -17,6 +17,12 @@ data LispVal = Atom String
              | Bool Bool
              | Def String LispVal
              | Fn [String] [LispVal]
+             | New String [LispVal]
+             | Dot String String [LispVal]
+             | DefClass String LispVal [LispVal] [LispVal] 
+             | Const [LispVal] LispVal
+             | Classfn String [LispVal] LispVal 
+             | Classvar String LispVal   
              deriving (Eq, Show)
 
 primitives :: M.Map String String
