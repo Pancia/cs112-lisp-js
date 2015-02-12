@@ -32,7 +32,8 @@ testReadExpr :: [T.Test]
 testReadExpr = fmap (\(name, (l, r)) -> testCase name (l @=? readExpr' r)) tests
     where
         tests = [("list of numbers", ([L.List [L.Number 3, L.Number 4]], "(3 4)"))
-                ,("list of atoms", ([L.List [L.Atom "foo", L.Atom "bar"]], "(foo bar)"))]
+                ,("list of atoms", ([L.List [L.Atom "foo", L.Atom "bar"]], "(foo bar)"))
+                ,("def obj", ([L.New "Number" [L.Number 5]] , "(new Number 5)"))]
         readExpr' = U.catch . readExpr
 
 testToJS :: [T.Test]
