@@ -26,7 +26,9 @@ primitives = M.fromList [("+", "plus")
                         ,("<", "lt")
                         ,("<=", "lte")
                         ,(">", "gt")
-                        ,(">=", "gte")]
+                        ,(">=", "gte")
+                        ,("and", "and_")
+                        ,("or", "or_")]
 
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
