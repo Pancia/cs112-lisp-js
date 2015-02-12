@@ -7,16 +7,18 @@ To Do:
 * Parse new syntax
   * Parse defclass, constructor, and name
   * Parse instance declarations (variables and methods)
-  * Parse static declarations
-  * Parse new constructor (`(new classname args*)`)
-  * Parse . syntax for objects
   * Parse / syntax for static/class
 * Convert each new `LispVal` into JavaScript
 * Convert each new `LispVal` into Python
 
 In Progress:
+* Parse new syntax
+  * Parse static declarations
 
 Finished:
+* Parse new syntax
+ * Parse . syntax for objects
+ * Parse new constructor (`(new classname args*)`)
 
 Stretch Goals:
 * Compile down to a dynamically-typed language

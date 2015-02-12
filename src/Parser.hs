@@ -18,11 +18,30 @@ parseExpr1 = parseAtom
              <|> try parseString
              <|> try parseNumber
              <|> try parseQuoted
+             <|> try parseDotProp
+             <|> try parseDotFunc
              <|> try parseDef
              <|> try parseFn
              <|> try parseNew
-             <|> try parseClass
+			       <|> try parseClass
              <|> try parseList
+
+parseDotProp :: Parser L.LispVal
+parseDotProp = between (char '(') (char ')') $ do
+      string "."
+      propName <- ident <* spaces1
+      objName <- ident <* spaces
+      return $ L.Dot propName objName []
+	  
+parseDotFunc :: Parser L.LispVal
+parseDotFunc = between (char '(') (char ')') $ do
+      string "."
+      funcName <- ident <* spaces1
+      objName <- ident <* spaces1
+      params <- parseExpr
+      return $ L.Dot funcName objName params
+             
+  -- Ex:(Foo ([] 5))
 
 parseClass :: Parser L.LispVal
 parseClass = between (char '(') (char ')') $ do
@@ -57,14 +76,13 @@ parseConst = between (char '(') (char ')') (do
           params <- parseargs
           body <- parseExpr1
           return $ L.Const params body ) <* spaces
-                      
+		  
 parseNew :: Parser L.LispVal
 parseNew =  between (char '(') (char ')') $ do
          string "new" >> spaces1
          idparse <- ident <* spaces1
          body <- parseExpr
          return $ L.New idparse body 
-         	
 
 parseFn :: Parser L.LispVal
 parseFn = between (char '(') (char ')') $ do
