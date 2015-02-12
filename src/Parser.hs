@@ -24,27 +24,37 @@ parseExpr1 = parseAtom
              <|> try parseClass
              <|> try parseList
 
-  -- Ex:(Foo ([] 5))
 parseClass :: Parser L.LispVal
 parseClass = between (char '(') (char ')') $ do
            string "defclass" >> spaces1
            id <- ident <* spaces1 
            c <- parseConst 
-           list2 <- many parseVars
-           return $ L.DefClass id c [] list2
+           list1 <- many $ try parsecnfn
+           list2 <- many $ try parseVars
+           return $ L.DefClass id c list1 list2
+
+parseargs :: Parser [String]
+parseargs = between (char '[') (char ']')
+                    (manyTill (ident <* spaces)
+                              (lookAhead (char ']'))) <* spaces1           
            
+parsecnfn :: Parser L.LispVal
+parsecnfn = between  (char '(') (char ')') ( do 
+            id <- ident <* spaces1
+            params <- parseargs 
+            body <- parseExpr1
+            return $ L.Classfn id params body ) <* spaces1
+                       
 -- Ex: [Bar 3] 
 parseVars :: Parser L.LispVal
 parseVars = between (char '(') (char ')') ( do
             id <- ident <* spaces1
             body <- parseExpr1 
-            return $ L.Classvar id body ) <* spaces
+            return $ L.Classvar id body ) <* spaces1
 
 parseConst :: Parser L.LispVal 
 parseConst = between (char '(') (char ')') (do
-          params <- between (char '[') (char ']')
-                    (manyTill (ident <* spaces)
-                              (lookAhead (char ']'))) <* spaces1
+          params <- parseargs
           body <- parseExpr1
           return $ L.Const params body ) <* spaces
                       
@@ -59,9 +69,7 @@ parseNew =  between (char '(') (char ')') $ do
 parseFn :: Parser L.LispVal
 parseFn = between (char '(') (char ')') $ do
         string "fn" >> spaces1
-        params <- between (char '[') (char ']')
-                  (manyTill (ident <* spaces)
-                            (lookAhead (char ']'))) <* spaces1
+        params <- parseargs
         body <- parseExpr
         return $ L.Fn params body
 

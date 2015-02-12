@@ -37,7 +37,11 @@ testReadExpr = fmap (\(name, (l, r)) -> testCase name (l @=? readExpr' r)) tests
                 ,("defclass", ([L.DefClass "Foo" (L.Const [] $ L.Number 5) [] []],
                               "(defclass Foo ([] 5))"))
                 ,("classvar", ([L.DefClass "Foo" (L.Const [] $ L.Number 5) [] [L.Classvar "bar" $ L.Number 3]],
-                              "(defclass Foo ([] 5) (bar 3) )"))]
+                              "(defclass Foo ([] 5) (bar 3) )"))
+                ,("classfn", ([L.DefClass "Foo" (L.Const [] $ L.Number 5) [L.Classfn "bar" [] $ L.Number 3] []],
+                              "(defclass Foo ([] 5) (bar [] 3)  )"))
+                ,("classfn n classvar",([L.DefClass "Foo" (L.Const [] $ L.Number 5) [L.Classfn "bar" [] $ L.Number 3] [L.Classvar "tar" $ L.Number 2]],
+                              "(defclass Foo ([] 5) (bar [] 3) (tar 2) )")) ]
         readExpr' = U.catch . readExpr
 
 testToJS :: [T.Test]
