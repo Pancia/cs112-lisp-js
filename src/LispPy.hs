@@ -9,7 +9,6 @@ import Data.Maybe
 import Data.Char (toLower)
 
 import Utils
-import qualified LispJs as JS
 
 formatPy :: [String] -> IO String
 formatPy py = do helperFns <- readFile "helperFunctions.py"
@@ -33,34 +32,34 @@ primitives = M.fromList [("+", "plus")
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
 
-data PyVal = PyVar String PyVal                -- var x = ...
+data PyVal = PyVar String PyVal                -- x = ...
            | PyFn [String] [PyVal]             -- function(...){...}
            | PyStr String                      -- "..."
            | PyBool Bool                       -- true|false
            | PyNum Integer                     -- ..-1,0,1..
            | PyId String                       -- x, foo, ...
-           | PyObjCall String [String] [PyVal] -- x.foo.bar(...)
+           | PyObjCall String String [PyVal]   -- x.foo.bar(...)
            | PyFnCall String [PyVal]           -- foo(...)
            | PyList [PyVal]                    -- [...]
-           | PyDotThing String String [PyVal]  -- .function objname parameters*
            | PyThing String                    -- ???
            deriving (Eq, Show)
 
-translate :: JS.LispVal -> PyVal
+translate :: LispVal -> PyVal
 translate v = case v of
-                  (JS.Atom a) -> PyId a
-                  (JS.Number n) -> PyNum n
-                  (JS.String s) -> PyStr s
-                  (JS.Bool b) -> PyBool b
-                  (JS.Def n b) -> PyVar n (translate b)
-                  (JS.Fn xs b) -> PyFn xs (translate <$> b)
-                  l@(JS.List _) -> list2pyVal l
-                  (JS.Dot fp on ps) -> PyDotThing fp on (translate <$> ps)
+                  (Atom a) -> PyId a
+                  (Number n) -> PyNum n
+                  (String s) -> PyStr s
+                  (Bool b) -> PyBool b
+                  (Def n b) -> PyVar n (translate b)
+                  (Fn xs b) -> PyFn xs (translate <$> b)
+                  l@(List _) -> list2pyVal l
+                  (Dot fp on ps) -> PyObjCall fp on (translate <$> ps)
                   _ -> PyThing $ show v
       where
-        list2pyVal :: JS.LispVal -> PyVal
+        list2pyVal :: LispVal -> PyVal
         list2pyVal l = case l of
-                        (JS.List (JS.Atom a:args)) -> PyFnCall a $ translate <$> args
+                           (List (Atom a:args)) -> PyFnCall a $ translate <$> args
+                           x -> catch . throwError . TypeMismatch "List" $ show x
 
 toPY :: PyVal -> String
 toPY pv = case pv of
@@ -70,7 +69,7 @@ toPY pv = case pv of
               (PyBool b)            -> toLower <$> show b
               (PyVar n b)           -> n ++ " = " ++ toPY b
               f@(PyFn{})            -> fn2py f
-              d@(PyDotThing{})      -> dot2py d
+              d@(PyObjCall{})      -> dot2py d
               (PyFnCall n as)
                   | lookupFn n /= n -> lookupFn n ++ "([" ++ args ++ "])"
                   | otherwise       -> lookupFn n ++ "(" ++ args ++ ")"
@@ -92,11 +91,12 @@ fn2py (PyFn params body) = "(lambda " ++ params' ++ " : " ++ showBody body ++ ")
 fn2py x = catch . throwError . TypeMismatch "PyFn" $ show x
 
 dot2py :: PyVal -> String
-dot2py (PyDotThing fp on ps)
-      | ps /= [] = on ++ "." ++ fp ++ "(" ++ params' ++ ")" 
+dot2py (PyObjCall fp on ps)
+      | ps /= [] = on ++ "." ++ fp ++ "(" ++ params' ++ ")"
       | otherwise = on ++ "." ++ fp
       where
         params' = L.intercalate ", " $ toPY <$> ps
+dot2py x = catch . throwError . TypeMismatch "PyObjCall" $ show x
 
 --Use for: if, for, while, anything else. Make sure to pass around a weight and
 --increment and decrement accordingly

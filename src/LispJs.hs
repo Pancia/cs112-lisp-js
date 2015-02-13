@@ -10,21 +10,6 @@ import Data.Char (toLower)
 
 import Utils
 
-data LispVal = Atom String
-             | List [LispVal]
-             | Number Integer
-             | String String
-             | Bool Bool
-             | Def String LispVal
-             | Fn [String] [LispVal]
-             | New String [LispVal]
-             | Dot String String [LispVal]
-             | DefClass String LispVal [LispVal] [LispVal]
-             | Const [String] LispVal
-             | Classfn String [String] LispVal
-             | Classvar String LispVal
-             deriving (Eq, Show)
-
 primitives :: M.Map String String
 primitives = M.fromList [("log", "print")
                         ,("+", "plus")

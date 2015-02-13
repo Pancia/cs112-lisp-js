@@ -6,6 +6,21 @@ import Control.Applicative
 
 import System.Info (os)
 
+data LispVal = Atom String
+             | List [LispVal]
+             | Number Integer
+             | String String
+             | Bool Bool
+             | Def String LispVal
+             | Fn [String] [LispVal]
+             | New String [LispVal]
+             | Dot String String [LispVal]
+             | DefClass String LispVal [LispVal] [LispVal]
+             | Const [String] LispVal
+             | Classfn String [String] LispVal
+             | Classvar String LispVal
+             deriving (Eq, Show)
+
 data CompilerError = NumArgs        Integer [String]
                    | TypeMismatch   String String
                    | ParserErr      ParseError

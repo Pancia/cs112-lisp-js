@@ -1,6 +1,6 @@
 import Data.Monoid
 import Control.Monad
-import Control.Applicative
+import Control.Applicative hiding (Const)
 
 import Text.Parsec (parse)
 import Control.Monad.Except (throwError)
@@ -16,8 +16,8 @@ import Test.Framework.Providers.QuickCheck2()
 import Test.HUnit
 import Test.QuickCheck()
 
-import qualified LispJs as L
-import qualified Utils as U
+import qualified LispJs as JS
+import Utils as U
 import qualified Parser as P
 import qualified TestLispPy as PY
 
@@ -31,16 +31,16 @@ main = do tests' <- sequence testExecJS
 testReadExpr :: [T.Test]
 testReadExpr = fmap (\(name, (l, r)) -> testCase name (l @=? readExpr' r)) tests
     where
-        tests = [("list of numbers", ([L.List [L.Number 3, L.Number 4]], "(3 4)"))
-                ,("list of atoms", ([L.List [L.Atom "foo", L.Atom "bar"]], "(foo bar)"))
-                ,("def obj", ([L.New "Number" [L.Number 5]] , "(new Number 5)"))
-                ,("defclass", ([L.DefClass "Foo" (L.Const [] $ L.Number 5) [] []],
+        tests = [("list of numbers", ([List [Number 3, Number 4]], "(3 4)"))
+                ,("list of atoms", ([List [Atom "foo", Atom "bar"]], "(foo bar)"))
+                ,("def obj", ([New "Number" [Number 5]] , "(new Number 5)"))
+                ,("defclass", ([DefClass "Foo" (Const [] $ Number 5) [] []],
                               "(defclass Foo ([] 5))"))
-                ,("classvar", ([L.DefClass "Foo" (L.Const [] $ L.Number 5) [] [L.Classvar "bar" $ L.Number 3]],
+                ,("classvar", ([DefClass "Foo" (Const [] $ Number 5) [] [Classvar "bar" $ Number 3]],
                               "(defclass Foo ([] 5) (bar 3))"))
-                ,("classfn", ([L.DefClass "Foo" (L.Const [] $ L.Number 5) [L.Classfn "bar" [] $ L.Number 3] []],
+                ,("classfn", ([DefClass "Foo" (Const [] $ Number 5) [Classfn "bar" [] $ Number 3] []],
                               "(defclass Foo ([] 5) (bar [] 3))"))
-                ,("classfn n classvar",([L.DefClass "Foo" (L.Const [] $ L.Number 5) [L.Classfn "bar" [] $ L.Number 3] [L.Classvar "tar" $ L.Number 2]],
+                ,("classfn n classvar",([DefClass "Foo" (Const [] $ Number 5) [Classfn "bar" [] $ Number 3] [Classvar "tar" $ Number 2]],
                               "(defclass Foo ([] 5) (bar [] 3) (tar 2) )")) ]
         readExpr' = U.catch . readExpr
 
@@ -55,7 +55,7 @@ testToJS = fmap (\(name, (l, r)) -> testCase name (l @=? lisp2js r)) tests
                 ,("fn+", (["function (x) {\nreturn plus(x, 2)\n}"], "(fn [x] (+ x 2))"))
                 ,("def&fn", (["var foo = function (x, y) {\nreturn minus(x, y)\n}"], "(def foo (fn [x y] (- x y)))"))
                 ,("defn&call", (["var f = function () {\nreturn true\n}", "print(f())"],"(def f (fn [] true)) (log (f))"))]
-        lisp2js = fmap L.toJS . U.catch . liftM (L.translate <$>) . readExpr
+        lisp2js = fmap JS.toJS . U.catch . liftM (JS.translate <$>) . readExpr
 
 testExecJS :: [IO T.Test]
 testExecJS = fmap (\(name, (l, r)) -> do r' <- lisp2execJS r name; return $ testCase name (l @=? r')) tests
@@ -69,12 +69,12 @@ testExecJS = fmap (\(name, (l, r)) -> do r' <- lisp2execJS r name; return $ test
             let outDir = FS.decodeString "test-out"
                 outFile = outDir FS.</> FS.decodeString filename
             SH.mktree outDir
-            js <- L.formatJs . fmap L.toJS . U.catch . liftM (L.translate <$>) . readExpr $ lisp
+            js <- JS.formatJs . fmap JS.toJS . U.catch . liftM (JS.translate <$>) . readExpr $ lisp
             SH.output outFile $ return $ T.pack js
             let jsOutput = SH.inproc (T.pack U.getJsExecProgName) [FS.encode outFile] SH.empty
             SH.fold jsOutput (T.unpack <$> F.mconcat)
 
-readExpr :: String -> Either U.CompilerError [L.LispVal]
+readExpr :: String -> Either U.CompilerError [LispVal]
 readExpr input = case parse P.parseExpr "lisp-js" input of
                      Left err -> throwError $ U.ParserErr err
                      Right val -> return val
