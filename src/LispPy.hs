@@ -42,6 +42,7 @@ data PyVal = PyVar String PyVal                -- var x = ...
            | PyObjCall String [String] [PyVal] -- x.foo.bar(...)
            | PyFnCall String [PyVal]           -- foo(...)
            | PyList [PyVal]                    -- [...]
+           | PyDotThing String String [PyVal]  -- .function objname parameters*
            | PyThing String                    -- ???
            deriving (Eq, Show)
 
@@ -52,7 +53,9 @@ translate v = case v of
                   (JS.String s) -> PyStr s
                   (JS.Bool b) -> PyBool b
                   (JS.Def n b) -> PyVar n (translate b)
+                  (JS.Fn xs b) -> PyFn xs (translate <$> b)
                   l@(JS.List _) -> list2pyVal l
+                  (JS.Dot fp on ps) -> PyDotThing fp on (translate <$> ps)
                   _ -> PyThing $ show v
       where
         list2pyVal :: JS.LispVal -> PyVal
@@ -66,6 +69,7 @@ toPY pv = case pv of
               (PyStr s)             -> "\"" ++ s ++ "\""
               (PyBool b)            -> toLower <$> show b
               (PyVar n b)           -> n ++ " = " ++ toPY b
+              f@(PyFn{})            -> fn2py f
               (PyFnCall n as)
                   | lookupFn n /= n -> lookupFn n ++ "([" ++ args ++ "])"
                   | otherwise       -> lookupFn n ++ "(" ++ args ++ ")"
@@ -76,6 +80,16 @@ toPY pv = case pv of
 id2py :: PyVal -> String
 id2py (PyId pv) = pv
 id2py x = catch . throwError . TypeMismatch "PyId" $ show x
+
+fn2py :: PyVal -> String
+fn2py (PyFn params body) = "(lambda " ++ params' ++ " : " ++ showBody body ++ ")"
+      where
+        params' = L.intercalate ", " params
+        showBody [] = []
+        showBody (b:q:bs) = toPY b ++ ";\n" ++ showBody (q:bs)
+        showBody [b] = toPY b
+fn2py x = catch . throwError . TypeMismatch "PyFn" $ show x
+
 
 --Use for: if, for, while, anything else. Make sure to pass around a weight and
 --increment and decrement accordingly

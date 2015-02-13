@@ -1,6 +1,6 @@
 load("functional.js");
 
-var className = {type:"anything", someFunc: function(c){print (c);}};
+//var className = {type:"anything", someFunc: function(c){print (c);}};
 
 var log = function() {
     var _log = function(x) {print(x)}
