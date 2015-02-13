@@ -115,7 +115,23 @@ toJS jv = case jv of
               x@(JsObjCall{}) -> objCall2js x
               f@(JsFnCall{})  -> fnCall2js f
               d@(JsDotThing{})-> dot2js d
+              d@(JsDefCls{})  -> defcls2js d
+              
               (JsThing x)     -> x
+
+
+defcls2js :: JsVal -> String
+defcls2js (JsDefCls name (JsConst args b) fns vars) = "function " ++ name ++ "(" ++  params ++ ") {\n" ++ 
+                                         parseargsvals vars ++ "\n}"
+        where params = L.intercalate ", " args 
+              parseargsvals :: [JsVal] -> String
+              parseargsvals = L.intercalate ";\n" . map (\(JsClassvar s b)  -> "this." ++ s ++ " = " ++ (toJS b))
+              
+
+
+                                                 
+
+
 
 objCall2js :: JsVal -> String
 objCall2js (JsObjCall _obj _props _args) = undefined
