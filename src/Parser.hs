@@ -7,104 +7,99 @@ import Text.Parsec
 
 import qualified LispJs as L
 
--- return list of lispvals 
 type Parser a = ParsecT String () Identity a
-	
+
 parseExpr :: Parser [L.LispVal]
 parseExpr = many1 $ try (parseExpr1 <* spaces)
 
 parseExpr1 :: Parser L.LispVal
 parseExpr1 = parseAtom
-             <|> try parseString
-             <|> try parseNumber
-             <|> try parseQuoted
-             <|> try parseDotProp
-             <|> try parseDotFunc
-             <|> try parseDef
-             <|> try parseFn
-             <|> try parseNew
-			       <|> try parseClass
-             <|> try parseList
+     <|> try parseString
+     <|> try parseNumber
+     <|> try parseQuoted
+     <|> try parseDotProp
+     <|> try parseDotFunc
+     <|> try parseDef
+     <|> try parseFn
+     <|> try parseNew
+     <|> try parseClass
+     <|> try parseList
 
 parseDotProp :: Parser L.LispVal
 parseDotProp = between (char '(') (char ')') $ do
-      string "."
-      propName <- ident <* spaces1
-      objName <- ident <* spaces
-      return $ L.Dot propName objName []
-	  
+    void $ string "."
+    propName <- ident <* spaces1
+    objName <- ident <* spaces
+    return $ L.Dot propName objName []
+
 parseDotFunc :: Parser L.LispVal
 parseDotFunc = between (char '(') (char ')') $ do
-      string "."
-      funcName <- ident <* spaces1
-      objName <- ident <* spaces1
-      params <- parseExpr
-      return $ L.Dot funcName objName params
-             
-  -- Ex:(Foo ([] 5))
+    void $ string "."
+    funcName <- ident <* spaces1
+    objName <- ident <* spaces1
+    params <- parseExpr
+    return $ L.Dot funcName objName params
 
 parseClass :: Parser L.LispVal
 parseClass = between (char '(') (char ')') $ do
-           string "defclass" >> spaces1
-           id <- ident <* spaces1 
-           c <- parseConst 
-           list1 <- many $ try parsecnfn
-           list2 <- many $ try parseVars
-           return $ L.DefClass id c list1 list2
+    string "defclass" >> spaces1
+    className <- ident <* spaces1
+    cnstr <- parseConst <* spaces
+    classFns <- many . try $ parseClassFn <* spaces
+    classVars <- many . try $ parseVars <* spaces
+    return $ L.DefClass className cnstr classFns classVars
 
-parseargs :: Parser [String]
-parseargs = between (char '[') (char ']')
-                    (manyTill (ident <* spaces)
-                              (lookAhead (char ']'))) <* spaces1           
-           
-parsecnfn :: Parser L.LispVal
-parsecnfn = between  (char '(') (char ')') ( do 
-            id <- ident <* spaces1
-            params <- parseargs 
-            body <- parseExpr1
-            return $ L.Classfn id params body ) <* spaces1
-                       
--- Ex: [Bar 3] 
+parseClassFn :: Parser L.LispVal
+parseClassFn = between (char '(') (char ')') $ do
+    fnName <- ident <* spaces1
+    params <- parseArgs <* spaces
+    body <- parseExpr1
+    return $ L.Classfn fnName params body
+
 parseVars :: Parser L.LispVal
-parseVars = between (char '(') (char ')') ( do
-            id <- ident <* spaces1
-            body <- parseExpr1 
-            return $ L.Classvar id body ) <* spaces1
+parseVars = between (char '(') (char ')') $ do
+    varName <- ident <* spaces1
+    body <- parseExpr1
+    return $ L.Classvar varName body
 
-parseConst :: Parser L.LispVal 
-parseConst = between (char '(') (char ')') (do
-          params <- parseargs
-          body <- parseExpr1
-          return $ L.Const params body ) <* spaces
-		  
+parseConst :: Parser L.LispVal
+parseConst = between (char '(') (char ')') $ do
+    params <- parseArgs <* spaces
+    body <- parseExpr1
+    return $ L.Const params body
+
 parseNew :: Parser L.LispVal
-parseNew =  between (char '(') (char ')') $ do
-         string "new" >> spaces1
-         idparse <- ident <* spaces1
-         body <- parseExpr
-         return $ L.New idparse body 
+parseNew = between (char '(') (char ')') $  do
+    string "new" >> spaces1
+    className <- ident <* spaces1
+    body <- parseExpr
+    return $ L.New className body
 
 parseFn :: Parser L.LispVal
 parseFn = between (char '(') (char ')') $ do
-        string "fn" >> spaces1
-        params <- parseargs
-        body <- parseExpr
-        return $ L.Fn params body
+    string "fn" >> spaces1
+    params <- parseArgs <* spaces
+    body <- parseExpr
+    return $ L.Fn params body
+
+parseArgs :: Parser [String]
+parseArgs = between (char '[') (char ']')
+                    (manyTill (ident <* spaces)
+                              (lookAhead (char ']')))
 
 parseDef :: Parser L.LispVal
 parseDef = between (char '(') (char ')') $ do
-        string "def" >> spaces1
-        name <- ident <* spaces1
-        body <- parseExpr1
-        return $ L.Def name body
+    string "def" >> spaces1
+    name <- ident <* spaces1
+    body <- parseExpr1
+    return $ L.Def name body
 
 parseAtom :: Parser L.LispVal
-parseAtom = do
-        atom <- ident
-        return $ case atom of
-                     "#t" -> L.Bool True
-                     "#f" -> L.Bool False
-                     _    -> L.Atom atom
+parseAtom = do atom <- ident
+               return $ case atom of
+                            "true"  -> L.Bool True
+                            "false" -> L.Bool False
+                            _       -> L.Atom atom
 
 parseString :: Parser L.LispVal
 parseString = do void $ char '"'
@@ -125,10 +120,9 @@ parseQuoted = do void $ char '\''
 
 parseList :: Parser L.LispVal
 parseList = L.List <$> between (char '(') (char ')')
-                       (sepBy parseExpr1 spaces1)
+                          (sepBy parseExpr1 spaces1)
 
---HELPER PARSERS
-
+-----HELPER PARSERS-----
 ident :: Parser String
 ident = (:) <$> first <*> many rest
     where first = letter <|> symbol

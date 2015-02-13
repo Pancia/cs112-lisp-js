@@ -67,30 +67,31 @@ main = do args <- getArgs
           putStrLn $ ">>opts: " ++ show opts
           putStrLn $ ">>nonOpts: " ++ show nonOpts
           putStrLn $ ">>msgs: " ++ show msgs
-          putStrLn . take 60 $ repeat '#'
+          printDivider
 
           lispVals <- if null $ optLisp opts
                           then liftM readExpr . readFile $ optInput opts
                           else return . readExpr $ optLisp opts
           --Show lisp after parsing
           putStrLn . (">>lispVals:\n" ++) . U.catch . liftM show $ lispVals
-          putStrLn . take 60 $ repeat '#'
-          --Convert to outType, write to out, and print
+          printDivider
+          --Convert to outType
           src <- case outType of
                      JS -> do let jsVals = U.catch . liftM (JS.translate <$>) $ lispVals
                               putStrLn $ ">>jsVals:\n" ++ show jsVals
-                              putStrLn . take 60 $ repeat '#'
+                              printDivider
                               JS.formatJs $ JS.toJS <$> jsVals
                      PY -> do let pyVals = U.catch . liftM (PY.translate <$>) $ lispVals
                               putStrLn $ ">>pyVals:\n" ++ show pyVals
-                              putStrLn . take 60 $ repeat '#'
+                              printDivider
                               PY.formatPy $ PY.toPY <$> pyVals
-
+          --Print src
           putStrLn $ ">>" ++ outFile ++ ":\n" ++ src
-          putStrLn . take 60 $ repeat '#'
+          printDivider
+          --Write src to outFile
           writeFile outFile src
 
-          --Execute src, print its result
+          --Execute src, printing its result
           print =<< ("stdout: " ++) <$> execSrc outType outFile
 
 execSrc :: OutputType -> String -> IO String
@@ -104,3 +105,6 @@ readExpr :: String -> Either U.CompilerError [JS.LispVal]
 readExpr input = case parse P.parseExpr "lisp-js" input of
                      Left err -> throwError $ U.ParserErr err
                      Right val -> return val
+
+printDivider :: IO ()
+printDivider = putStrLn . take 60 $ repeat '#'

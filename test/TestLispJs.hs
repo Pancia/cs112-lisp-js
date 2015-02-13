@@ -27,7 +27,7 @@ main = do tests' <- sequence testExecJS
           T.defaultMainWithOpts (tests ++ tests') mempty
     where
         tests = testToJS ++ testReadExpr ++ PY.tests
- 
+
 testReadExpr :: [T.Test]
 testReadExpr = fmap (\(name, (l, r)) -> testCase name (l @=? readExpr' r)) tests
     where
@@ -37,9 +37,9 @@ testReadExpr = fmap (\(name, (l, r)) -> testCase name (l @=? readExpr' r)) tests
                 ,("defclass", ([L.DefClass "Foo" (L.Const [] $ L.Number 5) [] []],
                               "(defclass Foo ([] 5))"))
                 ,("classvar", ([L.DefClass "Foo" (L.Const [] $ L.Number 5) [] [L.Classvar "bar" $ L.Number 3]],
-                              "(defclass Foo ([] 5) (bar 3) )"))
+                              "(defclass Foo ([] 5) (bar 3))"))
                 ,("classfn", ([L.DefClass "Foo" (L.Const [] $ L.Number 5) [L.Classfn "bar" [] $ L.Number 3] []],
-                              "(defclass Foo ([] 5) (bar [] 3)  )"))
+                              "(defclass Foo ([] 5) (bar [] 3))"))
                 ,("classfn n classvar",([L.DefClass "Foo" (L.Const [] $ L.Number 5) [L.Classfn "bar" [] $ L.Number 3] [L.Classvar "tar" $ L.Number 2]],
                               "(defclass Foo ([] 5) (bar [] 3) (tar 2) )")) ]
         readExpr' = U.catch . readExpr
@@ -51,17 +51,17 @@ testToJS = fmap (\(name, (l, r)) -> testCase name (l @=? lisp2js r)) tests
                 ,("plus", (["plus(1, [2, 3])"], "(+ 1 '(2 3))"))
                 ,("def", (["var foo = 5"],"(def foo 5)"))
                 ,("def1", (["var foo = plus(3, 2)"],"(def foo (+ 3 2))"))
-                ,("fn", (["function () {\nreturn true\n}"], "(fn [] #t)"))
+                ,("fn", (["function () {\nreturn true\n}"], "(fn [] true)"))
                 ,("fn+", (["function (x) {\nreturn plus(x, 2)\n}"], "(fn [x] (+ x 2))"))
                 ,("def&fn", (["var foo = function (x, y) {\nreturn minus(x, y)\n}"], "(def foo (fn [x y] (- x y)))"))
-                ,("defn&call", (["var f = function () {\nreturn true\n}", "print(f())"],"(def f (fn [] #t)) (log (f))"))]
+                ,("defn&call", (["var f = function () {\nreturn true\n}", "print(f())"],"(def f (fn [] true)) (log (f))"))]
         lisp2js = fmap L.toJS . U.catch . liftM (L.translate <$>) . readExpr
 
 testExecJS :: [IO T.Test]
 testExecJS = fmap (\(name, (l, r)) -> do r' <- lisp2execJS r name; return $ testCase name (l @=? r')) tests
     where
         tests = [("addition", ("9", "(log (+ 2 3 4))"))
-                ,("defn&call", ("true", "(def f (fn [] #t)) (log (f))"))
+                ,("defn&call", ("true", "(def f (fn [] true)) (log (f))"))
                 ,("defn+&call", ("5", "(def f (fn [] (+ 2 3))) (log (f))"))
                 ,("defn+args&call", ("10", "(def f (fn [x] (+ x 1))) (log (f 9))"))]
         lisp2execJS :: String -> String -> IO String

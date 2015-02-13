@@ -1,6 +1,6 @@
 module LispJs where
 
-import Control.Applicative hiding (many, (<|>))
+import Control.Applicative hiding (many, (<|>), Const)
 import Control.Monad.Except
 
 import qualified Data.List as L
@@ -19,10 +19,10 @@ data LispVal = Atom String
              | Fn [String] [LispVal]
              | New String [LispVal]
              | Dot String String [LispVal]
-             | DefClass String LispVal [LispVal] [LispVal] 
+             | DefClass String LispVal [LispVal] [LispVal]
              | Const [String] LispVal
-             | Classfn String [String] LispVal 
-             | Classvar String LispVal   
+             | Classfn String [String] LispVal
+             | Classvar String LispVal
              deriving (Eq, Show)
 
 primitives :: M.Map String String
@@ -58,22 +58,21 @@ formatJs js = do helperFns <- readFile "helperFunctions.js"
                  let js' = (++ ";") . L.intercalate ";\n" $ js
                  return $ helperFns ++ js'
 
-data JsVal = JsVar String JsVal                -- var x = ...
-           | JsFn [String] [JsVal]             -- function(...){...}
-           | JsStr String                      -- "..."
-           | JsBool Bool                       -- true|false
-           | JsNum Integer                     -- ..-1,0,1..
-           | JsId String                       -- x, foo, ...
-           | JsObjCall String [String] [JsVal] -- x.foo.bar(...)
-           | JsFnCall String [JsVal]           -- foo(...)
-           | JsNewObj String [JsVal]           -- new Foo (...)
-           | JsDefCls String JsVal [JsVal] [JsVal] -- function Class () {...}
-           | JsConst [String] JsVal     
-           | JsClassfn String [String] JsVal
-           | JsClassvar String JsVal       
-           | JsDotThing String String [JsVal]  -- .function objname parameters*
-           | JsList [JsVal]                    -- [...]
-           | JsThing String                    -- ???
+data JsVal = JsVar String JsVal                      -- var x = ..
+           | JsFn [String] [JsVal]                   -- function(..){..}
+           | JsStr String                            -- ".."
+           | JsBool Bool                             -- true|false
+           | JsNum Integer                           -- ..-1,0,1..
+           | JsId String                             -- x, foo, ..
+           | JsObjCall String [String] [JsVal]       -- x.foo.bar(..)
+           | JsFnCall String [JsVal]                 -- foo(..)
+           | JsNewObj String [JsVal]                 -- new Foo (..)
+           | JsDefClass String JsVal [JsVal] [JsVal] -- function Class(..) {..}
+           | JsConst [String] JsVal                  -- Class(..) {..}
+           | JsClassFn String [String] JsVal         -- Class.prototype.fn = function(..){..}
+           | JsClassVar String JsVal                 -- Class(..) {this.var = val}
+           | JsDotThing String String [JsVal]        -- .function objname parameters*
+           | JsList [JsVal]                          -- [] | [x,..]
            deriving (Eq, Show)
 
 translate :: LispVal -> JsVal
@@ -86,10 +85,10 @@ translate v = case v of
                   (Number n) -> JsNum n
                   (String s) -> JsStr s
                   (New s l) -> JsNewObj s (translate <$> l)
-                  (DefClass n c l1 l2) -> JsDefCls n (translate c) (translate <$> l1) (translate <$> l2)
-                  (LispJs.Const s b) -> JsConst s (translate b)
-                  (Classfn s p b) -> JsClassfn s p (translate b) 
-                  (Classvar s b) -> JsClassvar s (translate b)
+                  (DefClass n c lf lv) -> JsDefClass n (translate c) (translate <$> lf) (translate <$> lv)
+                  (Const s b) -> JsConst s (translate b)
+                  (Classfn s p b) -> JsClassFn s p (translate b)
+                  (Classvar s b) -> JsClassVar s (translate b)
                   (Dot fp on ps) -> JsDotThing fp on (translate <$> ps)
 
     where
@@ -105,33 +104,27 @@ translate v = case v of
 
 toJS :: JsVal -> String
 toJS jv = case jv of
-              a@(JsId{})      -> id2js a
-              (JsNum n)       -> show n
-              (JsStr s)       -> "\"" ++ s ++ "\""
-              (JsBool x)      -> toLower <$> show x
-              l@(JsList{})    -> list2js l
-              v@(JsVar{})     -> var2js v
-              f@(JsFn{})      -> fn2js f
-              x@(JsObjCall{}) -> objCall2js x
-              f@(JsFnCall{})  -> fnCall2js f
-              d@(JsDotThing{})-> dot2js d
-              d@(JsDefCls{})  -> defcls2js d
-              
-              (JsThing x)     -> x
+              a@(JsId{})       -> id2js a
+              (JsNum n)        -> show n
+              (JsStr s)        -> "\"" ++ s ++ "\""
+              (JsBool x)       -> toLower <$> show x
+              l@(JsList{})     -> list2js l
+              v@(JsVar{})      -> var2js v
+              f@(JsFn{})       -> fn2js f
+              x@(JsObjCall{})  -> objCall2js x
+              f@(JsFnCall{})   -> fnCall2js f
+              d@(JsDotThing{}) -> dot2js d
+              d@(JsDefClass{}) -> defclass2js d
+              x -> error "JsVal=(" ++ show x ++ ") should not be toJS'ed"
 
-
-defcls2js :: JsVal -> String
-defcls2js (JsDefCls name (JsConst args b) fns vars) = "function " ++ name ++ "(" ++  params ++ ") {\n" ++ 
-                                         parseargsvals vars ++ "\n}"
-        where params = L.intercalate ", " args 
-              parseargsvals :: [JsVal] -> String
-              parseargsvals = L.intercalate ";\n" . map (\(JsClassvar s b)  -> "this." ++ s ++ " = " ++ (toJS b))
-              
-
-
-                                                 
-
-
+defclass2js :: JsVal -> String
+defclass2js (JsDefClass name (JsConst args _) _ vars) =
+        "function " ++ name ++ "(" ++  params ++ ") {\n" ++
+        classVars2js vars ++ "\n}"
+    where params = L.intercalate ", " args
+          classVars2js :: [JsVal] -> String
+          classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b)  -> "this." ++ s ++ " = " ++ toJS b)
+defclass2js x = catch . throwError . TypeMismatch "JsDefClass" $ show x
 
 objCall2js :: JsVal -> String
 objCall2js (JsObjCall _obj _props _args) = undefined
@@ -148,8 +141,9 @@ fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
 dot2js :: JsVal -> String
 dot2js (JsDotThing fp on ps)
         | ps /= [] = on ++ "." ++ fp ++ "(" ++ args' ++ ")"
-		| otherwise = on ++ "." ++ fp 
+		| otherwise = on ++ "." ++ fp
      where args' = L.intercalate ", " $ toJS <$> ps
+dot2js x = catch . throwError . TypeMismatch "JsDotThing" $ show x
 
 id2js :: JsVal -> String
 id2js (JsId a) = a
