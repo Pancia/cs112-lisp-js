@@ -70,6 +70,7 @@ toPY pv = case pv of
               (PyBool b)            -> toLower <$> show b
               (PyVar n b)           -> n ++ " = " ++ toPY b
               f@(PyFn{})            -> fn2py f
+              d@(PyDotThing{})      -> dot2py d
               (PyFnCall n as)
                   | lookupFn n /= n -> lookupFn n ++ "([" ++ args ++ "])"
                   | otherwise       -> lookupFn n ++ "(" ++ args ++ ")"
@@ -90,6 +91,12 @@ fn2py (PyFn params body) = "(lambda " ++ params' ++ " : " ++ showBody body ++ ")
         showBody [b] = toPY b
 fn2py x = catch . throwError . TypeMismatch "PyFn" $ show x
 
+dot2py :: PyVal -> String
+dot2py (PyDotThing fp on ps)
+      | ps /= [] = on ++ "." ++ fp ++ "(" ++ params' ++ ")" 
+      | otherwise = on ++ "." ++ fp
+      where
+        params' = L.intercalate ", " $ toPY <$> ps
 
 --Use for: if, for, while, anything else. Make sure to pass around a weight and
 --increment and decrement accordingly

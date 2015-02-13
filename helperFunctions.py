@@ -34,4 +34,12 @@ def gt (l):
 def gte (l):
 	return reduce((lambda x, y : x >= y), l)
 
+class Dog:
+    tricks = []             # mistaken use of a class variable
+    def __init__(self, name):
+        self.name = name
+    def add_trick(self, trick):
+        self.tricks.append(trick)
+
+d = Dog('Fido')
 #END HELPER FUNCTIONS
