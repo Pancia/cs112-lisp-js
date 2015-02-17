@@ -107,12 +107,18 @@ map2js (JsMap ks vs) = "{" ++ kvs ++ "}"
 map2js x = catch . throwError . TypeMismatch "JsMap" $ show x
 
 defclass2js :: JsVal -> String
-defclass2js (JsDefClass name (JsConst args _) _ vars) =
-        "function " ++ name ++ "(" ++ params ++ ") {\n" ++
-        classVars2js vars ++ "\n}"
+defclass2js (JsDefClass name (JsConst args ret) fns vars) =
+        "function " ++ name ++ "(" ++  params ++ ") {\n" ++
+        classVars2js vars ++ ";\n" ++ ret2js ret ++ "\n};\n" ++ fns2js fns
     where params = L.intercalate ", " args
+          ret2js :: JsVal -> String
+          ret2js (JsMap ks vs) = L.intercalate ";\n" $ zipWith (\k v -> "this." ++ k ++ " = " ++ toJS v) ks vs
+          ret2js x = error . show $ x
           classVars2js :: [JsVal] -> String
           classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b)  -> "this." ++ s ++ " = " ++ toJS b)
+          fns2js :: [JsVal] -> String
+          fns2js = (++ "\n}") . L.intercalate "\n};\n" . map(\(JsClassFn fn pms ob ) -> name ++ ".prototype." ++ fn ++
+                    " = function(" ++ L.intercalate ", " pms ++ ") {\n return " ++  toJS ob)
 defclass2js x = catch . throwError . TypeMismatch "JsDefClass" $ show x
 
 fnCall2js :: JsVal -> String
