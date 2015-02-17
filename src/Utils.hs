@@ -13,6 +13,7 @@ data LispVal = Atom String
              | Bool Bool
              | Def String LispVal
              | Fn [String] [LispVal]
+             | Map [String] [LispVal]
              | New String [LispVal]
              | Dot String String [LispVal]
              | DefClass String LispVal [LispVal] [LispVal]

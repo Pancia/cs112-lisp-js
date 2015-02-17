@@ -49,7 +49,7 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsBool Bool                             -- true|false
            | JsNum Integer                           -- ..-1,0,1..
            | JsId String                             -- x, foo, ..
-           | JsObjCall String [String] [JsVal]       -- x.foo.bar(..)
+           | JsMap [String] [JsVal]                  -- {x : y, ..}
            | JsFnCall String [JsVal]                 -- foo(..)
            | JsNewObj String [JsVal]                 -- new Foo (..)
            | JsDefClass String JsVal [JsVal] [JsVal] -- function Class(..) {..}
@@ -75,15 +75,14 @@ translate v = case v of
                   (Classfn s p b) -> JsClassFn s p (translate b)
                   (Classvar s b) -> JsClassVar s (translate b)
                   (Dot fp on ps) -> JsDotThing fp on (translate <$> ps)
+                  (Map ks vs) -> JsMap ks (translate <$> vs)
 
     where
         list2jsVal :: LispVal -> JsVal
         list2jsVal l = case l of
                         (List [Atom "quote", ql]) -> translate ql
                         (List [Atom a]) -> JsFnCall a []
-                        (List (Atom a:(arg:args)))
-                            | last a == '.' -> JsObjCall a [show $ translate arg] $ translate <$> args
-                            | otherwise     -> JsFnCall a $ translate <$> (arg:args)
+                        (List (Atom a:(arg:args))) -> JsFnCall a $ translate <$> (arg:args)
                         (List xs) -> JsList $ translate <$> xs
                         x -> catch . throwError $ TypeMismatch "List" $ show x
 
@@ -96,24 +95,25 @@ toJS jv = case jv of
               l@(JsList{})     -> list2js l
               v@(JsVar{})      -> var2js v
               f@(JsFn{})       -> fn2js f
-              x@(JsObjCall{})  -> objCall2js x
               f@(JsFnCall{})   -> fnCall2js f
               d@(JsDotThing{}) -> dot2js d
               d@(JsDefClass{}) -> defclass2js d
+              m@(JsMap{})      -> map2js m
               x -> error "JsVal=(" ++ show x ++ ") should not be toJS'ed"
+
+map2js :: JsVal -> String
+map2js (JsMap ks vs) = "{" ++ kvs ++ "}"
+    where kvs = L.intercalate ", " $ zipWith (\k v -> k ++ " : " ++ toJS v) ks vs
+map2js x = catch . throwError . TypeMismatch "JsMap" $ show x
 
 defclass2js :: JsVal -> String
 defclass2js (JsDefClass name (JsConst args _) _ vars) =
-        "function " ++ name ++ "(" ++  params ++ ") {\n" ++
+        "function " ++ name ++ "(" ++ params ++ ") {\n" ++
         classVars2js vars ++ "\n}"
     where params = L.intercalate ", " args
           classVars2js :: [JsVal] -> String
           classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b)  -> "this." ++ s ++ " = " ++ toJS b)
 defclass2js x = catch . throwError . TypeMismatch "JsDefClass" $ show x
-
-objCall2js :: JsVal -> String
-objCall2js (JsObjCall _obj _props _args) = undefined
-objCall2js x = catch . throwError . TypeMismatch "JsObjCall" $ show x
 
 fnCall2js :: JsVal -> String
 fnCall2js (JsFnCall fn args)

@@ -23,7 +23,20 @@ parseExpr1 = parseAtom
      <|> try parseFn
      <|> try parseNew
      <|> try parseClass
+     <|> try parseMap
      <|> try parseList
+
+parseMap :: Parser LispVal
+parseMap = between (char '{') (char '}') $ do
+    keyVals <- manyTill parseKeyVal (lookAhead (char '}'))
+    let (keys, vals) = foldl (\(ks, vs) (k, v) -> (k:ks, v:vs)) ([],[]) keyVals
+    return $ Map keys vals
+
+parseKeyVal :: Parser (String, LispVal)
+parseKeyVal = do
+    key <- ident <* spaces1
+    val <- parseExpr1 <* spaces
+    return (key, val)
 
 parseDotProp :: Parser LispVal
 parseDotProp = between (char '(') (char ')') $ do
@@ -69,7 +82,7 @@ parseConst = between (char '(') (char ')') $ do
     return $ Const params body
 
 parseNew :: Parser LispVal
-parseNew = between (char '(') (char ')') $  do
+parseNew = between (char '(') (char ')') $ do
     string "new" >> spaces1
     className <- ident <* spaces1
     body <- parseExpr
