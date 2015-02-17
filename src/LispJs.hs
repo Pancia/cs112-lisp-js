@@ -102,13 +102,18 @@ toJS jv = case jv of
               d@(JsDefClass{}) -> defclass2js d
               x -> error "JsVal=(" ++ show x ++ ") should not be toJS'ed"
 
+
 defclass2js :: JsVal -> String
-defclass2js (JsDefClass name (JsConst args _) _ vars) =
+defclass2js (JsDefClass name (JsConst args _) fns vars) =
         "function " ++ name ++ "(" ++  params ++ ") {\n" ++
-        classVars2js vars ++ "\n}"
+        classVars2js vars ++ "\n}\n" ++ fnstojs fns 
     where params = L.intercalate ", " args
           classVars2js :: [JsVal] -> String
           classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b)  -> "this." ++ s ++ " = " ++ toJS b)
+          fnstojs :: [JsVal] -> String
+          fnstojs = (++ "\n}") . L.intercalate "\n};\n" . map(\(JsClassFn fn pms ob ) -> name ++ ".prototype." ++ fn ++ 
+                         " = function(" ++ L.intercalate ", " pms ++ ") {\n return " ++  toJS ob)
+                         
 defclass2js x = catch . throwError . TypeMismatch "JsDefClass" $ show x
 
 objCall2js :: JsVal -> String
