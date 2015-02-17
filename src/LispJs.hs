@@ -112,8 +112,7 @@ defclass2js (JsDefClass name (JsConst args _) fns vars) =
           classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b)  -> "this." ++ s ++ " = " ++ toJS b)
           fnstojs :: [JsVal] -> String
           fnstojs = (++ "\n}") . L.intercalate "\n};\n" . map(\(JsClassFn fn pms ob ) -> name ++ ".prototype." ++ fn ++ 
-                         " = function(" ++ L.intercalate ", " pms ++ ") {\n return " ++  toJS ob)
-                         
+                    " = function(" ++ L.intercalate ", " pms ++ ") {\n return " ++  toJS ob)                     
 defclass2js x = catch . throwError . TypeMismatch "JsDefClass" $ show x
 
 objCall2js :: JsVal -> String
