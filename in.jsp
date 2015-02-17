@@ -7,4 +7,3 @@
 (log (.speed r))
 (log (.bar r))
 (log (.launch r 42))
-

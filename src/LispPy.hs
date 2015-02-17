@@ -1,6 +1,6 @@
 module LispPy where
 
-import Control.Applicative hiding (many, (<|>))
+import Control.Applicative hiding (many, (<|>), Const)
 import Control.Monad.Except
 
 import qualified Data.List as L
@@ -40,6 +40,11 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyId String                       -- x, foo, ...
            | PyObjCall String String [PyVal]   -- x.foo.bar(...)
            | PyFnCall String [PyVal]           -- foo(...)
+           | PyNewObj String [PyVal]                 -- new Foo (..)
+           | PyDefClass String PyVal [PyVal] [PyVal] -- function Class(..) {..}
+           | PyConst [String] PyVal                  -- Class(..) {..}
+           | PyClassFn String [String] PyVal         -- Class.prototype.fn = function(..){..}
+           | PyClassVar String PyVal  
            | PyList [PyVal]                    -- [...]
            | PyThing String                    -- ???
            deriving (Eq, Show)
@@ -52,6 +57,11 @@ translate v = case v of
                   (Bool b) -> PyBool b
                   (Def n b) -> PyVar n (translate b)
                   (Fn xs b) -> PyFn xs (translate <$> b)
+                  (New s l) -> PyNewObj s (translate <$> l)
+                  (DefClass n c lf lv) -> PyDefClass n (translate c) (translate <$> lf) (translate <$> lv)
+                  (Const s b) -> PyConst s (translate b)
+                  (Classfn s p b) -> PyClassFn s p (translate b)
+                  (Classvar s b) -> PyClassVar s (translate b)
                   l@(List _) -> list2pyVal l
                   (Dot fp on ps) -> PyObjCall fp on (translate <$> ps)
                   _ -> PyThing $ show v
@@ -67,15 +77,31 @@ toPY pv = case pv of
               (PyNum n)             -> show n
               (PyStr s)             -> "\"" ++ s ++ "\""
               (PyBool b)            -> toLower <$> show b
+              l@(PyList{})          -> list2py l
               (PyVar n b)           -> n ++ " = " ++ toPY b
               f@(PyFn{})            -> fn2py f
-              d@(PyObjCall{})      -> dot2py d
+              d@(PyObjCall{})       -> dot2py d
+              d@(PyDefClass{})      -> defclass2py d
               (PyFnCall n as)
                   | lookupFn n /= n -> lookupFn n ++ "([" ++ args ++ "])"
                   | otherwise       -> lookupFn n ++ "(" ++ args ++ ")"
                   where
                     args = L.intercalate ", " $ toPY <$> as
               _ -> show pv
+
+defclass2py :: PyVal -> String
+defclass2py (PyDefClass name (PyConst args body) _ vars) = "class " ++ name ++ ":\n"
+                ++ addSpacing 1 ++ "def __init__(self, " ++ args' ++ "):\n" ++
+                addSpacing 2 ++ "self." ++ consBody
+                where
+                  args' =  L.intercalate ", " args
+                  consBody = (toPY body)
+
+list2py :: PyVal -> String
+list2py l = case l of
+              (PyList [PyId "quote", ql]) -> toPY ql
+              (PyList xs) -> "[" ++ L.intercalate ", " (fmap toPY xs) ++ "]"
+              x -> catch . throwError . TypeMismatch "PyList" $ show x
 
 id2py :: PyVal -> String
 id2py (PyId pv) = pv
