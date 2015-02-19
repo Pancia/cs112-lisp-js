@@ -4,6 +4,7 @@ Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation
 ## Scrum Board
 To Do:
 * Create `LispVal` constructors for class/object stuff
+* Array indexing (helper fn similar to get in clj)
 * Parse new syntax
   * Parse defclass, constructor, and name
   * Parse static declarations
@@ -13,7 +14,10 @@ To Do:
 * Convert each new `LispVal` into Python
 
 In Progress:
-* Convert each new `LispVal` into Python
+* JS in browser/compiling to HTML (Rachelle)
+* Syntax changes (Anthony)
+* Conditional tag syntax ```(#+langName expr) ``` (Neeraj)
+* Make game in our language (Francisco)
 
 Finished:
 * Parse new syntax
