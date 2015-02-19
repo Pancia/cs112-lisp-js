@@ -8,6 +8,10 @@ var log = function() {
     args.forEach(_log);
 };
 
+var get_ = function(e, i){
+	return e[i];
+};
+
 var plus  = fjs.curry(function(x, y) {return x + y});
 var minus = fjs.curry(function(x, y) {return x - y});
 var mult  = fjs.curry(function(x, y) {return x * y});

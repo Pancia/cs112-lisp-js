@@ -34,6 +34,9 @@ def gt (l):
 def gte (l):
 	return reduce((lambda x, y : x >= y), l)
 
+def get (e, i):
+	return e[i]
+
 class Dog:
     tricks = []             # mistaken use of a class variable
     def __init__(self, name):
