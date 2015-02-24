@@ -6,7 +6,7 @@ var log = function() {
     args.forEach(_log);
 };
 
-var get_ = function(e, i){
+var get = function(e, i){
 	return e[i];
 };
 
