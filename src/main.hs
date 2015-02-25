@@ -27,9 +27,12 @@ data Options = Options  {
     optType :: OutputType
     } deriving (Show)
 
+fileType :: String
+fileType = "loki"
+
 defaultOptions :: Options
 defaultOptions = Options {
-    optInput  = "in.jsp",
+    optInput  = "in." ++ fileType,
     optOutput = "out",
     optLisp = "",
     optType = JS}
@@ -63,7 +66,7 @@ main = do args <- getArgs
               outType = optType opts
               outFile = if '.' `elem` tail (optOutput opts)
                             then optOutput opts
-                            else optOutput opts ++ ".jsp." ++ (toLower <$> show outType)
+                            else optOutput opts ++ "." ++ fileType ++ "." ++ (toLower <$> show outType)
           putStrLn $ ">>opts: " ++ show opts
           putStrLn $ ">>nonOpts: " ++ show nonOpts
           putStrLn $ ">>msgs: " ++ show msgs

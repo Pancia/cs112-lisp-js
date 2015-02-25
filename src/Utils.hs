@@ -9,6 +9,7 @@ import Data.Map as M
 
 type MetaData = M.Map String String
 -- TODO: Change to record syntax, so getMetaData is cleaner?
+-- TODO: Prefix Constructors with (Lk|Loki|Lki|Lok|...)
 data LokiVal = Atom MetaData String
              | List MetaData [LokiVal]
              | Number MetaData Integer
