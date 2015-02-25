@@ -1,12 +1,13 @@
-var log = function() {
-    var _log = function(x) {if (console != undefined) {console.log(x)} else {print(x)}}
+var _print = function() {
+    var _log = function(x) {if (typeof(console) == "object") {console.log(x);}
+                            else {print(x);}}
     var args = Array.prototype.slice.call(arguments);
     args.forEach(_log);
 };
 
-if (load != undefined) {load("functional.js");}
-else {log("WARNING: not running in a valid cmdl env,"+
-          "use JSC or make sure to import necessary libraries");}
+if (typeof(load) == "function") {load("functional.js");}
+else {_print("WARNING: not running in a valid cmdl env, "+
+        "use JSC or make sure to import necessary libraries");}
 
 var get = function(e, i){
 	return e[i];

@@ -11,7 +11,7 @@ import Data.Char (toLower)
 import Utils
 
 primitives :: M.Map String String
-primitives = M.fromList [("log", "print")
+primitives = M.fromList [("print", "_print")
                         ,("+", "plus")
                         ,("-", "minus")
                         ,("*", "mult")
