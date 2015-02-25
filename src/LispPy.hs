@@ -38,13 +38,13 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyBool Bool                       -- true|false
            | PyNum Integer                     -- ..-1,0,1..
            | PyId String                       -- x, foo, ...
-           | PyObjCall String String [PyVal]   -- x.foo.bar(...)
+           | PyObjCall String PyVal [PyVal]   -- x.foo.bar(...)
            | PyFnCall String [PyVal]           -- foo(...)
            | PyNewObj String [PyVal]                 -- new Foo (..)
            | PyDefClass String PyVal [PyVal] [PyVal] -- function Class(..) {..}
            | PyConst [String] PyVal                  -- Class(..) {..}
            | PyClassFn String [String] PyVal         -- Class.prototype.fn = function(..){..}
-           | PyClassVar String PyVal  
+           | PyClassVar String PyVal
            | PyList [PyVal]                    -- [...]
            | PyThing String                    -- ???
            deriving (Eq, Show)
@@ -63,7 +63,7 @@ translate v = case v of
                   (Classfn s p b) -> PyClassFn s p (translate b)
                   (Classvar s b) -> PyClassVar s (translate b)
                   l@(List _) -> list2pyVal l
-                  (Dot fp on ps) -> PyObjCall fp on (translate <$> ps)
+                  (Dot fp on ps) -> PyObjCall fp (translate on) (translate <$> ps)
                   _ -> PyThing $ show v
       where
         list2pyVal :: LispVal -> PyVal
@@ -90,12 +90,13 @@ toPY pv = case pv of
               _ -> show pv
 
 defclass2py :: PyVal -> String
-defclass2py (PyDefClass name (PyConst args body) _ vars) = "class " ++ name ++ ":\n"
+defclass2py (PyDefClass name (PyConst args body) _ _vars) = "class " ++ name ++ ":\n"
                 ++ addSpacing 1 ++ "def __init__(self, " ++ args' ++ "):\n" ++
                 addSpacing 2 ++ "self." ++ consBody
                 where
                   args' =  L.intercalate ", " args
-                  consBody = (toPY body)
+                  consBody = toPY body
+defclass2py x = catch . throwError . TypeMismatch "PyDefClass" $ show x
 
 list2py :: PyVal -> String
 list2py l = case l of
@@ -118,8 +119,8 @@ fn2py x = catch . throwError . TypeMismatch "PyFn" $ show x
 
 dot2py :: PyVal -> String
 dot2py (PyObjCall fp on ps)
-      | ps /= [] = on ++ "." ++ fp ++ "(" ++ params' ++ ")"
-      | otherwise = on ++ "." ++ fp
+      | ps /= [] = toPY on ++ "." ++ fp ++ "(" ++ params' ++ ")"
+      | otherwise = toPY on ++ "." ++ fp
       where
         params' = L.intercalate ", " $ toPY <$> ps
 dot2py x = catch . throwError . TypeMismatch "PyObjCall" $ show x
