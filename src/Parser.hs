@@ -3,7 +3,7 @@ module Parser where
 import Control.Applicative hiding ((<|>), many, Const)
 import Control.Monad.Identity
 
-import Text.Parsec
+import Text.Parsec hiding (spaces)
 
 import Utils
 
@@ -13,21 +13,27 @@ parseExpr :: Parser [LispVal]
 parseExpr = many1 $ try (parseExpr1 <* spaces)
 
 parseExpr1 :: Parser LispVal
-parseExpr1 = try parseDef
-         <|> try parseClass
-         <|> parseBasicExpr
+parseExpr1 = do void $ many comment
+                lispVal <- try parseDef
+                       <|> try parseClass
+                       <|> parseBasicExpr
+                void $ many comment
+                return lispVal
 
 parseBasicExpr :: Parser LispVal
-parseBasicExpr = try parseAtom
-             <|> try parseString
-             <|> try parseNumber
-             <|> try parseQuoted
-             <|> try parseDotProp
-             <|> try parseDotFunc
-             <|> try parseFn
-             <|> try parseNew
-             <|> try parseMap
-             <|> try parseList
+parseBasicExpr = do void $ many comment
+                    lispVal <- try parseAtom
+                           <|> try parseString
+                           <|> try parseNumber
+                           <|> try parseQuoted
+                           <|> try parseDotProp
+                           <|> try parseDotFunc
+                           <|> try parseFn
+                           <|> try parseNew
+                           <|> try parseMap
+                           <|> try parseList
+                    void $ many comment
+                    return lispVal
 
 parseMap :: Parser LispVal
 parseMap = between (char '{') (char '}') $ do
@@ -147,5 +153,14 @@ ident = (:) <$> first <*> many rest
 symbol :: Parser Char
 symbol = oneOf "!$%&|*+-/<=>?@^_~"
 
+space' :: Parser()
+space' = void space <|> comment
+
+spaces :: Parser ()
+spaces = skipMany space'
+
 spaces1 :: Parser ()
-spaces1 = skipMany1 space
+spaces1 = skipMany1 space'
+
+comment :: Parser ()
+comment = string "#" >>= void . return (manyTill anyChar newline)

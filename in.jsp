@@ -1,7 +1,10 @@
-(def y "y")
+(def y "y")#test1
 (def hello_world (fn []
-	(alert (+ 2 3))))
-(def y "y")
+     (log #Added comments everywhere!
+          "foobar")
+     (alert (+ 2 3))))
+(def y "y") #test2
 (.click ($ "img") (fn []
-				(alert "img")))
-
+    (alert "img")))
+(log y)
+#test-eof
