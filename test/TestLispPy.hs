@@ -3,7 +3,7 @@ module TestLispPy where
 import Control.Monad
 import Control.Applicative
 
-import Text.Parsec (parse)
+import Text.Parsec (runParser)
 import Control.Monad.Except (throwError)
 
 import Test.Framework as T
@@ -26,7 +26,7 @@ testToPY = fmap (\(name, (l, r)) -> testCase name (l @=? lisp2py r)) tests'
         tests' = [("def", (["foo = 5"],"(def foo 5)"))]
         lisp2py = fmap L.toPY . U.catch . liftM (L.translate <$>) . readExpr
 
-readExpr :: String -> Either U.CompilerError [U.LispVal]
-readExpr input = case parse P.parseExpr "lisp-py" input of
+readExpr :: String -> Either U.CompilerError [U.LokiVal]
+readExpr input = case runParser P.parseExpr "py" "lisp-py" input of
                      Left err -> throwError $ U.ParserErr err
                      Right val -> return val

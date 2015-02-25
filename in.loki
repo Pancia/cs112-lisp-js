@@ -1,11 +1,13 @@
-#test-sof
-(def y "y")#test1
 (def hello_world (fn []
-     (print #Added comments everywhere!
-          "foobar")
+     (print "foobar")
      (alert (+ 2 3 5))))
-(def y "y") #test2
-(.click ($ "img") (fn []
-    (alert "img")))
-(print y)
-#test-eof
+(.click ($ "img")
+        (fn []
+          (alert "img")))
+(def printLang (fn []
+(print
+#+py "py"
+#+js "js")))
+(printLang)
+
+(alert #+py "py" #+js "js")

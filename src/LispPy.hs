@@ -11,7 +11,7 @@ import Data.Char (toLower)
 import Utils
 
 formatPy :: [String] -> IO String
-formatPy py = do helperFns <- readFile "helperFunctions.py"
+formatPy py = do helperFns <- readFile "src/helperFunctions.py"
                  let py' = L.intercalate "\n" py
                  return $ helperFns ++ py'
 

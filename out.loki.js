@@ -72,13 +72,15 @@ var loki = (function (){
     return loki;
 })();
 //END HELPER FUNCTIONS
-var y = "y";
 var hello_world = function () {
 loki.print("foobar");
 return alert(loki.plus(2, 3, 5))
 };
-var y = "y";
 $("img").click(function () {
 return alert("img")
 });
-loki.print(y);
+var printLang = function () {
+return loki.print("js")
+};
+printLang();
+alert("js");

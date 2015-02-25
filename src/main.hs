@@ -8,17 +8,15 @@ import System.IO
 import System.Process
 import System.Console.GetOpt
 
-import Text.Parsec (parse)
+import Text.Parsec (runParser)
 import Control.Monad.Except (throwError)
 import Data.Char (toLower)
 
 import qualified LispJs as JS
 import qualified LispPy as PY
+import Utils(OutputType(JS,PY))
 import qualified Utils as U
 import qualified Parser as P
-
-data OutputType = JS | PY
-                deriving (Show)
 
 data Options = Options  {
     optInput  :: String,
@@ -44,11 +42,7 @@ options = [Option "i" ["input"]     (ReqArg readInput "FILE")     "input file"
           ,Option "t" ["type"]      (ReqArg readOutputType "type") "output file type"]
 
 readOutputType :: String -> Options -> Options
-readOutputType arg opts = opts {optType = type_}
-        where type_ = case toLower <$> arg of
-                          "js" -> JS
-                          "py" -> PY
-                          _ -> error $ "invalid outputType: " ++ arg
+readOutputType arg opts = opts {optType = read arg}
 
 readLispExpr :: String -> Options -> Options
 readLispExpr arg opts = opts {optLisp = arg}
@@ -73,9 +67,9 @@ main = do args <- getArgs
           printDivider
 
           lispVals <- if null $ optLisp opts
-                          then liftM readExpr . readFile $ optInput opts
-                          else return . readExpr $ optLisp opts
-          --Show lisp after parsing
+                          then liftM (readExpr outType) . readFile $ optInput opts
+                          else return . readExpr outType $ optLisp opts
+          --Show lokiVal
           putStrLn . ((prefix ++ "lispVals:\n") ++) . U.catch . liftM show $ lispVals
           printDivider
           --Convert to outType
@@ -83,34 +77,37 @@ main = do args <- getArgs
                      JS -> do let jsVals = U.catch . liftM (JS.translate <$>) $ lispVals
                               putStrLn $ prefix ++ "jsVals:\n" ++ show jsVals
                               printDivider
-                              JS.formatJs $ JS.toJS <$> jsVals
+                              JS.formatJs . filter (/= "") $ JS.toJS <$> jsVals
                      PY -> do let pyVals = U.catch . liftM (PY.translate <$>) $ lispVals
                               putStrLn $ prefix ++ "pyVals:\n" ++ show pyVals
                               printDivider
                               PY.formatPy $ PY.toPY <$> pyVals
-          --Print src
+          --Print out.loki.*
           putStrLn $ prefix ++ "" ++ outFile ++ ":\n" ++ src
           printDivider
           --Write src to outFile
           writeFile outFile src
-
-          --Execute src, printing its result
-          print =<< ("stdout: " ++) <$> execSrc outType outFile
+          --Switch on outType:
+          case outType of
+              --Open test.html in the default browser
+              JS -> void $ openInBrowser "test.html"
+              --Execute src, printing its result
+              PY -> print =<< ("stdout: " ++) <$> execSrc outType outFile
     where
-        prefix :: String
+        openInBrowser url = createProcess $ proc (U.caseWindowsOrOther "explorer" "open") [url]
         prefix = ">>"
 
 execSrc :: OutputType -> String -> IO String
 execSrc outType file = do let exe = case outType of
-                                     JS -> U.getJsExecProgName
+                                     JS -> U.caseWindowsOrOther "cscript" "jsc"
                                      PY -> "python"
                           (_, Just hout, _, _) <- createProcess $ (proc exe [file]) { std_out = CreatePipe }
                           hGetContents hout
 
-readExpr :: String -> Either U.CompilerError [U.LokiVal]
-readExpr input = case parse P.parseExpr "lisp-js" input of
-                     Left err -> throwError $ U.ParserErr err
-                     Right val -> return val
+readExpr :: OutputType -> String -> Either U.CompilerError [U.LokiVal]
+readExpr outType input = case runParser P.parseExpr (show outType) "lisp-js" input of
+                             Left err -> throwError $ U.ParserErr err
+                             Right val -> return val
 
 printDivider :: IO ()
 printDivider = putStrLn . take 60 $ repeat '#'

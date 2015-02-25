@@ -1,6 +1,7 @@
 module Parser where
 
 import qualified Data.Map as M
+import Data.Maybe (fromMaybe)
 import Control.Applicative hiding ((<|>), many, Const)
 import Control.Monad.Identity
 
@@ -8,39 +9,52 @@ import Text.Parsec hiding (spaces)
 
 import Utils
 
-type Parser a = ParsecT String () Identity a
+type Parser a = ParsecT String String Identity a
 
 parseExpr :: Parser [LokiVal]
 parseExpr = many1 $ try (parseExpr1 <* spaces)
 
 parseExpr1 :: Parser LokiVal
 parseExpr1 = do void $ many comment
+                tag <- optionMaybe parseAnnotation
+                s <- getState
+                let meta = fromMaybe (M.singleton "fileType" s) $ M.singleton "fileType" <$> tag
                 lispVal <- try parseDef
                        <|> try parseClass
-                       <|> parseBasicExpr
+                       <|> parseBasicExpr1
                 void $ many comment
-                return lispVal
+                return $ setMeta meta lispVal
 
-parseBasicExpr :: Parser LokiVal
-parseBasicExpr = do void $ many comment
-                    lispVal <- try parseAtom
-                           <|> try parseString
-                           <|> try parseNumber
-                           <|> try parseQuoted
-                           <|> try parseDotProp
-                           <|> try parseDotFunc
-                           <|> try parseFn
-                           <|> try parseNew
-                           <|> try parseMap
-                           <|> try parseList
-                    void $ many comment
-                    return lispVal
+parseBasicExpr1 :: Parser LokiVal
+parseBasicExpr1 = do void $ many comment
+                     meta <- getFileType
+                     lispVal <- try parseAtom
+                            <|> try parseString
+                            <|> try parseNumber
+                            <|> try parseQuoted
+                            <|> try parseDotProp
+                            <|> try parseDotFunc
+                            <|> try parseFn
+                            <|> try parseNew
+                            <|> try parseMap
+                            <|> try parseList
+                     void $ many comment
+                     return $ setMeta meta lispVal
+
+getFileType :: Parser Meta
+getFileType =  do tag <- optionMaybe parseAnnotation
+                  s <- getState
+                  return . fromMaybe (M.singleton "fileType" s) $ M.singleton "fileType" <$> tag
+
+parseAnnotation :: Parser String
+parseAnnotation = string "#+" >> many1 letter <* spaces
 
 parseMap :: Parser LokiVal
 parseMap = between (char '{') (char '}') $ do
     keyVals <- manyTill parseKeyVal (lookAhead (char '}'))
     let (keys, vals) = foldl (\(ks, vs) (k, v) -> (k:ks, v:vs)) ([],[]) keyVals
-    return $ Map M.empty keys vals
+    s <- getState
+    return $ Map (M.singleton "fileType" s) keys vals
 
 parseKeyVal :: Parser (String, LokiVal)
 parseKeyVal = do
@@ -52,16 +66,18 @@ parseDotProp :: Parser LokiVal
 parseDotProp = between (char '(') (char ')') $ do
     void $ string "."
     propName <- ident <* spaces1
-    objName <- parseBasicExpr <* spaces1
-    return $ Dot M.empty propName objName []
+    objName <- parseBasicExpr1 <* spaces1
+    s <- getState
+    return $ Dot (M.singleton "fileType" s) propName objName []
 
 parseDotFunc :: Parser LokiVal
 parseDotFunc = between (char '(') (char ')') $ do
     void $ string "."
     funcName <- ident <* spaces1
-    objName <- parseBasicExpr <* spaces1
+    objName <- parseBasicExpr1 <* spaces1
     params <- parseExpr
-    return $ Dot M.empty funcName objName params
+    s <- getState
+    return $ Dot (M.singleton "fileType" s) funcName objName params
 
 parseClass :: Parser LokiVal
 parseClass = between (char '(') (char ')') $ do
@@ -70,40 +86,46 @@ parseClass = between (char '(') (char ')') $ do
     cnstr <- parseConst <* spaces
     classFns <- many . try $ parseClassFn <* spaces
     classVars <- many . try $ parseVars <* spaces
-    return $ DefClass M.empty className cnstr classFns classVars
+    s <- getState
+    return $ DefClass (M.singleton "fileType" s) className cnstr classFns classVars
 
 parseClassFn :: Parser LokiVal
 parseClassFn = between (char '(') (char ')') $ do
     fnName <- ident <* spaces1
-    params <- parseArgs <* spaces
+    args <- parseArgs <* spaces
     body <- parseExpr1
-    return $ Classfn M.empty fnName params body
+    s <- getState
+    return $ Classfn (M.singleton "fileType" s) fnName args body
 
 parseVars :: Parser LokiVal
 parseVars = between (char '(') (char ')') $ do
     varName <- ident <* spaces1
     body <- parseExpr1
-    return $ Classvar M.empty varName body
+    s <- getState
+    return $ Classvar (M.singleton "fileType" s) varName body
 
 parseConst :: Parser LokiVal
 parseConst = between (char '(') (char ')') $ do
     params <- parseArgs <* spaces
     body <- parseExpr1
-    return $ Const M.empty params body
+    s <- getState
+    return $ Const (M.singleton "fileType" s) params body
 
 parseNew :: Parser LokiVal
 parseNew = between (char '(') (char ')') $ do
     string "new" >> spaces1
     className <- ident <* spaces1
     body <- parseExpr
-    return $ New M.empty className body
+    s <- getState
+    return $ New (M.singleton "fileType" s) className body
 
 parseFn :: Parser LokiVal
 parseFn = between (char '(') (char ')') $ do
     string "fn" >> spaces1
     params <- parseArgs <* spaces
     body <- parseExpr
-    return $ Fn M.empty params body
+    s <- getState
+    return $ Fn (M.singleton "fileType" s) params body
 
 parseArgs :: Parser [String]
 parseArgs = between (char '[') (char ']')
@@ -115,7 +137,8 @@ parseDef = between (char '(') (char ')') $ do
     string "def" >> spaces1
     name <- ident <* spaces1
     body <- parseExpr1
-    return $ Def M.empty name body
+    s <- getState
+    return $ Def (M.singleton "fileType" s) name body
 
 parseAtom :: Parser LokiVal
 parseAtom = do atom <- ident
@@ -128,23 +151,27 @@ parseString :: Parser LokiVal
 parseString = do void $ char '"'
                  x <- many (noneOf "\"")
                  void $ char '"'
-                 return $ String M.empty x
+                 s <- getState
+                 return $ String (M.singleton "fileType" s) x
 
 parseNumber :: Parser LokiVal
-parseNumber = liftM (Number M.empty . read) $ many1 digit
+parseNumber = do s <- getState
+                 liftM (Number (M.singleton "fileType" s) . read) $ many1 digit
 
 parseQuoted :: Parser LokiVal
 parseQuoted = do void $ char '\''
                  toQuote <- parseExpr1
-                 let m = getMetaData toQuote
+                 let m = getMeta toQuote
                      toQuote' = case toQuote of
                               (List _ [l]) -> l
                               x -> x
-                 return $ List m [Atom M.empty "quote", toQuote']
+                 s <- getState
+                 return $ List m [Atom (M.singleton "fileType" s) "quote", toQuote']
 
 parseList :: Parser LokiVal
-parseList = List M.empty <$> between (char '(') (char ')')
-                              (sepBy parseExpr1 spaces1)
+parseList = do s <- getState
+               List (M.singleton "fileType" s) <$> between (char '(') (char ')')
+                                                      (sepBy parseExpr1 spaces1)
 
 -----HELPER PARSERS-----
 ident :: Parser String
@@ -165,4 +192,4 @@ spaces1 :: Parser ()
 spaces1 = skipMany1 space'
 
 comment :: Parser ()
-comment = string "#" >>= void . return (manyTill anyChar newline)
+comment = string ";" >>= void . return (manyTill anyChar newline)

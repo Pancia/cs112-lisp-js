@@ -33,7 +33,7 @@ lookupSpecForm :: String -> Maybe SpecialForm
 lookupSpecForm s = M.lookup s specialForms
 
 formatJs :: [String] -> IO String
-formatJs js = do helperFns <- readFile "helperFunctions.js"
+formatJs js = do helperFns <- readFile "src/helperFunctions.js"
                  let js' = (++ ";") . L.intercalate ";\n" $ js
                  return $ helperFns ++ js'
 
@@ -50,26 +50,29 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsConst [String] JsVal                  -- Class(..) {..}
            | JsClassFn String [String] JsVal         -- Class.prototype.fn = function(..){..}
            | JsClassVar String JsVal                 -- Class(..) {this.var = val}
-           | JsDotThing String JsVal [JsVal]        -- .function objname parameters*
+           | JsDotThing String JsVal [JsVal]         -- .function objname parameters*
            | JsList [JsVal]                          -- [] | [x,..]
+           | JsPleaseIgnore
            deriving (Eq, Show)
 
 translate :: LokiVal -> JsVal
-translate v = case v of
-                  (Atom _ a) -> JsId a
-                  (Bool _ b) -> JsBool b
-                  (Def _ n b) -> JsVar n (translate b)
-                  (Fn _ xs b) -> JsFn xs (translate <$> b)
-                  l@(List {}) -> list2jsVal l
-                  (Number _ n) -> JsNum n
-                  (String _ s) -> JsStr s
-                  (New _ s l) -> JsNewObj s (translate <$> l)
-                  (DefClass _ n c lf lv) -> JsDefClass n (translate c) (translate <$> lf) (translate <$> lv)
-                  (Const _ s b) -> JsConst s (translate b)
-                  (Classfn _ s p b) -> JsClassFn s p (translate b)
-                  (Classvar _ s b) -> JsClassVar s (translate b)
-                  (Dot _ fp on ps) -> JsDotThing fp (translate on) (translate <$> ps)
-                  (Map _ ks vs) -> JsMap ks (translate <$> vs)
+translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
+                  then JsPleaseIgnore
+                  else case v of
+                           (Atom _ a) -> JsId a
+                           (Bool _ b) -> JsBool b
+                           (Def _ n b) -> JsVar n (translate b)
+                           (Fn _ xs b) -> JsFn xs (translate <$> b)
+                           l@(List {}) -> list2jsVal l
+                           (Number _ n) -> JsNum n
+                           (String _ s) -> JsStr s
+                           (New _ s l) -> JsNewObj s (translate <$> l)
+                           (DefClass _ n c lf lv) -> JsDefClass n (translate c) (translate <$> lf) (translate <$> lv)
+                           (Const _ s b) -> JsConst s (translate b)
+                           (Classfn _ s p b) -> JsClassFn s p (translate b)
+                           (Classvar _ s b) -> JsClassVar s (translate b)
+                           (Dot _ fp on ps) -> JsDotThing fp (translate on) (translate <$> ps)
+                           (Map _ ks vs) -> JsMap ks (translate <$> vs)
     where
         list2jsVal :: LokiVal -> JsVal
         list2jsVal l = case l of
@@ -79,6 +82,8 @@ translate v = case v of
                         (List _ xs) -> JsList $ translate <$> xs
                         x -> catch . throwError $ TypeMismatch "List" $ show x
 
+-- TODO: Change to ... -> Maybe String,
+-- so that JsPleaseIgnore can be ignored
 toJS :: JsVal -> String
 toJS jv = case jv of
               a@(JsId{})       -> id2js a
@@ -92,6 +97,7 @@ toJS jv = case jv of
               d@(JsDotThing{}) -> dot2js d
               d@(JsDefClass{}) -> defclass2js d
               m@(JsMap{})      -> map2js m
+              JsPleaseIgnore -> ""
               x -> error "JsVal=(" ++ show x ++ ") should not be toJS'ed"
 
 map2js :: JsVal -> String
@@ -118,7 +124,7 @@ fnCall2js :: JsVal -> String
 fnCall2js (JsFnCall fn args)
         | isJust specForm = fromJust specForm args
         | otherwise = lookupFn fn ++ "(" ++ args' ++ ")"
-    where args' = L.intercalate ", " $ toJS <$> args
+    where args' = L.intercalate ", " . filter (/= "") $ toJS <$> args
           specForm = lookupSpecForm fn
 fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
 
@@ -126,7 +132,7 @@ dot2js :: JsVal -> String
 dot2js (JsDotThing fp on ps)
         | ps /= [] = toJS on ++ "." ++ fp ++ "(" ++ args' ++ ")"
 		| otherwise = toJS on ++ "." ++ fp
-     where args' = L.intercalate ", " $ toJS <$> ps
+     where args' = L.intercalate ", " . filter (/= "") $ toJS <$> ps
 dot2js x = catch . throwError . TypeMismatch "JsDotThing" $ show x
 
 id2js :: JsVal -> String
