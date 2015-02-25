@@ -2,25 +2,45 @@ module Utils where
 
 import Text.Parsec
 import Control.Monad.Except
-import Control.Applicative
+import Control.Applicative hiding (Const)
 
 import System.Info (os)
+import Data.Map as M
 
-data LispVal = Atom String
-             | List [LispVal]
-             | Number Integer
-             | String String
-             | Bool Bool
-             | Def String LispVal
-             | Fn [String] [LispVal]
-             | Map [String] [LispVal]
-             | New String [LispVal]
-             | Dot String LispVal [LispVal]
-             | DefClass String LispVal [LispVal] [LispVal]
-             | Const [String] LispVal
-             | Classfn String [String] LispVal
-             | Classvar String LispVal
+type MetaData = M.Map String String
+-- TODO: Change to record syntax, so getMetaData is cleaner?
+data LispVal = Atom MetaData String
+             | List MetaData [LispVal]
+             | Number MetaData Integer
+             | String MetaData String
+             | Bool MetaData Bool
+             | Def MetaData String LispVal
+             | Fn MetaData [String] [LispVal]
+             | Map MetaData [String] [LispVal]
+             | New MetaData String [LispVal]
+             | Dot MetaData String LispVal [LispVal]
+             | DefClass MetaData String LispVal [LispVal] [LispVal]
+             | Const MetaData [String] LispVal
+             | Classfn MetaData String [String] LispVal
+             | Classvar MetaData String LispVal
              deriving (Eq, Show)
+
+getMetaData :: LispVal -> MetaData
+getMetaData x = case x of
+                    Atom m _ -> m
+                    List m _ -> m
+                    Number m _ -> m
+                    String m _ -> m
+                    Bool m _ -> m
+                    Def m _ _ -> m
+                    Fn m _ _ -> m
+                    Map m _ _ -> m
+                    New m _ _ -> m
+                    Dot m _ _ _ -> m
+                    DefClass m _ _ _ _ -> m
+                    Const m _ _ -> m
+                    Classfn m _ _ _ -> m
+                    Classvar m _ _ -> m
 
 data CompilerError = NumArgs        Integer [String]
                    | TypeMismatch   String String

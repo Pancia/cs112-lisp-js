@@ -56,28 +56,27 @@ data JsVal = JsVar String JsVal                      -- var x = ..
 
 translate :: LispVal -> JsVal
 translate v = case v of
-                  (Atom a) -> JsId a
-                  (Bool b) -> JsBool b
-                  (Def n b) -> JsVar n (translate b)
-                  (Fn xs b) -> JsFn xs (translate <$> b)
-                  l@(List _) -> list2jsVal l
-                  (Number n) -> JsNum n
-                  (String s) -> JsStr s
-                  (New s l) -> JsNewObj s (translate <$> l)
-                  (DefClass n c lf lv) -> JsDefClass n (translate c) (translate <$> lf) (translate <$> lv)
-                  (Const s b) -> JsConst s (translate b)
-                  (Classfn s p b) -> JsClassFn s p (translate b)
-                  (Classvar s b) -> JsClassVar s (translate b)
-                  (Dot fp on ps) -> JsDotThing fp (translate on) (translate <$> ps)
-                  (Map ks vs) -> JsMap ks (translate <$> vs)
-
+                  (Atom _ a) -> JsId a
+                  (Bool _ b) -> JsBool b
+                  (Def _ n b) -> JsVar n (translate b)
+                  (Fn _ xs b) -> JsFn xs (translate <$> b)
+                  l@(List {}) -> list2jsVal l
+                  (Number _ n) -> JsNum n
+                  (String _ s) -> JsStr s
+                  (New _ s l) -> JsNewObj s (translate <$> l)
+                  (DefClass _ n c lf lv) -> JsDefClass n (translate c) (translate <$> lf) (translate <$> lv)
+                  (Const _ s b) -> JsConst s (translate b)
+                  (Classfn _ s p b) -> JsClassFn s p (translate b)
+                  (Classvar _ s b) -> JsClassVar s (translate b)
+                  (Dot _ fp on ps) -> JsDotThing fp (translate on) (translate <$> ps)
+                  (Map _ ks vs) -> JsMap ks (translate <$> vs)
     where
         list2jsVal :: LispVal -> JsVal
         list2jsVal l = case l of
-                        (List [Atom "quote", ql]) -> translate ql
-                        (List [Atom a]) -> JsFnCall a []
-                        (List (Atom a:(arg:args))) -> JsFnCall a $ translate <$> (arg:args)
-                        (List xs) -> JsList $ translate <$> xs
+                        (List _ [Atom _ "quote", ql]) -> translate ql
+                        (List _ [Atom _ a]) -> JsFnCall a []
+                        (List _ (Atom _ a:(arg:args))) -> JsFnCall a $ translate <$> (arg:args)
+                        (List _ xs) -> JsList $ translate <$> xs
                         x -> catch . throwError $ TypeMismatch "List" $ show x
 
 toJS :: JsVal -> String
@@ -109,7 +108,7 @@ defclass2js (JsDefClass name (JsConst args ret) fns vars) =
           ret2js (JsMap ks vs) = L.intercalate ";\n" $ zipWith (\k v -> "this." ++ k ++ " = " ++ toJS v) ks vs
           ret2js x = error . show $ x
           classVars2js :: [JsVal] -> String
-          classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b)  -> "this." ++ s ++ " = " ++ toJS b)
+          classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b) -> "this." ++ s ++ " = " ++ toJS b)
           fns2js :: [JsVal] -> String
           fns2js = (++ "\n}") . L.intercalate "\n};\n" . map(\(JsClassFn fn pms ob ) -> name ++ ".prototype." ++ fn ++
                     " = function(" ++ L.intercalate ", " pms ++ ") {\n return " ++  toJS ob)

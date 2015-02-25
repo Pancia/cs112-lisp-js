@@ -1,24 +1,14 @@
 var loki = (function (){
     var loki = {};
 
-    loki.print = function() {
-        var _log = function(x) {
-            if (typeof(console) === "object")
-            {console.log(x);} else {print(x);}
-        };
-        var args = sliceArgs(arguments);
-        args.forEach(_log);
-    };
-
-    loki.get = function(e, i) {return e[i];};
-
     var sliceArgs = function (args) {
         return args.length > 0 ? [].slice.call(args, 0) : [];
     };
 
     var assertIsFunction = function (f) {
-        if (typeof(f) !== "function")
+        if (typeof f !== "function")
         {throw "loki error: curry expected a function"}
+        return f;
     };
 
     var curry = function (fn) {
@@ -53,11 +43,23 @@ var loki = (function (){
         return acc;
     });
 
+    loki.print = function() {
+        var _log = function(x) {
+            if (typeof console === "object") {console.log(x);}
+            else {assertIsFunction(print)(x);}
+        };
+        var args = sliceArgs(arguments);
+        args.forEach(_log);
+    };
+    loki.get = function(e, i) {return e[i];};
+
+    //Arithmetic
     loki.plus  = curry(function(x, y) {return x + y});
     loki.minus = curry(function(x, y) {return x - y});
     loki.mult  = curry(function(x, y) {return x * y});
     loki.div   = curry(function(x, y) {return x / y});
 
+    //Logic
     loki.and = curry(function(x, y) {return x && y});
     loki.or  = curry(function(x, y) {return x || y});
     loki.eq  = curry(function(x, y) {return x == y});

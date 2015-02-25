@@ -51,24 +51,24 @@ data PyVal = PyVar String PyVal                -- x = ...
 
 translate :: LispVal -> PyVal
 translate v = case v of
-                  (Atom a) -> PyId a
-                  (Number n) -> PyNum n
-                  (String s) -> PyStr s
-                  (Bool b) -> PyBool b
-                  (Def n b) -> PyVar n (translate b)
-                  (Fn xs b) -> PyFn xs (translate <$> b)
-                  (New s l) -> PyNewObj s (translate <$> l)
-                  (DefClass n c lf lv) -> PyDefClass n (translate c) (translate <$> lf) (translate <$> lv)
-                  (Const s b) -> PyConst s (translate b)
-                  (Classfn s p b) -> PyClassFn s p (translate b)
-                  (Classvar s b) -> PyClassVar s (translate b)
-                  l@(List _) -> list2pyVal l
-                  (Dot fp on ps) -> PyObjCall fp (translate on) (translate <$> ps)
+                  (Atom _ a) -> PyId a
+                  (Number _ n) -> PyNum n
+                  (String _ s) -> PyStr s
+                  (Bool _ b) -> PyBool b
+                  (Def _ n b) -> PyVar n (translate b)
+                  (Fn _ xs b) -> PyFn xs (translate <$> b)
+                  (New _ s l) -> PyNewObj s (translate <$> l)
+                  (DefClass _ n c lf lv) -> PyDefClass n (translate c) (translate <$> lf) (translate <$> lv)
+                  (Const _ s b) -> PyConst s (translate b)
+                  (Classfn _ s p b) -> PyClassFn s p (translate b)
+                  (Classvar _ s b) -> PyClassVar s (translate b)
+                  l@(List{}) -> list2pyVal l
+                  (Dot _ fp on ps) -> PyObjCall fp (translate on) (translate <$> ps)
                   _ -> PyThing $ show v
       where
         list2pyVal :: LispVal -> PyVal
         list2pyVal l = case l of
-                           (List (Atom a:args)) -> PyFnCall a $ translate <$> args
+                           (List _ (Atom _ a:args)) -> PyFnCall a $ translate <$> args
                            x -> catch . throwError . TypeMismatch "List" $ show x
 
 toPY :: PyVal -> String
