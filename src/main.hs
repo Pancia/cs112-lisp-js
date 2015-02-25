@@ -67,35 +67,38 @@ main = do args <- getArgs
               outFile = if '.' `elem` tail (optOutput opts)
                             then optOutput opts
                             else optOutput opts ++ "." ++ fileType ++ "." ++ (toLower <$> show outType)
-          putStrLn $ ">>opts: " ++ show opts
-          putStrLn $ ">>nonOpts: " ++ show nonOpts
-          putStrLn $ ">>msgs: " ++ show msgs
+          putStrLn $ prefix ++ "opts: " ++ show opts
+          putStrLn $ prefix ++ "nonOpts: " ++ show nonOpts
+          putStrLn $ prefix ++ "msgs: " ++ show msgs
           printDivider
 
           lispVals <- if null $ optLisp opts
                           then liftM readExpr . readFile $ optInput opts
                           else return . readExpr $ optLisp opts
           --Show lisp after parsing
-          putStrLn . (">>lispVals:\n" ++) . U.catch . liftM show $ lispVals
+          putStrLn . ((prefix ++ "lispVals:\n") ++) . U.catch . liftM show $ lispVals
           printDivider
           --Convert to outType
           src <- case outType of
                      JS -> do let jsVals = U.catch . liftM (JS.translate <$>) $ lispVals
-                              putStrLn $ ">>jsVals:\n" ++ show jsVals
+                              putStrLn $ prefix ++ "jsVals:\n" ++ show jsVals
                               printDivider
                               JS.formatJs $ JS.toJS <$> jsVals
                      PY -> do let pyVals = U.catch . liftM (PY.translate <$>) $ lispVals
-                              putStrLn $ ">>pyVals:\n" ++ show pyVals
+                              putStrLn $ prefix ++ "pyVals:\n" ++ show pyVals
                               printDivider
                               PY.formatPy $ PY.toPY <$> pyVals
           --Print src
-          putStrLn $ ">>" ++ outFile ++ ":\n" ++ src
+          putStrLn $ prefix ++ "" ++ outFile ++ ":\n" ++ src
           printDivider
           --Write src to outFile
           writeFile outFile src
 
           --Execute src, printing its result
           print =<< ("stdout: " ++) <$> execSrc outType outFile
+    where
+        prefix :: String
+        prefix = ">>"
 
 execSrc :: OutputType -> String -> IO String
 execSrc outType file = do let exe = case outType of
