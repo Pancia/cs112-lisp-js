@@ -11,17 +11,11 @@ import Data.Char (toLower)
 import Utils
 
 primitives :: M.Map String String
-primitives = M.fromList [("print", "_print")
-                        ,("+", "plus")
-                        ,("-", "minus")
-                        ,("*", "mult")
-                        ,("/", "div")
-                        ,("=", "eq")
-                        ,("!=", "neq")
-                        ,("<", "lt")
-                        ,("<=", "lte")
-                        ,(">", "gt")
-                        ,(">=", "gte")]
+primitives = M.fromList $ fmap addLokiPrefix
+        [("print", "print"),("+", "plus"),("-", "minus"),("*", "mult"),("/", "div"),("=", "eq")
+        ,("!=", "neq"),("<", "lt"),("<=", "lte"),(">", "gt"),(">=", "gte")]
+    where
+        addLokiPrefix (q,s) = (q,"loki." ++ s)
 
 type SpecialForm = [JsVal] -> String
 specialForms :: M.Map String SpecialForm
