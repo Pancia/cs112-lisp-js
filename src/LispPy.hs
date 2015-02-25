@@ -80,6 +80,7 @@ toPY pv = case pv of
               l@(PyList{})          -> list2py l
               (PyVar n b)           -> n ++ " = " ++ toPY b
               f@(PyFn{})            -> fn2py f
+              o@(PyNewObj s a)      -> new2py o
               d@(PyObjCall{})       -> dot2py d
               d@(PyDefClass{})      -> defclass2py d
               (PyFnCall n as)
@@ -88,6 +89,10 @@ toPY pv = case pv of
                   where
                     args = L.intercalate ", " $ toPY <$> as
               _ -> show pv
+
+new2py :: PyVal -> String
+new2py (PyNewObj className args) = className ++ "(" ++ args' ++ ")"
+  where args' = L.intercalate ", " $ toPY <$> args
 
 defclass2py :: PyVal -> String
 defclass2py (PyDefClass name (PyConst args body) _ _vars) = "class " ++ name ++ ":\n"

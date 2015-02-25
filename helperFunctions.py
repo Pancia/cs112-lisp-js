@@ -44,5 +44,4 @@ class Dog:
     def add_trick(self, trick):
         self.tricks.append(trick)
 
-d = Dog('Fido')
 #END HELPER FUNCTIONS
