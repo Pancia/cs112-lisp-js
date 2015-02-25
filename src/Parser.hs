@@ -13,18 +13,21 @@ parseExpr :: Parser [LispVal]
 parseExpr = many1 $ try (parseExpr1 <* spaces)
 
 parseExpr1 :: Parser LispVal
-parseExpr1 = parseAtom
-     <|> try parseString
-     <|> try parseNumber
-     <|> try parseQuoted
-     <|> try parseDotProp
-     <|> try parseDotFunc
-     <|> try parseDef
-     <|> try parseFn
-     <|> try parseNew
-     <|> try parseClass
-     <|> try parseMap
-     <|> try parseList
+parseExpr1 = try parseDef
+         <|> try parseClass
+         <|> parseBasicExpr
+
+parseBasicExpr :: Parser LispVal
+parseBasicExpr = try parseAtom
+             <|> try parseString
+             <|> try parseNumber
+             <|> try parseQuoted
+             <|> try parseDotProp
+             <|> try parseDotFunc
+             <|> try parseFn
+             <|> try parseNew
+             <|> try parseMap
+             <|> try parseList
 
 parseMap :: Parser LispVal
 parseMap = between (char '{') (char '}') $ do
@@ -42,14 +45,14 @@ parseDotProp :: Parser LispVal
 parseDotProp = between (char '(') (char ')') $ do
     void $ string "."
     propName <- ident <* spaces1
-    objName <- ident <* spaces
+    objName <- parseBasicExpr <* spaces1
     return $ Dot propName objName []
 
 parseDotFunc :: Parser LispVal
 parseDotFunc = between (char '(') (char ')') $ do
     void $ string "."
     funcName <- ident <* spaces1
-    objName <- ident <* spaces1
+    objName <- parseBasicExpr <* spaces1
     params <- parseExpr
     return $ Dot funcName objName params
 
@@ -142,7 +145,7 @@ ident = (:) <$> first <*> many rest
           rest  = letter <|> digit <|> symbol
 
 symbol :: Parser Char
-symbol = oneOf ".!#$%&|*+-/:<=>?@^_~"
+symbol = oneOf "!$%&|*+-/<=>?@^_~"
 
 spaces1 :: Parser ()
 spaces1 = skipMany1 space

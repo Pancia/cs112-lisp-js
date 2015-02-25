@@ -56,7 +56,7 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsConst [String] JsVal                  -- Class(..) {..}
            | JsClassFn String [String] JsVal         -- Class.prototype.fn = function(..){..}
            | JsClassVar String JsVal                 -- Class(..) {this.var = val}
-           | JsDotThing String String [JsVal]        -- .function objname parameters*
+           | JsDotThing String JsVal [JsVal]        -- .function objname parameters*
            | JsList [JsVal]                          -- [] | [x,..]
            deriving (Eq, Show)
 
@@ -74,7 +74,7 @@ translate v = case v of
                   (Const s b) -> JsConst s (translate b)
                   (Classfn s p b) -> JsClassFn s p (translate b)
                   (Classvar s b) -> JsClassVar s (translate b)
-                  (Dot fp on ps) -> JsDotThing fp on (translate <$> ps)
+                  (Dot fp on ps) -> JsDotThing fp (translate on) (translate <$> ps)
                   (Map ks vs) -> JsMap ks (translate <$> vs)
 
     where
@@ -131,8 +131,8 @@ fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
 
 dot2js :: JsVal -> String
 dot2js (JsDotThing fp on ps)
-        | ps /= [] = on ++ "." ++ fp ++ "(" ++ args' ++ ")"
-		| otherwise = on ++ "." ++ fp
+        | ps /= [] = toJS on ++ "." ++ fp ++ "(" ++ args' ++ ")"
+		| otherwise = toJS on ++ "." ++ fp
      where args' = L.intercalate ", " $ toJS <$> ps
 dot2js x = catch . throwError . TypeMismatch "JsDotThing" $ show x
 

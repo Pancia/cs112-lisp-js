@@ -1,4 +1,6 @@
-(def d (new Dog "fido"))
-(print (.name d))
-(d.add_trick "roll over")
-(print (.tricks d))
+(def y "y")
+(def hello_world (fn []
+	(alert (+ 2 3))))
+(def y "y")
+(.click ($ "img") (fn []
+				(alert "img")))

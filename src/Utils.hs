@@ -15,7 +15,7 @@ data LispVal = Atom String
              | Fn [String] [LispVal]
              | Map [String] [LispVal]
              | New String [LispVal]
-             | Dot String String [LispVal]
+             | Dot String LispVal [LispVal]
              | DefClass String LispVal [LispVal] [LispVal]
              | Const [String] LispVal
              | Classfn String [String] LispVal
