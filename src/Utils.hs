@@ -9,23 +9,23 @@ import Data.Map as M
 
 type MetaData = M.Map String String
 -- TODO: Change to record syntax, so getMetaData is cleaner?
-data LispVal = Atom MetaData String
-             | List MetaData [LispVal]
+data LokiVal = Atom MetaData String
+             | List MetaData [LokiVal]
              | Number MetaData Integer
              | String MetaData String
              | Bool MetaData Bool
-             | Def MetaData String LispVal
-             | Fn MetaData [String] [LispVal]
-             | Map MetaData [String] [LispVal]
-             | New MetaData String [LispVal]
-             | Dot MetaData String LispVal [LispVal]
-             | DefClass MetaData String LispVal [LispVal] [LispVal]
-             | Const MetaData [String] LispVal
-             | Classfn MetaData String [String] LispVal
-             | Classvar MetaData String LispVal
+             | Def MetaData String LokiVal
+             | Fn MetaData [String] [LokiVal]
+             | Map MetaData [String] [LokiVal]
+             | New MetaData String [LokiVal]
+             | Dot MetaData String LokiVal [LokiVal]
+             | DefClass MetaData String LokiVal [LokiVal] [LokiVal]
+             | Const MetaData [String] LokiVal
+             | Classfn MetaData String [String] LokiVal
+             | Classvar MetaData String LokiVal
              deriving (Eq, Show)
 
-getMetaData :: LispVal -> MetaData
+getMetaData :: LokiVal -> MetaData
 getMetaData x = case x of
                     Atom m _ -> m
                     List m _ -> m

@@ -101,7 +101,7 @@ execSrc outType file = do let exe = case outType of
                           (_, Just hout, _, _) <- createProcess $ (proc exe [file]) { std_out = CreatePipe }
                           hGetContents hout
 
-readExpr :: String -> Either U.CompilerError [U.LispVal]
+readExpr :: String -> Either U.CompilerError [U.LokiVal]
 readExpr input = case parse P.parseExpr "lisp-js" input of
                      Left err -> throwError $ U.ParserErr err
                      Right val -> return val

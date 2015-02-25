@@ -49,7 +49,7 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyThing String                    -- ???
            deriving (Eq, Show)
 
-translate :: LispVal -> PyVal
+translate :: LokiVal -> PyVal
 translate v = case v of
                   (Atom _ a) -> PyId a
                   (Number _ n) -> PyNum n
@@ -66,7 +66,7 @@ translate v = case v of
                   (Dot _ fp on ps) -> PyObjCall fp (translate on) (translate <$> ps)
                   _ -> PyThing $ show v
       where
-        list2pyVal :: LispVal -> PyVal
+        list2pyVal :: LokiVal -> PyVal
         list2pyVal l = case l of
                            (List _ (Atom _ a:args)) -> PyFnCall a $ translate <$> args
                            x -> catch . throwError . TypeMismatch "List" $ show x

@@ -10,10 +10,10 @@ import Utils
 
 type Parser a = ParsecT String () Identity a
 
-parseExpr :: Parser [LispVal]
+parseExpr :: Parser [LokiVal]
 parseExpr = many1 $ try (parseExpr1 <* spaces)
 
-parseExpr1 :: Parser LispVal
+parseExpr1 :: Parser LokiVal
 parseExpr1 = do void $ many comment
                 lispVal <- try parseDef
                        <|> try parseClass
@@ -21,7 +21,7 @@ parseExpr1 = do void $ many comment
                 void $ many comment
                 return lispVal
 
-parseBasicExpr :: Parser LispVal
+parseBasicExpr :: Parser LokiVal
 parseBasicExpr = do void $ many comment
                     lispVal <- try parseAtom
                            <|> try parseString
@@ -36,26 +36,26 @@ parseBasicExpr = do void $ many comment
                     void $ many comment
                     return lispVal
 
-parseMap :: Parser LispVal
+parseMap :: Parser LokiVal
 parseMap = between (char '{') (char '}') $ do
     keyVals <- manyTill parseKeyVal (lookAhead (char '}'))
     let (keys, vals) = foldl (\(ks, vs) (k, v) -> (k:ks, v:vs)) ([],[]) keyVals
     return $ Map M.empty keys vals
 
-parseKeyVal :: Parser (String, LispVal)
+parseKeyVal :: Parser (String, LokiVal)
 parseKeyVal = do
     key <- ident <* spaces1
     val <- parseExpr1 <* spaces
     return (key, val)
 
-parseDotProp :: Parser LispVal
+parseDotProp :: Parser LokiVal
 parseDotProp = between (char '(') (char ')') $ do
     void $ string "."
     propName <- ident <* spaces1
     objName <- parseBasicExpr <* spaces1
     return $ Dot M.empty propName objName []
 
-parseDotFunc :: Parser LispVal
+parseDotFunc :: Parser LokiVal
 parseDotFunc = between (char '(') (char ')') $ do
     void $ string "."
     funcName <- ident <* spaces1
@@ -63,7 +63,7 @@ parseDotFunc = between (char '(') (char ')') $ do
     params <- parseExpr
     return $ Dot M.empty funcName objName params
 
-parseClass :: Parser LispVal
+parseClass :: Parser LokiVal
 parseClass = between (char '(') (char ')') $ do
     string "defclass" >> spaces1
     className <- ident <* spaces1
@@ -72,33 +72,33 @@ parseClass = between (char '(') (char ')') $ do
     classVars <- many . try $ parseVars <* spaces
     return $ DefClass M.empty className cnstr classFns classVars
 
-parseClassFn :: Parser LispVal
+parseClassFn :: Parser LokiVal
 parseClassFn = between (char '(') (char ')') $ do
     fnName <- ident <* spaces1
     params <- parseArgs <* spaces
     body <- parseExpr1
     return $ Classfn M.empty fnName params body
 
-parseVars :: Parser LispVal
+parseVars :: Parser LokiVal
 parseVars = between (char '(') (char ')') $ do
     varName <- ident <* spaces1
     body <- parseExpr1
     return $ Classvar M.empty varName body
 
-parseConst :: Parser LispVal
+parseConst :: Parser LokiVal
 parseConst = between (char '(') (char ')') $ do
     params <- parseArgs <* spaces
     body <- parseExpr1
     return $ Const M.empty params body
 
-parseNew :: Parser LispVal
+parseNew :: Parser LokiVal
 parseNew = between (char '(') (char ')') $ do
     string "new" >> spaces1
     className <- ident <* spaces1
     body <- parseExpr
     return $ New M.empty className body
 
-parseFn :: Parser LispVal
+parseFn :: Parser LokiVal
 parseFn = between (char '(') (char ')') $ do
     string "fn" >> spaces1
     params <- parseArgs <* spaces
@@ -110,30 +110,30 @@ parseArgs = between (char '[') (char ']')
                     (manyTill (ident <* spaces)
                               (lookAhead (char ']')))
 
-parseDef :: Parser LispVal
+parseDef :: Parser LokiVal
 parseDef = between (char '(') (char ')') $ do
     string "def" >> spaces1
     name <- ident <* spaces1
     body <- parseExpr1
     return $ Def M.empty name body
 
-parseAtom :: Parser LispVal
+parseAtom :: Parser LokiVal
 parseAtom = do atom <- ident
                return $ case atom of
                             "true"  -> Bool M.empty True
                             "false" -> Bool M.empty False
                             _       -> Atom M.empty atom
 
-parseString :: Parser LispVal
+parseString :: Parser LokiVal
 parseString = do void $ char '"'
                  x <- many (noneOf "\"")
                  void $ char '"'
                  return $ String M.empty x
 
-parseNumber :: Parser LispVal
+parseNumber :: Parser LokiVal
 parseNumber = liftM (Number M.empty . read) $ many1 digit
 
-parseQuoted :: Parser LispVal
+parseQuoted :: Parser LokiVal
 parseQuoted = do void $ char '\''
                  toQuote <- parseExpr1
                  let m = getMetaData toQuote
@@ -142,7 +142,7 @@ parseQuoted = do void $ char '\''
                               x -> x
                  return $ List m [Atom M.empty "quote", toQuote']
 
-parseList :: Parser LispVal
+parseList :: Parser LokiVal
 parseList = List M.empty <$> between (char '(') (char ')')
                               (sepBy parseExpr1 spaces1)
 

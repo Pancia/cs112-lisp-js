@@ -54,7 +54,7 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsList [JsVal]                          -- [] | [x,..]
            deriving (Eq, Show)
 
-translate :: LispVal -> JsVal
+translate :: LokiVal -> JsVal
 translate v = case v of
                   (Atom _ a) -> JsId a
                   (Bool _ b) -> JsBool b
@@ -71,7 +71,7 @@ translate v = case v of
                   (Dot _ fp on ps) -> JsDotThing fp (translate on) (translate <$> ps)
                   (Map _ ks vs) -> JsMap ks (translate <$> vs)
     where
-        list2jsVal :: LispVal -> JsVal
+        list2jsVal :: LokiVal -> JsVal
         list2jsVal l = case l of
                         (List _ [Atom _ "quote", ql]) -> translate ql
                         (List _ [Atom _ a]) -> JsFnCall a []
