@@ -3,7 +3,7 @@
 (def hello_world (fn []
      (print #Added comments everywhere!
           "foobar")
-     (alert (+ 2 3))))
+     (alert (+ 2 3 5))))
 (def y "y") #test2
 (.click ($ "img") (fn []
     (alert "img")))

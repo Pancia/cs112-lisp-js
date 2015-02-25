@@ -16,18 +16,13 @@ var loki = (function (){
         return args.length > 0 ? [].slice.call(args, 0) : [];
     };
 
-    var foldl = curry(function (iterator, cumulate, items) {
-        iterator = checkFunction(iterator);
-        fjs.each(function (item, i) {
-            cumulate = iterator.call(null, cumulate, item, i);
-        }, items);
-        return cumulate;
-    });
-
+    var assertIsFunction = function (f) {
+        if (typeof(f) !== "function")
+        {throw "loki error: curry expected a function"}
+    };
 
     var curry = function (fn) {
-        if (!typeof(fn) !== "function")
-        {throw "loki error: curry expected a function"}
+        assertIsFunction(fn);
         return function inner() {
             var _args = sliceArgs(arguments);
             if (_args.length === fn.length) {
@@ -44,19 +39,33 @@ var loki = (function (){
         };
     };
 
-    loki.plus  = loki.curry(function(x, y) {return x + y});
-    loki.minus = loki.curry(function(x, y) {return x - y});
-    loki.mult  = loki.curry(function(x, y) {return x * y});
-    loki.div   = loki.curry(function(x, y) {return x / y});
+    var each = curry(function (iterator, items) {
+        assertIsFunction(iterator);
+        if (items == null || !Array.isArray(items)) {return;}
+        items.forEach(function (e, i) {iterator.call(null, e, i)});
+    });
 
-    loki.and = loki.curry(function(x, y) {return x && y});
-    loki.or  = loki.curry(function(x, y) {return x || y});
-    loki.eq  = loki.curry(function(x, y) {return x == y});
-    loki.neq = loki.curry(function(x, y) {return x != y});
-    loki.lt  = loki.curry(function(x, y) {return x < y});
-    loki.lte = loki.curry(function(x, y) {return x <= y});
-    loki.gt  = loki.curry(function(x, y) {return x > y});
-    loki.gte = loki.curry(function(x, y) {return x >= y});
+    var foldl = curry(function (iterator, acc, xs) {
+        assertIsFunction(iterator);
+        each(function (x, i) {
+            acc = iterator.call(null, acc, x, i);
+        }, xs);
+        return acc;
+    });
+
+    loki.plus  = curry(function(x, y) {return x + y});
+    loki.minus = curry(function(x, y) {return x - y});
+    loki.mult  = curry(function(x, y) {return x * y});
+    loki.div   = curry(function(x, y) {return x / y});
+
+    loki.and = curry(function(x, y) {return x && y});
+    loki.or  = curry(function(x, y) {return x || y});
+    loki.eq  = curry(function(x, y) {return x == y});
+    loki.neq = curry(function(x, y) {return x != y});
+    loki.lt  = curry(function(x, y) {return x < y});
+    loki.lte = curry(function(x, y) {return x <= y});
+    loki.gt  = curry(function(x, y) {return x > y});
+    loki.gte = curry(function(x, y) {return x >= y});
 
     return loki;
 })();
