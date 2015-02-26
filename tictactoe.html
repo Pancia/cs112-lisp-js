@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script type = "text/javascript">
+			var painted;
+			var content;
+			var winningCombos;
+			var turn = 0;
+			var theCanvas;
+			var c;
+			var cxt;
+			var squaresFilled = 0;
+			var w;
+			var y;
+			
+			window.onload = function(){
+				painted = new Array();
+				content = new Array();
+				winningCombos = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+				
+				for(var l = 0; l <= 8; l++){
+					painted[l] = false;
+					content[l] = '';
+				}
+			}
+			
+			function canvasClicked(canvasNum){
+				theCanvas = "canvas" + canvasNum;
+				c = document.getElementById(theCanvas);
+				cxt = c.getContext("2d");
+				
+				if(painted[canvasNum-1] == false){
+					if(turn%2 == 0){
+						cxt.beginPath();
+						cxt.moveTo(10,10);
+						cxt.lineTo(40,40);
+						cxt.moveTo(40,10);
+						cxt.lineTo(10,40);
+						cxt.stroke();
+						cxt.closePath();
+						content[canvasNum-1] = 'X';
+					}
+					else{
+						cxt.beginPath();
+						cxt.arc(25,25,20,0,Math.PI*2,true);
+						cxt.stroke();
+						cxt.closePath();
+						content[canvasNum-1] = 'O';
+					}
+					
+					turn++;
+					painted[canvasNum-1] = true;
+					squaresFilled++;
+					checkForWinners(content[canvasNum-1]);
+					
+					if(squaresFilled == 9){
+						alert("Draw!");
+						location.reload(true);
+					}
+				}
+				else{
+					alert("Invalid move!");
+				}
+			}
+			
+			function checkForWinners(symbol){
+				for(var a = 0; a < winningCombos.length; a++){
+					if(content[winningCombos[a][0]] == symbol && content[winningCombos[a][1]] == symbol && content[winningCombos[a][2]] == symbol){
+						alert(symbol + " won!");
+						playAgain();
+					}
+				}
+			}
+			
+			function playAgain(){
+				y = confirm("Play again?");
+				if(y == true){
+					location.reload(true);
+				}
+			}
+
+		</script>
+	</head>
+	<body>
+		<h1>Tic Tac Toe</h1>
+		<canvas id = "canvas1" width = "50" height = "50" style = "border:1px solid black" onclick = "canvasClicked(1)"></canvas>
+		<canvas id = "canvas2" width = "50" height = "50" style = "border:1px solid black" onclick = "canvasClicked(2)"></canvas>
+		<canvas id = "canvas3" width = "50" height = "50" style = "border:1px solid black" onclick = "canvasClicked(3)"></canvas>
+		<br><canvas id = "canvas4" width = "50" height = "50" style = "border:1px solid black" onclick = "canvasClicked(4)"></canvas>
+		<canvas id = "canvas5" width = "50" height = "50" style = "border:1px solid black" onclick = "canvasClicked(5)"></canvas>
+		<canvas id = "canvas6" width = "50" height = "50" style = "border:1px solid black" onclick = "canvasClicked(6)"></canvas>
+		<br><canvas id = "canvas7" width = "50" height = "50" style = "border:1px solid black" onclick = "canvasClicked(7)"></canvas>
+		<canvas id = "canvas8" width = "50" height = "50" style = "border:1px solid black" onclick = "canvasClicked(8)"></canvas>
+		<canvas id = "canvas9" width = "50" height = "50" style = "border:1px solid black" onclick = "canvasClicked(9)"></canvas>
+	</body>
+</html>
