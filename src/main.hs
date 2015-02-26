@@ -11,18 +11,20 @@ import System.Console.GetOpt
 import Text.Parsec (runParser)
 import Control.Monad.Except (throwError)
 import Data.Char (toLower)
+import Data.Maybe (fromMaybe)
 
 import qualified LispJs as JS
 import qualified LispPy as PY
-import Utils(OutputType(JS,PY))
+import Utils (OutputType(JS,PY))
 import qualified Utils as U
 import qualified Parser as P
 
-data Options = Options  {
+data Options = Options {
     optInput  :: String,
     optOutput :: String,
     optLisp :: String,
-    optType :: OutputType
+    optType :: OutputType,
+    optRun :: Bool
     } deriving (Show)
 
 fileType :: String
@@ -33,31 +35,30 @@ defaultOptions = Options {
     optInput  = "in." ++ fileType,
     optOutput = "out",
     optLisp = "",
-    optType = JS}
+    optType = JS,
+    optRun = True
+    }
 
 options :: [OptDescr (Options -> Options)]
-options = [Option "i" ["input"]     (ReqArg readInput "FILE")     "input file"
-          ,Option "o" ["output"]    (ReqArg readOutput "FILE")    "output filename"
-          ,Option "l" ["lisp-expr"] (ReqArg readLispExpr "stdin") "input lisp s-exprs"
-          ,Option "t" ["type"]      (ReqArg readOutputType "type") "output file type"]
-
-readOutputType :: String -> Options -> Options
-readOutputType arg opts = opts {optType = read arg}
-
-readLispExpr :: String -> Options -> Options
-readLispExpr arg opts = opts {optLisp = arg}
-
-readInput :: String -> Options -> Options
-readInput arg opts = opts {optInput = arg}
-
-readOutput :: String -> Options -> Options
-readOutput arg opts = opts {optOutput = arg}
+options = [Option "i" ["input"]     (ReqArg readInput "FILE")      "input file"
+          ,Option "o" ["output"]    (ReqArg readOutput "FILE")     "output filename"
+          ,Option "l" ["lisp-expr"] (ReqArg readLispExpr "stdin")  "input lisp s-exprs"
+          ,Option "t" ["type"]      (ReqArg readOutputType "type") "output file type"
+          ,Option "c" ["compile"]   (OptArg readRun "compile?")    "should just compile"]
+    where
+        readOutputType arg opts = opts {optType = read arg}
+        readLispExpr arg opts = opts {optLisp = arg}
+        readInput arg opts = opts {optInput = arg}
+        readOutput arg opts = opts {optOutput = arg}
+        readRun arg opts = opts {optRun = readBool $ fromMaybe "no" arg}
+        readBool x = (toLower <$> x) `elem` ["y", "yes", "true"]
 
 main :: IO ()
 main = do args <- getArgs
           let (actions, nonOpts, msgs) = getOpt RequireOrder options args
               opts = foldl (flip ($)) defaultOptions actions
               outType = optType opts
+              outRun = optRun opts
               outFile = if '.' `elem` tail (optOutput opts)
                             then optOutput opts
                             else optOutput opts ++ "." ++ fileType ++ "." ++ (toLower <$> show outType)
@@ -88,11 +89,11 @@ main = do args <- getArgs
           --Write src to outFile
           writeFile outFile src
           --Switch on outType:
-          case outType of
-              --Open test.html in the default browser
-              JS -> void $ openInBrowser "test.html"
-              --Execute src, printing its result
-              PY -> print =<< ("stdout: " ++) <$> execSrc outType outFile
+          when outRun $ case outType of
+                            --Open test.html in the default browser
+                            JS -> void $ openInBrowser "test.html"
+                            --Execute src, printing its result
+                            PY -> print =<< ("stdout: " ++) <$> execSrc outType outFile
     where
         openInBrowser url = createProcess $ proc (U.caseWindowsOrOther "explorer" "open") [url]
         prefix = ">>"

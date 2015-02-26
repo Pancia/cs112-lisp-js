@@ -30,6 +30,7 @@ data LokiVal = Atom Meta String
              | Const Meta [String] LokiVal
              | Classfn Meta String [String] LokiVal
              | Classvar Meta String LokiVal
+             | PleaseIgnore Meta
              deriving (Eq, Show)
 
 getMeta :: LokiVal -> Meta
@@ -48,6 +49,7 @@ getMeta x = case x of
                 Const m _ _ -> m
                 Classfn m _ _ _ -> m
                 Classvar m _ _ -> m
+                PleaseIgnore m -> m
 
 setMeta :: Meta -> LokiVal -> LokiVal
 setMeta m x = case x of
@@ -65,6 +67,7 @@ setMeta m x = case x of
                   Const _ a b -> Const m a b
                   Classfn _ a b c -> Classfn m a b c
                   Classvar _ a b -> Classvar m a b
+                  PleaseIgnore _ -> PleaseIgnore m
 
 data OutputType = JS | PY
                 deriving (Eq, Show)

@@ -13,4 +13,4 @@
 #+js "js")))
 (printLang)
 
-(alert #+py "py" #+js "js")
+(alert (get [0 1 2] 1))

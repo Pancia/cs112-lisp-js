@@ -12,11 +12,13 @@ import Text.Printf (printf)
 import Utils
 
 primitives :: M.Map String String
-primitives = M.fromList $ fmap addLokiPrefix
-        [("print", "print"),("+", "plus"),("-", "minus"),("*", "mult"),("/", "div"),("=", "eq")
+primitives = M.fromList $ fmap addLokiPrefix $
+        [("+", "plus"),("-", "minus"),("*", "mult"),("/", "div"),("=", "eq")
         ,("!=", "neq"),("<", "lt"),("<=", "lte"),(">", "gt"),(">=", "gte")]
+        ++ (dupl <$> ["print","mod","assoc","set","range","get"])
     where
         addLokiPrefix (q,s) = (q,"loki." ++ s)
+        dupl x = (x,x)
 
 type SpecialForm = [JsVal] -> String
 specialForms :: M.Map String SpecialForm
@@ -60,6 +62,7 @@ translate :: LokiVal -> JsVal
 translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                   then JsPleaseIgnore
                   else case v of
+                           (PleaseIgnore _) -> JsPleaseIgnore
                            (Atom _ a) -> JsId a
                            (Bool _ b) -> JsBool b
                            (Def _ n b) -> JsVar n (translate b)
@@ -154,6 +157,7 @@ fn2js (JsFn params body) = printf "function (%s) {\n%s\n}" params' (showBody bod
 fn2js x = catch . throwError . TypeMismatch "JsFn" $ show x
 
 var2js :: JsVal -> String
+var2js (JsVar name JsPleaseIgnore) = printf "var %s" name
 var2js (JsVar name body) = printf "var %s = %s" name (toJS body)
 var2js x = catch . throwError . TypeMismatch "JsVar" $ show x
 
