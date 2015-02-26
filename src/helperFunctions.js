@@ -52,12 +52,16 @@ var loki = (function (){
         args.forEach(_log);
     };
     loki.get = function(e, i) {return e[i];};
+    loki.set = function(x, v) {x = v;};
+    loki.assoc = function(x, i, v) {x[i] = v;};
+    loki.range = function(N) {return Array.apply(null, {length: N}).map(Number.call, Number);};
 
     //Arithmetic
     loki.plus  = curry(function(x, y) {return x + y});
     loki.minus = curry(function(x, y) {return x - y});
     loki.mult  = curry(function(x, y) {return x * y});
     loki.div   = curry(function(x, y) {return x / y});
+    loki.mod   = curry(function(x, y) {return x % y});
 
     //Logic
     loki.and = curry(function(x, y) {return x && y});
