@@ -1,3 +1,6 @@
+(defclass Rocket
+    ([] {})
+    (speed 5))
 (def hello_world (fn []
      (print "foobar")
      (alert (+ 2 3 5))))

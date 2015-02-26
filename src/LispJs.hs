@@ -7,6 +7,7 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Char (toLower)
+import Text.Printf (printf)
 
 import Utils
 
@@ -97,7 +98,7 @@ toJS jv = case jv of
               d@(JsDotThing{}) -> dot2js d
               d@(JsDefClass{}) -> defclass2js d
               m@(JsMap{})      -> map2js m
-              JsPleaseIgnore -> ""
+              JsPleaseIgnore   -> ""
               x -> error "JsVal=(" ++ show x ++ ") should not be toJS'ed"
 
 map2js :: JsVal -> String
@@ -107,17 +108,22 @@ map2js x = catch . throwError . TypeMismatch "JsMap" $ show x
 
 defclass2js :: JsVal -> String
 defclass2js (JsDefClass name (JsConst args ret) fns vars) =
-        "function " ++ name ++ "(" ++  params ++ ") {\n" ++
-        classVars2js vars ++ ";\n" ++ ret2js ret ++ "\n};\n" ++ fns2js fns
+        printf "function %s(%s) {\n%s;\n%s\n};\n%s"
+        name params (classVars2js vars) (ret2js ret) (fns2js fns)
     where params = L.intercalate ", " args
           ret2js :: JsVal -> String
           ret2js (JsMap ks vs) = L.intercalate ";\n" $ zipWith (\k v -> "this." ++ k ++ " = " ++ toJS v) ks vs
           ret2js x = error . show $ x
           classVars2js :: [JsVal] -> String
           classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b) -> "this." ++ s ++ " = " ++ toJS b)
+          fn2js' :: JsVal -> String
+          fn2js' (JsClassFn fn pms ob) =
+              printf "%s.prototype.%s = function(%s) {\n return %s"
+              name fn (L.intercalate ", " pms) (toJS ob)
+          fn2js' x = catch . throwError . TypeMismatch "JsClassFn" $ show x
           fns2js :: [JsVal] -> String
-          fns2js = (++ "\n}") . L.intercalate "\n};\n" . map(\(JsClassFn fn pms ob ) -> name ++ ".prototype." ++ fn ++
-                    " = function(" ++ L.intercalate ", " pms ++ ") {\n return " ++  toJS ob)
+          fns2js [] = []
+          fns2js l = (++ "\n};") . L.intercalate "\n};\n" $ map fn2js' l
 defclass2js x = catch . throwError . TypeMismatch "JsDefClass" $ show x
 
 fnCall2js :: JsVal -> String
@@ -130,8 +136,8 @@ fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
 
 dot2js :: JsVal -> String
 dot2js (JsDotThing fp on ps)
-        | ps /= [] = toJS on ++ "." ++ fp ++ "(" ++ args' ++ ")"
-		| otherwise = toJS on ++ "." ++ fp
+        | ps /= [] = printf "%s.%s(%s)" (toJS on) fp args'
+        | otherwise = printf "%s.%s" (toJS on) fp
      where args' = L.intercalate ", " . filter (/= "") $ toJS <$> ps
 dot2js x = catch . throwError . TypeMismatch "JsDotThing" $ show x
 
@@ -140,7 +146,7 @@ id2js (JsId a) = a
 id2js x = catch . throwError . TypeMismatch "JsId" $ show x
 
 fn2js :: JsVal -> String
-fn2js (JsFn params body) = "function (" ++ params' ++ ") {\n" ++ showBody body ++ "\n}"
+fn2js (JsFn params body) = printf "function (%s) {\n%s\n}" params' (showBody body)
     where params' = L.intercalate ", " params
           showBody [] = []
           showBody (b:q:bs) = toJS b ++ ";\n" ++ showBody (q:bs)
@@ -148,7 +154,7 @@ fn2js (JsFn params body) = "function (" ++ params' ++ ") {\n" ++ showBody body +
 fn2js x = catch . throwError . TypeMismatch "JsFn" $ show x
 
 var2js :: JsVal -> String
-var2js (JsVar name body) = "var " ++ name ++ " = " ++ toJS body
+var2js (JsVar name body) = printf "var %s = %s" name (toJS body)
 var2js x = catch . throwError . TypeMismatch "JsVar" $ show x
 
 list2js :: JsVal -> String
