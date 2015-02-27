@@ -41,3 +41,8 @@ class Dog:
         self.tricks.append(trick)
 
 #END HELPER FUNCTIONS
+hello_world = (lambda  : Loki.printf("foobar")
+)
+
+printLang = (lambda  : Loki.printf("py"))
+printLang()

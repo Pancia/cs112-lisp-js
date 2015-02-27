@@ -1,15 +1,13 @@
-(defclass Rocket
-    ([] {})
-    (speed 5))
+;(defclass Rocket
+;    ([] {})
+;    (speed 5))
 (def hello_world (fn []
      (print "foobar")
-     (alert (+ 2 3 5))))
-(.click ($ "img")
+     #+js (alert (+ 2 3 5))))
+#+js (.click ($ "img")
         (fn []
-          (alert "img")))
+         (alert "img")))
 (def printLang (fn []
-    (print
-        #+py "py"
-        #+js "js")))
+    (print #+js"js" #+py"py")))
 (printLang)
-(alert (get [0, 1 2] 1))
+(print 5)

@@ -11,14 +11,13 @@ import Utils
 
 type Parser a = ParsecT String String Identity a
 
+-- HIGH LEVEL PARSERS
 parseExpr :: Parser [LokiVal]
 parseExpr = many1 $ try (parseExpr1 <* spaces)
 
 parseExpr1 :: Parser LokiVal
 parseExpr1 = do void $ many comment
-                tag <- optionMaybe parseAnnotation
-                s <- getState
-                let meta = fromMaybe (newMeta s) $ newMeta <$> tag
+                meta <- getFileType
                 lispVal <- try parseDef
                        <|> try parseClass
                        <|> parseBasicExpr1
@@ -42,6 +41,7 @@ parseBasicExpr1 = do void $ many comment
                      void $ many comment
                      return $ setMeta meta lispVal
 
+-- PARSE OBJECT RELATED
 parseDotProp :: Parser LokiVal
 parseDotProp = between (char '(') (char ')') $ do
     void $ string "."
@@ -59,6 +59,32 @@ parseDotFunc = between (char '(') (char ')') $ do
     s <- getState
     return $ Dot (newMeta s) funcName objName params
 
+parseNew :: Parser LokiVal
+parseNew = between (char '(') (char ')') $ do
+    string "new" >> spaces1
+    className <- ident <* spaces1
+    body <- parseExpr
+    s <- getState
+    return $ New (newMeta s) className body
+
+-- PARSE DEF & FN
+parseFn :: Parser LokiVal
+parseFn = between (char '(') (char ')') $ do
+    string "fn" >> spaces1
+    params <- parseArgs <* spaces
+    body <- parseExpr
+    s <- getState
+    return $ Fn (newMeta s) params body
+
+parseDef :: Parser LokiVal
+parseDef = between (char '(') (char ')') $ do
+    string "def" >> spaces1
+    name <- ident
+    s <- getState
+    body <- (spaces1 >> parseExpr1) <|> return (PleaseIgnore $ newMeta s)
+    return $ Def (newMeta s) name body
+
+-- PARSE DEFCLASS
 parseClass :: Parser LokiVal
 parseClass = between (char '(') (char ')') $ do
     string "defclass" >> spaces1
@@ -87,38 +113,15 @@ parseVars = between (char '(') (char ')') $ do
 parseConst :: Parser LokiVal
 parseConst = between (char '(') (char ')') $ do
     params <- parseArgs <* spaces
-    body <- parseExpr1
+    body <- parseProp
     s <- getState
     return $ Const (newMeta s) params body
-
-parseNew :: Parser LokiVal
-parseNew = between (char '(') (char ')') $ do
-    string "new" >> spaces1
-    className <- ident <* spaces1
-    body <- parseExpr
-    s <- getState
-    return $ New (newMeta s) className body
-
-parseFn :: Parser LokiVal
-parseFn = between (char '(') (char ')') $ do
-    string "fn" >> spaces1
-    params <- parseArgs <* spaces
-    body <- parseExpr
-    s <- getState
-    return $ Fn (newMeta s) params body
-
-parseArgs :: Parser [String]
-parseArgs = between (char '[') (char ']')
-                    (manyTill (ident <* spaces)
-                              (lookAhead (char ']')))
-
-parseDef :: Parser LokiVal
-parseDef = between (char '(') (char ')') $ do
-    string "def" >> spaces1
-    name <- ident
-    s <- getState
-    body <- (spaces1 >> parseExpr1) <|> return (PleaseIgnore $ newMeta s)
-    return $ Def (newMeta s) name body
+    where
+        parseProp :: Parser [(String, LokiVal)]
+        parseProp = between (char '(') (char ')') .
+                    many $ do propName <- ident <* spaces1
+                              propVal <- parseExpr1
+                              return (propName, propVal)
 
 -- PARSE SPECIAL FORMS
 parseQuoted :: Parser LokiVal
@@ -162,12 +165,12 @@ parseNumber = do s <- getState
 parseList :: Parser LokiVal
 parseList = do s <- getState
                List (newMeta s) <$> between (char '(') (char ')')
-                                       (sepBy parseExpr1 spacesInLiteral)
+                               (sepBy parseExpr1 spacesInLiteral)
 
 parseArray :: Parser LokiVal
 parseArray = do s <- getState
                 List (newMeta s) <$> between (char '[') (char ']')
-                                        (sepBy parseExpr1 spacesInLiteral)
+                                (sepBy parseExpr1 spacesInLiteral)
 
 parseMap :: Parser LokiVal
 parseMap = between (char '{') (char '}') $ do
@@ -187,6 +190,11 @@ newMeta :: String -> Meta
 newMeta = M.singleton "fileType"
 
 -----HELPER PARSERS-----
+parseArgs :: Parser [String]
+parseArgs = between (char '[') (char ']')
+                    (manyTill (ident <* spaces)
+                              (lookAhead (char ']')))
+
 ident :: Parser String
 ident = (:) <$> first <*> many rest
     where first = letter <|> symbol

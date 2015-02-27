@@ -76,11 +76,6 @@ var loki = (function (){
     return loki;
 })();
 //END HELPER FUNCTIONS
-function Rocket() {
-this.speed = 5;
-
-};
-;
 var hello_world = function () {
 loki.print("foobar");
 return alert(loki.plus(2, 3, 5))
@@ -92,4 +87,4 @@ var printLang = function () {
 return loki.print("js")
 };
 printLang();
-alert(loki.get([0, 1, 2], 1));
+loki.print(5);

@@ -50,7 +50,7 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsFnCall String [JsVal]                 -- foo(..)
            | JsNewObj String [JsVal]                 -- new Foo (..)
            | JsDefClass String JsVal [JsVal] [JsVal] -- function Class(..) {..}
-           | JsConst [String] JsVal                  -- Class(..) {..}
+           | JsConst [String] [(String, JsVal)]      -- Class(..) {..}
            | JsClassFn String [String] JsVal         -- Class.prototype.fn = function(..){..}
            | JsClassVar String JsVal                 -- Class(..) {this.var = val}
            | JsDotThing String JsVal [JsVal]         -- .function objname parameters*
@@ -72,19 +72,21 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (String _ s) -> JsStr s
                            (New _ s l) -> JsNewObj s (translate <$> l)
                            (DefClass _ n c lf lv) -> JsDefClass n (translate c) (translate <$> lf) (translate <$> lv)
-                           (Const _ s b) -> JsConst s (translate b)
+                           (Const _ s b) -> JsConst s (translateProp <$> b)
                            (Classfn _ s p b) -> JsClassFn s p (translate b)
                            (Classvar _ s b) -> JsClassVar s (translate b)
                            (Dot _ fp on ps) -> JsDotThing fp (translate on) (translate <$> ps)
                            (Map _ ks vs) -> JsMap ks (translate <$> vs)
     where
+        translateProp :: (String, LokiVal) -> (String, JsVal)
+        translateProp (s, l) = (s, translate l)
         list2jsVal :: LokiVal -> JsVal
         list2jsVal l = case l of
                         (List _ [Atom _ "quote", ql]) -> translate ql
                         (List _ [Atom _ a]) -> JsFnCall a []
                         (List _ (Atom _ a:(arg:args))) -> JsFnCall a $ translate <$> (arg:args)
                         (List _ xs) -> JsList $ translate <$> xs
-                        x -> catch . throwError $ TypeMismatch "List" $ show x
+                        x -> catch . throwError . TypeMismatch "List" $ show x
 
 -- TODO: Change to ... -> Maybe String,
 -- so that JsPleaseIgnore can be ignored
@@ -114,9 +116,9 @@ defclass2js (JsDefClass name (JsConst args ret) fns vars) =
         printf "function %s(%s) {\n%s;\n%s\n};\n%s"
         name params (classVars2js vars) (ret2js ret) (fns2js fns)
     where params = L.intercalate ", " args
-          ret2js :: JsVal -> String
-          ret2js (JsMap ks vs) = L.intercalate ";\n" $ zipWith (\k v -> "this." ++ k ++ " = " ++ toJS v) ks vs
-          ret2js x = error . show $ x
+          ret2js :: [(String, JsVal)] -> String
+          ret2js [] = []
+          ret2js propVals = L.intercalate ";\n" $ (\(k,v) -> "this." ++ k ++ " = " ++ toJS v) <$> propVals
           classVars2js :: [JsVal] -> String
           classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b) -> "this." ++ s ++ " = " ++ toJS b)
           fn2js' :: JsVal -> String

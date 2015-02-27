@@ -15,7 +15,6 @@ import Debug.Trace
 
 type Meta = M.Map String String
 -- TODO: Change to record syntax, so [get|set]Meta is cleaner?
--- TODO: Prefix Constructors with (Lk|Loki|Lki|Lok|...)
 data LokiVal = Atom Meta String
              | List Meta [LokiVal]
              | Number Meta Integer
@@ -27,7 +26,7 @@ data LokiVal = Atom Meta String
              | New Meta String [LokiVal]
              | Dot Meta String LokiVal [LokiVal]
              | DefClass Meta String LokiVal [LokiVal] [LokiVal]
-             | Const Meta [String] LokiVal
+             | Const Meta [String] [(String, LokiVal)]
              | Classfn Meta String [String] LokiVal
              | Classvar Meta String LokiVal
              | PleaseIgnore Meta
