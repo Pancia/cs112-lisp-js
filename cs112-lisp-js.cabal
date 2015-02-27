@@ -4,9 +4,16 @@ author:              Anthony D'Ambrosio
 maintainer:          nsa.anthony@gmail.com
 homepage:            https://github.com/Pancia/cs112-lisp-js
 license:             MIT
+license-file:        LICENSE
 category:            Language
 build-type:          Simple
 cabal-version:       >=1.10
+synopsis:            A lisp compiler down to multiple languages (js, py)
+description:         A compiler from lisp to (js, py)
+
+source-repository head
+  type:     git
+  location: https://github.com/Pancia/cs112-lisp-js
 
 executable cs112-lisp-js
     main-is: main.hs
@@ -21,7 +28,7 @@ executable cs112-lisp-js
 
 Test-suite test-lisp-js
     Hs-Source-Dirs:       test, ., src
-    Main-Is:              TestLispJs.hs
+    Main-Is:              TestMain.hs
     Type:                 exitcode-stdio-1.0
     Build-Depends:        base >= 4 && < 5,
                           test-framework,
