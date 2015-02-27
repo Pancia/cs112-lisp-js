@@ -1,4 +1,4 @@
-# cs112-lisp-js
+# loki-lang
 Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation of a lisp that compiles down to javascript, python, and more to follow.
 
 ## Scrum Board
