@@ -16,7 +16,8 @@ formatPy py = do helperFns <- readFile "src/helperFunctions.py"
                  return $ helperFns ++ py'
 
 primitives :: M.Map String String
-primitives = M.fromList [("+", "plus")
+primitives = M.fromList $ fmap addLokiPrefix
+                       [("+", "plus")
                         ,("-", "minus")
                         ,("*", "mult")
                         ,("/", "div")
@@ -28,6 +29,8 @@ primitives = M.fromList [("+", "plus")
                         ,(">=", "gte")
                         ,("and", "and_")
                         ,("or", "or_")]
+                  where
+                    addLokiPrefix (q, s) = (q, "loki." ++ s)
 
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
@@ -38,7 +41,8 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyBool Bool                       -- true|false
            | PyNum Integer                     -- ..-1,0,1..
            | PyId String                       -- x, foo, ...
-           | PyObjCall String PyVal [PyVal]   -- x.foo.bar(...)
+           | PyMap [String] [PyVal]            -- {x : y, ..} 
+           | PyObjCall String PyVal [PyVal]    -- x.foo.bar(...)
            | PyFnCall String [PyVal]           -- foo(...)
            | PyNewObj String [PyVal]                 -- new Foo (..)
            | PyDefClass String PyVal [PyVal] [PyVal] -- function Class(..) {..}
@@ -46,25 +50,29 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyClassFn String [String] PyVal         -- Class.prototype.fn = function(..){..}
            | PyClassVar String PyVal
            | PyList [PyVal]                    -- [...]
+           | PyPleaseIgnore
            | PyThing String                    -- ???
            deriving (Eq, Show)
 
 translate :: LokiVal -> PyVal
-translate v = case v of
-                  (Atom _ a) -> PyId a
-                  (Number _ n) -> PyNum n
-                  (String _ s) -> PyStr s
-                  (Bool _ b) -> PyBool b
-                  (Def _ n b) -> PyVar n (translate b)
-                  (Fn _ xs b) -> PyFn xs (translate <$> b)
-                  (New _ s l) -> PyNewObj s (translate <$> l)
-                  (DefClass _ n c lf lv) -> PyDefClass n (translate c) (translate <$> lf) (translate <$> lv)
-                  (Const _ s b) -> PyConst s (translate b)
-                  (Classfn _ s p b) -> PyClassFn s p (translate b)
-                  (Classvar _ s b) -> PyClassVar s (translate b)
-                  l@(List{}) -> list2pyVal l
-                  (Dot _ fp on ps) -> PyObjCall fp (translate on) (translate <$> ps)
-                  _ -> PyThing $ show v
+translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
+                  then PyPleaseIgnore
+                  else case v of
+                      (Atom _ a) -> PyId a
+                      (Number _ n) -> PyNum n
+                      (String _ s) -> PyStr s
+                      (Bool _ b) -> PyBool b
+                      (Def _ n b) -> PyVar n (translate b)
+                      (Fn _ xs b) -> PyFn xs (translate <$> b)
+                      (New _ s l) -> PyNewObj s (translate <$> l)
+                      (DefClass _ n c lf lv) -> PyDefClass n (translate c) (translate <$> lf) (translate <$> lv)
+                      (Const _ s b) -> PyConst s (translate b)
+                      (Classfn _ s p b) -> PyClassFn s p (translate b)
+                      (Classvar _ s b) -> PyClassVar s (translate b)
+                      l@(List{}) -> list2pyVal l
+                      (Dot _ fp on ps) -> PyObjCall fp (translate on) (translate <$> ps)
+                      (Map _ ks vs) -> PyMap ks (translate <$> vs)
+                      _ -> PyThing $ show v
       where
         list2pyVal :: LokiVal -> PyVal
         list2pyVal l = case l of
@@ -80,15 +88,22 @@ toPY pv = case pv of
               l@(PyList{})          -> list2py l
               (PyVar n b)           -> n ++ " = " ++ toPY b
               f@(PyFn{})            -> fn2py f
-              o@(PyNewObj {})      -> new2py o
+              o@(PyNewObj {})       -> new2py o
               d@(PyObjCall{})       -> dot2py d
               d@(PyDefClass{})      -> defclass2py d
+              m@(PyMap{})           -> map2py m
+              PyPleaseIgnore        -> ""
               (PyFnCall n as)
                   | lookupFn n /= n -> lookupFn n ++ "([" ++ args ++ "])"
                   | otherwise       -> lookupFn n ++ "(" ++ args ++ ")"
                   where
                     args = L.intercalate ", " $ toPY <$> as
-              _ -> show pv
+              x -> error "PyVal=(" ++ show x ++ ") should not be toPY'ed"
+
+map2py :: PyVal -> String
+map2py (PyMap ks vs) = "{" ++ kvs ++ "}"
+    where kvs = L.intercalate ", " $ zipWith (\k v -> k ++ " : " ++ toPY v) ks vs
+map2py x = catch . throwError . TypeMismatch "PyMap" $ show x
 
 new2py :: PyVal -> String
 new2py (PyNewObj className args) = className ++ "(" ++ args' ++ ")"
@@ -97,10 +112,12 @@ new2py x = catch . throwError . TypeMismatch "PyNewObj" $ show x
 
 defclass2py :: PyVal -> String
 defclass2py (PyDefClass name (PyConst args body) _ _vars) = "class " ++ name ++ ":\n"
-                ++ addSpacing 1 ++ "def __init__(self, " ++ args' ++ "):\n" ++
+                ++ addSpacing 1 ++ "def __init__(self" ++ args' ++ "):\n" ++
                 addSpacing 2 ++ "self." ++ consBody
                 where
-                  args' =  L.intercalate ", " args
+                  args' = if (length args) == 0
+                            then ""
+                            else ", " ++ L.intercalate ", " args
                   consBody = toPY body
 defclass2py x = catch . throwError . TypeMismatch "PyDefClass" $ show x
 
