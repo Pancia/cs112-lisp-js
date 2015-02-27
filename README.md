@@ -1,5 +1,5 @@
 # cs112-lisp-js
-Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation of a (functional) lisp that compiles down to (immutable) js.
+Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation of a lisp that compiles down to javascript, python, and more to follow.
 
 ## Scrum Board
 Our scrum board can be found here: https://trello.com/b/xjlNNkQT/cs112-loki-scrum-board
