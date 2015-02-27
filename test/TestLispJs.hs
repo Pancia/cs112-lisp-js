@@ -1,66 +1,46 @@
 module TestLispJs where
 
-import Control.Monad
 import Control.Applicative hiding (Const)
-
-import Text.Parsec (runParser)
-import Control.Monad.Except (throwError)
-
-import qualified Filesystem.Path.CurrentOS as FS
-import qualified Data.Text as T
-import qualified Turtle as SH
-import qualified Control.Foldl as F
-
-import qualified Test.Framework as T
-import Test.Framework.Providers.HUnit
+import Control.Monad
 import Test.Framework.Providers.QuickCheck2()
-import Test.HUnit
-import Test.QuickCheck()
+import TestUtils
 
+import qualified Control.Foldl as F
+import qualified Data.Text as T
+import qualified Filesystem.Path.CurrentOS as FS
 import qualified LispJs as JS
+import qualified Test.Framework as T
+import qualified Turtle as SH
 import qualified Utils as U
-import qualified Parser as P
-
-type LokiTest = [(String, (String, String) -> IO String)]
 
 tests :: IO [T.Test]
-tests = sequence . join $ runTest <$> [testJsParser, testToJS, testExecJS]
+tests = sequence . join $ runTest "js" <$> [testJsParser, testToJS, testExecJS]
 
-testJsParser :: LokiTest
-testJsParser = (,) <$> ["sexp"] <*> [return . U.catch . (show <$>) . readExpr . snd]
+testJsParser :: LokiTests
+testJsParser = (,) <$> ["sexp"]
+                   <*> [parseJS]
+    where parseJS (_, lisp) = do
+            let parsed = U.catch $ show <$> readExpr "js" lisp
+            return ("parse", parsed)
 
-testToJS :: LokiTest
+testToJS :: LokiTests
 testToJS = (,) <$> ["helpers", "specials"]
-               <*> [return . concat . fmap JS.toJS . U.catch
-                   . liftM (JS.translate <$>) . readExpr . snd]
+               <*> [toJS]
+    where toJS (_, lisp) = do
+            let translated = U.catch . liftM (JS.translate <$>) $ readExpr "js" lisp
+                jsStr = concat . fmap JS.toJS $ translated
+            return ("convert", jsStr)
 
-testExecJS :: LokiTest
-testExecJS = (,) <$> ["simple", "complex"] <*> [execJS]
+testExecJS :: LokiTests
+testExecJS = (,) <$> ["simple", "complex"]
+                 <*> [execJS]
     where execJS (file, lisp) = do
             js <- JS.formatJs . fmap JS.toJS . U.catch
-                  . liftM (JS.translate <$>) . readExpr $ lisp
+                  . liftM (JS.translate <$>) . readExpr "js" $ lisp
             let outFile = "tests/" ++ file ++ ".out.js"
             writeFile outFile js
             let jsOutput = SH.inproc (T.pack $ U.caseWindowsOrOther "cscript" "jsc")
                                      [FS.encode $ FS.decodeString outFile]
                                      SH.empty
-            SH.fold jsOutput (T.unpack <$> F.mconcat)
-
-runTest :: LokiTest -> [IO T.Test]
-runTest lt = let (files, f:_) = unzip lt
-             in buildTest f <$> files
-    where
-        buildTest :: ((String, String) -> IO String) -> String -> IO T.Test
-        buildTest f file = do
-            fileContents <- readFile ("tests/" ++ file ++ ".loki")
-            contents <- f (file, fileContents)
-            expected <- readFile $ "tests/" ++ file ++ ".js.expected"
-            let clean = filter (/= '\n')
-            let contents' = clean contents
-                expected' = clean expected
-            return $ testCase file (expected' @=? contents')
-
-readExpr :: String -> Either U.CompilerError [U.LokiVal]
-readExpr input = case runParser P.parseExpr "js" "lisp-js" input of
-                     Left err -> throwError $ U.ParserErr err
-                     Right val -> return val
+            (,) <$> return "exec"
+                <*> SH.fold jsOutput (T.unpack <$> F.mconcat)
