@@ -24,7 +24,7 @@ testToPY :: [T.Test]
 testToPY = fmap (\(name, (l, r)) -> testCase name (l @=? lisp2py r)) tests'
     where
         tests' = [("def", (["foo = 5"],"(def foo 5)"))]
-        lisp2py = fmap L.toPY . U.catch . liftM (L.translate <$>) . readExpr
+        lisp2py = fmap (L.toPY 0) . U.catch . liftM (L.translate <$>) . readExpr
 
 readExpr :: String -> Either U.CompilerError [U.LokiVal]
 readExpr input = case runParser P.parseExpr "py" "lisp-py" input of

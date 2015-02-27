@@ -79,74 +79,77 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                            (List _ (Atom _ a:args)) -> PyFnCall a $ translate <$> args
                            x -> catch . throwError . TypeMismatch "List" $ show x
 
-toPY :: PyVal -> String
-toPY pv = case pv of
-              a@(PyId{})            -> id2py a
-              (PyNum n)             -> show n
+toPY :: Int -> PyVal -> String
+toPY n pv = case pv of
+              a@(PyId{})            -> id2py n a
+              (PyNum n1)             -> show n1
               (PyStr s)             -> "\"" ++ s ++ "\""
               (PyBool b)            -> toLower <$> show b
-              l@(PyList{})          -> list2py l
-              (PyVar n b)           -> n ++ " = " ++ toPY b
-              f@(PyFn{})            -> fn2py f
-              o@(PyNewObj {})       -> new2py o
-              d@(PyObjCall{})       -> dot2py d
-              d@(PyDefClass{})      -> defclass2py d
-              m@(PyMap{})           -> map2py m
+              l@(PyList{})          -> list2py n l
+              (PyVar n1 b)           -> n1 ++ " = " ++ toPY n b
+              f@(PyFn{})            -> fn2py n f
+              o@(PyNewObj {})       -> new2py n o
+              d@(PyObjCall{})       -> dot2py n d
+              d@(PyDefClass{})      -> defclass2py n d
+              m@(PyMap{})           -> map2py n m
               PyPleaseIgnore        -> ""
-              (PyFnCall n as)
-                  | lookupFn n /= n -> lookupFn n ++ "([" ++ args ++ "])"
-                  | otherwise       -> lookupFn n ++ "(" ++ args ++ ")"
+              (PyFnCall n1 as)
+                  | lookupFn n1 /= n1 -> lookupFn n1 ++ "([" ++ args ++ "])"
+                  | otherwise       -> lookupFn n1 ++ "(" ++ args ++ ")"
                   where
-                    args = L.intercalate ", " $ toPY <$> as
+                    args = L.intercalate ", " $ toPY n <$> as
               x -> error "PyVal=(" ++ show x ++ ") should not be toPY'ed"
 
-map2py :: PyVal -> String
-map2py (PyMap ks vs) = "{" ++ kvs ++ "}"
-    where kvs = L.intercalate ", " $ zipWith (\k v -> k ++ " : " ++ toPY v) ks vs
-map2py x = catch . throwError . TypeMismatch "PyMap" $ show x
+map2py :: Int -> PyVal -> String
+map2py n (PyMap ks vs) = "{" ++ kvs ++ "}"
+    where kvs = L.intercalate ", " $ zipWith (\k v -> k ++ " : " ++ toPY n v) ks vs
+map2py n x = catch . throwError . TypeMismatch "PyMap" $ show x
 
-new2py :: PyVal -> String
-new2py (PyNewObj className args) = className ++ "(" ++ args' ++ ")"
-  where args' = L.intercalate ", " $ toPY <$> args
-new2py x = catch . throwError . TypeMismatch "PyNewObj" $ show x
+new2py :: Int -> PyVal -> String
+new2py n (PyNewObj className args) = className ++ "(" ++ args' ++ ")"
+  where args' = L.intercalate ", " $ toPY n <$> args
+new2py n x = catch . throwError . TypeMismatch "PyNewObj" $ show x
 
-defclass2py :: PyVal -> String
-defclass2py (PyDefClass name (PyConst args body) _ _vars) = "class " ++ name ++ ":\n"
-                ++ addSpacing 1 ++ "def __init__(self" ++ args' ++ "):\n" ++
-                addSpacing 2 ++ "self." ++ consBody
+defclass2py :: Int -> PyVal -> String
+defclass2py n (PyDefClass name (PyConst args body) _ vars) = "class " ++ name ++ ":\n"
+                ++ addSpacing (n + 1) ++ "def __init__(self" ++ args' ++ "):\n" ++
+                addCons ++ addVars
                 where
                   args' = if (length args) == 0
                             then ""
                             else ", " ++ L.intercalate ", " args
-                  consBody = toPY body
-defclass2py x = catch . throwError . TypeMismatch "PyDefClass" $ show x
+                  addCons = if show body /= "{}" 
+                              then addSpacing (n + 2) ++ toPY (n + 2) body
+                              else ""
+                  addVars = L.intercalate ("/n " ++ addSpacing 1) $ toPY n <$> vars
+defclass2py n x = catch . throwError . TypeMismatch "PyDefClass" $ show x
 
-list2py :: PyVal -> String
-list2py l = case l of
-              (PyList [PyId "quote", ql]) -> toPY ql
-              (PyList xs) -> "[" ++ L.intercalate ", " (fmap toPY xs) ++ "]"
+list2py :: Int -> PyVal -> String
+list2py n l = case l of
+              (PyList [PyId "quote", ql]) -> toPY n ql
+              (PyList xs) -> "[" ++ L.intercalate ", " (fmap (toPY n) xs) ++ "]"
               x -> catch . throwError . TypeMismatch "PyList" $ show x
 
-id2py :: PyVal -> String
-id2py (PyId pv) = pv
-id2py x = catch . throwError . TypeMismatch "PyId" $ show x
+id2py :: Int -> PyVal -> String
+id2py n (PyId pv) = pv
+id2py n x = catch . throwError . TypeMismatch "PyId" $ show x
 
-fn2py :: PyVal -> String
-fn2py (PyFn params body) = "(lambda " ++ params' ++ " : " ++ showBody body ++ ")"
+fn2py :: Int -> PyVal -> String
+fn2py n (PyFn params body) = "(lambda " ++ params' ++ " : " ++ showBody body ++ ")"
       where
         params' = L.intercalate ", " params
         showBody [] = []
-        showBody (b:q:bs) = toPY b ++ ";\n" ++ showBody (q:bs)
-        showBody [b] = toPY b
-fn2py x = catch . throwError . TypeMismatch "PyFn" $ show x
+        showBody (b:q:bs) = toPY n b ++ ";\n" ++ showBody (q:bs)
+        showBody [b] = toPY n b
+fn2py n x = catch . throwError . TypeMismatch "PyFn" $ show x
 
-dot2py :: PyVal -> String
-dot2py (PyObjCall fp on ps)
-      | ps /= [] = toPY on ++ "." ++ fp ++ "(" ++ params' ++ ")"
-      | otherwise = toPY on ++ "." ++ fp
+dot2py :: Int -> PyVal -> String
+dot2py n (PyObjCall fp on ps)
+      | ps /= [] = toPY n on ++ "." ++ fp ++ "(" ++ params' ++ ")"
+      | otherwise = toPY n on ++ "." ++ fp
       where
-        params' = L.intercalate ", " $ toPY <$> ps
-dot2py x = catch . throwError . TypeMismatch "PyObjCall" $ show x
+        params' = L.intercalate ", " $ toPY n <$> ps
+dot2py n x = catch . throwError . TypeMismatch "PyObjCall" $ show x
 
 --Use for: if, for, while, anything else. Make sure to pass around a weight and
 --increment and decrement accordingly

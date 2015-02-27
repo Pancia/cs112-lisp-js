@@ -82,7 +82,7 @@ main = do args <- getArgs
                      PY -> do let pyVals = U.catch . liftM (PY.translate <$>) $ lispVals
                               putStrLn $ prefix ++ "pyVals:\n" ++ show pyVals
                               printDivider
-                              PY.formatPy $ PY.toPY <$> pyVals
+                              PY.formatPy $ (PY.toPY 0) <$> pyVals
           --Print out.loki.*
           putStrLn $ prefix ++ "" ++ outFile ++ ":\n" ++ src
           printDivider

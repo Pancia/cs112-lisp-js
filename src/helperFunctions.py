@@ -10,6 +10,9 @@ def div (l):
 def mult (l):
 	return reduce((lambda x, y : x * y), l)
 
+def mod (l):
+	return reduce ((lambda x, y: x % y), l)
+
 def and_ (l):
 	return reduce((lambda x, y : x and y), l)
 
@@ -36,6 +39,12 @@ def gte (l):
 
 def get (e, i):
 	return e[i]
+
+def set (x, v):
+	x = v
+
+def assoc (x, i, v):
+	x[i] = v
 
 class Dog:
     tricks = []             # mistaken use of a class variable
