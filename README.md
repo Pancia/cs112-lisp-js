@@ -6,6 +6,11 @@ Our scrum board can be found here: https://trello.com/b/xjlNNkQT/cs112-loki-scru
 
 ## Links & Resources
 
+### Python Game Engines
+* [Pygame] (http://www.pygame.org/news.html)
+* [Kivy] (http://kivy.org/#home)
+* [Python GUIs] (https://wiki.python.org/moin/GuiProgramming)
+
 ### Compiler
 * [Write yourself a scheme](http://en.wikibooks.org/wiki/Write_Yourself_a_Scheme_in_48_Hours/First_Steps)
 * [Write yourself a brainfuck](https://github.com/quchen/articles/blob/master/write_yourself_a_brainfuck.md)
