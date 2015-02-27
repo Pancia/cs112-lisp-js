@@ -56,3 +56,4 @@ class Dog:
         self.tricks.append(trick)
 
 #END HELPER FUNCTIONS
+Loki.printf(Loki.plus(2, 3, 4))

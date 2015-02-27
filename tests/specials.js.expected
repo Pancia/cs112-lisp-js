@@ -1,0 +1,6 @@
+var foo = 5
+var foo = loki.plus(3, 2)
+function () {return true}
+function (x) {return loki.plus(x, 2)}
+var foo = function (x, y) {return loki.minus(x, y)}
+var f = function () {return true}loki.print(f())

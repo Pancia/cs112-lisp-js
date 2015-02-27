@@ -6,7 +6,6 @@ import Control.Monad.Except
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
-import Data.Char (toLower)
 
 import Utils
 
@@ -80,7 +79,7 @@ toPY n pv = case pv of
               a@(PyId{})       -> id2py n a
               (PyNum n1)       -> show n1
               (PyStr s)        -> "\"" ++ s ++ "\""
-              (PyBool b)       -> toLower <$> show b
+              (PyBool b)       -> show b
               l@(PyList{})     -> list2py n l
               (PyVar n1 b)     -> n1 ++ " = " ++ toPY n b
               f@(PyFn{})       -> fn2py n f

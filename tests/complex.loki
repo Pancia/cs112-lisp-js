@@ -1,0 +1,3 @@
+(def f (fn [] true)) (print (f))
+(def f (fn [] (+ 2 3))) (print (f))
+(def f (fn [x] (+ x 1))) (print (f 9))

@@ -1,0 +1,2 @@
+Loki.printf(5)
+Loki.plus(1, 2, 3)
