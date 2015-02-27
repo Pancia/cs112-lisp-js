@@ -8,9 +8,8 @@
         (fn []
           (alert "img")))
 (def printLang (fn []
-(print
-#+py "py"
-#+js "js")))
+    (print
+        #+py "py"
+        #+js "js")))
 (printLang)
-
-(alert (get [0 1 2] 1))
+(alert (get [0, 1 2] 1))

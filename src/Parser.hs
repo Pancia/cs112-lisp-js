@@ -42,27 +42,6 @@ parseBasicExpr1 = do void $ many comment
                      void $ many comment
                      return $ setMeta meta lispVal
 
-getFileType :: Parser Meta
-getFileType =  do tag <- optionMaybe parseAnnotation
-                  s <- getState
-                  return . fromMaybe (newMeta s) $ newMeta <$> tag
-
-parseAnnotation :: Parser String
-parseAnnotation = string "#+" >> many1 letter <* spaces
-
-parseMap :: Parser LokiVal
-parseMap = between (char '{') (char '}') $ do
-    keyVals <- manyTill parseKeyVal (lookAhead (char '}'))
-    let (keys, vals) = foldl (\(ks, vs) (k, v) -> (k:ks, v:vs)) ([],[]) keyVals
-    s <- getState
-    return $ Map (newMeta s) keys vals
-
-parseKeyVal :: Parser (String, LokiVal)
-parseKeyVal = do
-    key <- ident <* spaces1
-    val <- parseExpr1 <* spaces
-    return (key, val)
-
 parseDotProp :: Parser LokiVal
 parseDotProp = between (char '(') (char ')') $ do
     void $ string "."
@@ -141,6 +120,26 @@ parseDef = between (char '(') (char ')') $ do
     body <- (spaces1 >> parseExpr1) <|> return (PleaseIgnore $ newMeta s)
     return $ Def (newMeta s) name body
 
+-- PARSE SPECIAL FORMS
+parseQuoted :: Parser LokiVal
+parseQuoted = do void $ char '\''
+                 toQuote <- parseExpr1
+                 let m = getMeta toQuote
+                     toQuote' = case toQuote of
+                              (List _ [l]) -> l
+                              x -> x
+                 s <- getState
+                 return $ List m [Atom (newMeta s) "quote", toQuote']
+
+getFileType :: Parser Meta
+getFileType =  do tag <- optionMaybe parseAnnotation
+                  s <- getState
+                  return . fromMaybe (newMeta s) $ newMeta <$> tag
+
+parseAnnotation :: Parser String
+parseAnnotation = string "#+" >> many1 letter <* spaces
+
+-- PARSE PRIMITIVES
 parseAtom :: Parser LokiVal
 parseAtom = do atom <- ident
                return $ case atom of
@@ -159,25 +158,29 @@ parseNumber :: Parser LokiVal
 parseNumber = do s <- getState
                  liftM (Number (newMeta s) . read) $ many1 digit
 
-parseQuoted :: Parser LokiVal
-parseQuoted = do void $ char '\''
-                 toQuote <- parseExpr1
-                 let m = getMeta toQuote
-                     toQuote' = case toQuote of
-                              (List _ [l]) -> l
-                              x -> x
-                 s <- getState
-                 return $ List m [Atom (newMeta s) "quote", toQuote']
-
+-- PARSE LITERALS: [], {}, ...
 parseList :: Parser LokiVal
 parseList = do s <- getState
                List (newMeta s) <$> between (char '(') (char ')')
-                                       (sepBy parseExpr1 spaces1)
+                                       (sepBy parseExpr1 spacesInLiteral)
 
 parseArray :: Parser LokiVal
 parseArray = do s <- getState
                 List (newMeta s) <$> between (char '[') (char ']')
-                                        (sepBy parseExpr1 (char "," <|> spaces1))
+                                        (sepBy parseExpr1 spacesInLiteral)
+
+parseMap :: Parser LokiVal
+parseMap = between (char '{') (char '}') $ do
+    keyVals <- manyTill parseKeyVal (lookAhead (char '}'))
+    let (keys, vals) = foldl (\(ks, vs) (k, v) -> (k:ks, v:vs)) ([],[]) keyVals
+    s <- getState
+    return $ Map (newMeta s) keys vals
+
+parseKeyVal :: Parser (String, LokiVal)
+parseKeyVal = do
+    key <- ident <* spaces1InLiteral
+    val <- parseExpr1 <* spacesInLiteral
+    return (key, val)
 
 ---------HELPERS--------
 newMeta :: String -> Meta
@@ -192,7 +195,7 @@ ident = (:) <$> first <*> many rest
 symbol :: Parser Char
 symbol = oneOf "!$%&|*+-/<=>?@^_~"
 
-space' :: Parser()
+space' :: Parser ()
 space' = void space <|> comment
 
 spaces :: Parser ()
@@ -200,6 +203,12 @@ spaces = skipMany space'
 
 spaces1 :: Parser ()
 spaces1 = skipMany1 space'
+
+spacesInLiteral :: Parser ()
+spacesInLiteral = skipMany $ space' <|> comment <|> void (oneOf ",")
+
+spaces1InLiteral :: Parser ()
+spaces1InLiteral = skipMany1 $ space' <|> comment <|> void (oneOf ",")
 
 comment :: Parser ()
 comment = string ";" >>= void . return (manyTill anyChar newline)
