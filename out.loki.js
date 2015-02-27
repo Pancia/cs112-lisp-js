@@ -76,15 +76,13 @@ var loki = (function (){
     return loki;
 })();
 //END HELPER FUNCTIONS
-var hello_world = function () {
-loki.print("foobar");
-return alert(loki.plus(2, 3, 5))
-};
-$("img").click(function () {
-return alert("img")
-});
-var printLang = function () {
-return loki.print("js")
-};
-printLang();
-loki.print(5);
+var painted;
+var content;
+var winningCombos;
+var turn = 0;
+var theCanvas;
+var c;
+var cxt;
+var squaresFilled = 0;
+var w;
+var y;

@@ -6,6 +6,7 @@ import Control.Monad.Except
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
+import Text.Printf (printf)
 
 import Utils
 
@@ -115,11 +116,11 @@ defclass2py n (PyDefClass name (PyConst args body) _ vars) = "class " ++ name ++
                             then ""
                             else ", " ++ L.intercalate ", " args
                   body2py :: Int -> [(String, PyVal)] -> [String]
-                  body2py n' = fmap (\(p,v) -> p ++ toPY (n' + 2) v)
-                  addCons = if show body /= "{}"
-                              then L.intercalate ("\n" ++ addSpacing (n + 2)) $ body2py (n + 2) body
-                              else ""
-                  addVars = L.intercalate ("\n " ++ addSpacing 1) $ toPY n <$> vars
+                  body2py n' = fmap (\(p,v) -> printf (addSpacing n' ++ "self.%s = %s\n") p (toPY 0 v))
+                  addCons = (++ "\n") . concat $ body2py (n + 2) body
+                  addVars = vars2py (n + 1) vars
+                  vars2py :: Int -> [PyVal] -> String
+                  vars2py n' = concat . fmap (\(PyClassVar n x) -> printf (addSpacing n' ++ "%s = %s\n") n (toPY 0 x)) 
 defclass2py _ x = catch . throwError . TypeMismatch "PyDefClass" $ show x
 
 list2py :: Int -> PyVal -> String
@@ -149,7 +150,7 @@ dot2py n (PyObjCall fp on ps)
         params' = L.intercalate ", " $ toPY n <$> ps
 dot2py _ x = catch . throwError . TypeMismatch "PyObjCall" $ show x
 
---Use for: if, for, while, anything else. Make sure to pass around a weight and
---increment and decrement accordingly
+--Use for: if, for, while, class creation, anything else. Make sure to pass 
+--around a weight and increment and decrement accordingly
 addSpacing :: Int -> String
 addSpacing weight = replicate (weight * 4) ' '

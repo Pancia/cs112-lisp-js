@@ -46,7 +46,7 @@ parseDotProp :: Parser LokiVal
 parseDotProp = between (char '(') (char ')') $ do
     void $ string "."
     propName <- ident <* spaces1
-    objName <- parseBasicExpr1 <* spaces1
+    objName <- parseBasicExpr1 <* spaces
     s <- getState
     return $ Dot (newMeta s) propName objName []
 
@@ -54,7 +54,7 @@ parseDotFunc :: Parser LokiVal
 parseDotFunc = between (char '(') (char ')') $ do
     void $ string "."
     funcName <- ident <* spaces1
-    objName <- parseBasicExpr1 <* spaces1
+    objName <- parseBasicExpr1 <* spaces
     params <- parseExpr
     s <- getState
     return $ Dot (newMeta s) funcName objName params
@@ -113,15 +113,15 @@ parseVars = between (char '(') (char ')') $ do
 parseConst :: Parser LokiVal
 parseConst = between (char '(') (char ')') $ do
     params <- parseArgs <* spaces
-    body <- parseProp
+    body <- many (parseProp <* spaces)
     s <- getState
     return $ Const (newMeta s) params body
     where
-        parseProp :: Parser [(String, LokiVal)]
-        parseProp = between (char '(') (char ')') .
-                    many $ do propName <- ident <* spaces1
-                              propVal <- parseExpr1
-                              return (propName, propVal)
+        parseProp :: Parser (String, LokiVal)
+        parseProp = between (char '(') (char ')') $ do
+                      propName <- ident <* spaces1
+                      propVal <- parseExpr1
+                      return (propName, propVal)
 
 -- PARSE SPECIAL FORMS
 parseQuoted :: Parser LokiVal
