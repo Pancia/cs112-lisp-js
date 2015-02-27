@@ -1,4 +1,4 @@
-module TestLispPy where
+module TestLokiPY where
 
 import Control.Applicative hiding (Const)
 import Control.Monad
@@ -7,7 +7,7 @@ import TestUtils
 import qualified Control.Foldl as F
 import qualified Data.Text as T
 import qualified Filesystem.Path.CurrentOS as FS
-import qualified LispPy as PY
+import qualified LokiPY as PY
 import qualified Test.Framework as T
 import qualified Turtle as SH
 import qualified Utils as U

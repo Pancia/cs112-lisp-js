@@ -1,4 +1,4 @@
-module LispPy where
+module LokiPY where
 
 import Control.Applicative hiding (many, (<|>), Const)
 import Control.Monad.Except

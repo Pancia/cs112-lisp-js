@@ -13,8 +13,8 @@ import Control.Monad.Except (throwError)
 import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
 
-import qualified LispJs as JS
-import qualified LispPy as PY
+import qualified LokiJS as JS
+import qualified LokiPY as PY
 import Utils (OutputType(JS,PY))
 import qualified Utils as U
 import qualified Parser as P

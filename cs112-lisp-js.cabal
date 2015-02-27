@@ -1,8 +1,8 @@
-name:                cs112-lisp-js
+name:                loki-lang
 version:             0.1.0.0
 author:              Anthony D'Ambrosio
 maintainer:          nsa.anthony@gmail.com
-homepage:            https://github.com/Pancia/cs112-lisp-js
+homepage:            https://github.com/Pancia/loki-lang
 license:             MIT
 license-file:        LICENSE
 category:            Language
@@ -13,7 +13,7 @@ description:         A compiler from lisp to (js, py)
 
 source-repository head
   type:     git
-  location: https://github.com/Pancia/cs112-lisp-js
+  location: https://github.com/Pancia/loki-lang
 
 executable cs112-lisp-js
     main-is: main.hs

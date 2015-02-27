@@ -1,4 +1,4 @@
-module LispJs where
+module LokiJS where
 
 import Control.Applicative hiding (many, (<|>), Const)
 import Control.Monad.Except

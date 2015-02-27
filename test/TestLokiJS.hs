@@ -1,4 +1,4 @@
-module TestLispJs where
+module TestLokiJS where
 
 import Control.Applicative hiding (Const)
 import Control.Monad
@@ -8,7 +8,7 @@ import TestUtils
 import qualified Control.Foldl as F
 import qualified Data.Text as T
 import qualified Filesystem.Path.CurrentOS as FS
-import qualified LispJs as JS
+import qualified LokiJS as JS
 import qualified Test.Framework as T
 import qualified Turtle as SH
 import qualified Utils as U
