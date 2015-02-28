@@ -1,16 +1,16 @@
 (defclass Rocket
-    ([x] (p x) 
-         (f 0))
-    (speed 5))
+  ([x] (p x) 
+   (f 0))
+  (speed 5))
 
 (def hello_world (fn []
-     (print "foobar")
-     #+js (alert (+ 2 3 5))))
+                   (print "foobar")
+                   #+js (alert (+ 2 3 5))))
 #+js (.click ($ "img")
-        (fn []
-         (alert "img")))
+             (fn []
+               (alert "img")))
 (def printLang (fn []
-    (print #+js"js" #+py"py")))
+                 (print #+js"js" #+py"py")))
 (printLang)
 (print 5)
 (def r (new Rocket 7))

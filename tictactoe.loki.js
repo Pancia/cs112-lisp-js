@@ -76,6 +76,17 @@ var loki = (function (){
     return loki;
 })();
 //END HELPER FUNCTIONS
-[function () {
-return 5
-}];
+var painted;
+var content;
+var winningCombos;
+var turn = 0;
+var theCanvas;
+var c;
+var cxt;
+var squaresFilled = 0;
+var w;
+var y;
+myObj = {};
+loki.print(myObj);
+myObj = 5;
+loki.print(myObj);
