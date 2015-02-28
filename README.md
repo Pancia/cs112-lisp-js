@@ -1,8 +1,8 @@
 # loki-lang
-Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation of a lisp that compiles down to javascript, python, and more to follow.
+Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation of a lisp that compiles down to javascript, python, and maybe more.
 
 ## Scrum Board
-Our scrum board can be found here: https://trello.com/b/xjlNNkQT/cs112-loki-scrum-board
+[Trello Scrum Board](https://trello.com/b/xjlNNkQT/cs112-loki-scrum-board)
 
 ## Links & Resources
 
@@ -23,7 +23,8 @@ Our scrum board can be found here: https://trello.com/b/xjlNNkQT/cs112-loki-scru
 * [Haskell.org cabal guide](https://www.haskell.org/cabal/users-guide/installing-packages.html)
 * [Intro to cabal sandboxes](https://www.fpcomplete.com/school/to-infinity-and-beyond/older-but-still-interesting/an-introduction-to-cabal-sandboxes-copy)
 * [Cabal sandbox workflow](http://chromaticleaves.com/posts/cabal-sandbox-workflow.html)
-* TLDR: `>? cabal sandbox init` -> `>? cabal install` -> `>? cabal run $args`
+* TLDR: `>? cabal sandbox init` -> `>? cabal install` -> `>? cabal run -- $args`
+* See src/Main.hs options for flags and their description. 
 
 ### Proposed Class and Object Design
 ```Clojure
