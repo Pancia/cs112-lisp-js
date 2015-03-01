@@ -49,20 +49,4 @@ class Loki:
         x[i] = v
 
 #END HELPER FUNCTIONS
-class Rocket:
-    def __init__(self, x):
-        self.p = x
-        self.f = 0
-
-    speed = 5
-
-hello_world = (lambda  : Loki.printf("foobar")
-)
-
-printLang = (lambda  : Loki.printf("py"))
-printLang()
-Loki.printf(5)
-r = Rocket(7)
-Loki.printf(r.speed)
-Loki.printf(r.p)
-Loki.printf(r.f)
+[(lambda  : 7)]

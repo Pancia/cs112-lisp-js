@@ -17,7 +17,7 @@ tests :: IO [T.Test]
 tests = sequence . join $ runTest "js" <$> [testJsParser, testToJS, testExecJS]
 
 testJsParser :: LokiTests
-testJsParser = (,) <$> ["sexp"]
+testJsParser = (,) <$> ["sexp", "spaces"]
                    <*> [parseJS]
     where parseJS (_, lisp) = do
             let parsed = U.catch $ show <$> readExpr "js" lisp

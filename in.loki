@@ -1,7 +1,7 @@
 (defclass Rocket
-    ([x] (p x) 
-         (f 0))
-    (speed 5))
+  ([x] (p x)
+       (f 0))
+  (speed 5))
 
 (def hello_world (fn []
      (print "foobar")

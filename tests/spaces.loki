@@ -1,0 +1,11 @@
+(def f)
+(def f )
+( def f)
+(def f 1)
+(def f 2 )
+
+(fn [])
+( fn [])
+(fn [] )
+(fn [] 3)
+(fn [] 4 )

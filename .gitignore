@@ -4,10 +4,4 @@ cabal.sandbox.config
 *.lkshs
 *.lkshw
 node_modules/
-out.js
-*.jsp.*
-test-out/
 .*
-out.jsp
-in.jsp
-in.jsp
