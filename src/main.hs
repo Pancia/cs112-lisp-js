@@ -83,12 +83,12 @@ main = do args <- getArgs
                               putStrLn $ prefix ++ "pyVals:\n" ++ show pyVals
                               printDivider
                               PY.formatPy $ PY.toPY 0 <$> pyVals
-          --Print out.loki.*
-          putStrLn $ prefix ++ "" ++ outFile ++ ":\n" ++ src
-          printDivider
           --Write src to outFile
           writeFile outFile src
-          --Switch on outType:
+          --Print outFile
+          printLokiSrc outFile
+          printDivider
+          --If we should run: switch on outType:
           when outRun $ case outType of
                             --Open test.html in the default browser
                             JS -> void $ openInBrowser "test.html"
@@ -96,6 +96,7 @@ main = do args <- getArgs
                             PY -> print =<< ("stdout: " ++) <$> execSrc outType outFile
     where
         openInBrowser url = createProcess $ proc (U.caseWindowsOrOther "explorer" "open") [url]
+        printLokiSrc fileName = callProcess "sed" ["-n", "-e", "/END LOKI/,$p", fileName]
         prefix = ">>"
 
 execSrc :: OutputType -> String -> IO String
