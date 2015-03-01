@@ -75,5 +75,26 @@ var loki = (function (){
 
     return loki;
 })();
-//END HELPER FUNCTIONS
-{z : 2, y : 2, x : 5};
+//END LOKI HELPER FUNCTIONS
+function Rocket(x) {
+this.speed = 5;
+this.p = x;
+this.f = 0
+};
+;
+var hello_world = function () {
+loki.print("foobar");
+return alert(loki.plus(2, 3, 5))
+};
+$("img").click(function () {
+return alert("img")
+});
+var printLang = function () {
+return loki.print("js")
+};
+printLang();
+loki.print(5);
+var r = new Rocket(7);
+loki.print(r.speed);
+loki.print(r.p);
+loki.print(r.f);

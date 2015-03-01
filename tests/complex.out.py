@@ -48,7 +48,7 @@ class Loki:
     def assoc(x, i, v):
         x[i] = v
 
-#END HELPER FUNCTIONS
+#END LOKI HELPER FUNCTIONS
 f = (lambda  : True)
 Loki.printf(f())
 f = (lambda  : Loki.plus(2, 3))
