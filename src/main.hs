@@ -95,13 +95,13 @@ main = do args <- getArgs
                             --Execute src, printing its result
                             PY -> print =<< ("stdout: " ++) <$> execSrc outType outFile
     where
-        openInBrowser url = createProcess $ proc (U.caseWindowsOrOther "explorer" "open") [url]
+        openInBrowser url = createProcess $ proc (U.caseOS "explorer" "open") [url]
         printLokiSrc fileName = callProcess "sed" ["-n", "-e", "/END LOKI/,$p", fileName]
         prefix = ">>"
 
 execSrc :: OutputType -> String -> IO String
 execSrc outType file = do let exe = case outType of
-                                     JS -> U.caseWindowsOrOther "cscript" "jsc"
+                                     JS -> U.caseOS "cscript" "jsc"
                                      PY -> "python"
                           (_, Just hout, _, _) <- createProcess $ (proc exe [file]) { std_out = CreatePipe }
                           hGetContents hout

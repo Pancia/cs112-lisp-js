@@ -39,7 +39,7 @@ testExecJS = (,) <$> ["simple", "complex"]
                   . liftM (JS.translate <$>) . readExpr "js" $ lisp
             let outFile = "tests/" ++ file ++ ".out.js"
             writeFile outFile js
-            let jsOutput = SH.inproc (T.pack $ U.caseWindowsOrOther "cscript" "jsc")
+            let jsOutput = SH.inproc (T.pack $ U.caseOS "cscript" "jsc")
                                      [FS.encode $ FS.decodeString outFile]
                                      SH.empty
             (,) <$> return "exec"
