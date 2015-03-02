@@ -98,7 +98,7 @@ main = do args <- getArgs
         openInBrowser url = createProcess $ proc (U.caseOS "explorer" "open") [url]
         printLokiSrc fileName = if (U.caseOS "windows" "other") /= "windows"
                                   then callProcess "sed" ["-n", "-e", "/END LOKI/,$p", fileName]
-                                  else callProcess "whoami" []
+                                  else putStrLn =<< readFile fileName
         prefix = ">>"
 
 execSrc :: OutputType -> String -> IO String
