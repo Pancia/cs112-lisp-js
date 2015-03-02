@@ -11,114 +11,106 @@ import Utils
 
 type Parser a = ParsecT String String Identity a
 
--- HIGH LEVEL PARSERS
+infix 0 >?>
+(>?>) :: Parser a -> String -> Parser a
+(>?>) x y = x <?> "loki-" ++ y
+
+-- TOP LEVEL PARSERS
 parseExpr :: Parser [LokiVal]
-parseExpr = many1 $ try (parseExpr1 <* spaces)
+parseExpr = many1 (parseExpr1 <* spaces)
 
 parseExpr1 :: Parser LokiVal
 parseExpr1 = do void $ many comment
                 meta <- getFileType
-                lispVal <- try parseDef
-                       <|> try parseClass
-                       <|> parseBasicExpr1
+                lispVal <- choice [parseDef
+                                  ,parseClass
+                                  ,parseBasicExpr1]
                 void $ many comment
-                return $ setMeta meta lispVal
+                return (setMeta meta lispVal) >?> "1-expr"
 
 parseBasicExpr1 :: Parser LokiVal
 parseBasicExpr1 = do void $ many comment
                      meta <- getFileType
-                     lispVal <- try parseAtom
-                            <|> try parseString
-                            <|> try parseNumber
-                            <|> try parseQuoted
-                            <|> try parseDotProp
-                            <|> try parseDotFunc
-                            <|> try parseFn
-                            <|> try parseNew
-                            <|> try parseMap
-                            <|> try parseList
-                            <|> try parseArray
+                     lispVal <- choice [parseAtom
+                                       ,parseString
+                                       ,parseNumber
+                                       ,parseQuoted
+                                       ,parseDot
+                                       ,parseFn
+                                       ,parseNew
+                                       ,parseMap
+                                       ,parseList
+                                       ,parseArray]
                      void $ many comment
-                     return $ setMeta meta lispVal
+                     return (setMeta meta lispVal) >?> "1-basic-expr"
 
--- PARSE OBJECT RELATED
-parseDotProp :: Parser LokiVal
-parseDotProp = between (char '(') (char ')') $ do
-    void $ string "."
-    propName <- ident <* spaces1
-    objName <- parseBasicExpr1 <* spaces
-    s <- getState
-    return $ Dot (newMeta s) propName objName []
-
-parseDotFunc :: Parser LokiVal
-parseDotFunc = between (char '(') (char ')') $ do
-    void $ string "."
-    funcName <- ident <* spaces1
-    objName <- parseBasicExpr1 <* spaces
-    params <- parseExpr
+-- PARSE OO RELATED
+parseDot :: Parser LokiVal
+parseDot = inLispExpr "." $ do
+    funcName <- ident <* spaces1 >?> "func-name"
+    objName <- parseBasicExpr1 <* spaces >?> "obj-name"
+    params <- liftM (fromMaybe []) (optionMaybe $ many parseExpr1) >?> "args"
     s <- getState
     return $ Dot (newMeta s) funcName objName params
 
 parseNew :: Parser LokiVal
-parseNew = between (char '(') (char ')') $ do
-    string "new" >> spaces1
-    className <- ident <* spaces1
-    body <- parseExpr
+parseNew = inLispExpr "new" $ do
+    className <- ident <* spaces1 >?> "class-name"
+    body <- many (parseBasicExpr1 <* spaces) >?> "body"
     s <- getState
     return $ New (newMeta s) className body
 
 -- PARSE DEF & FN
 parseFn :: Parser LokiVal
-parseFn = between (char '(') (char ')') $ do
-    string "fn" >> spaces1
-    params <- parseArgs <* spaces
-    body <- parseExpr
+parseFn = inLispExpr "fn" $ do
+    params <- parseArgs <* spaces >?> "param-list"
+    body <- many (parseBasicExpr1 <* spaces) >?> "fn-body"
     s <- getState
     return $ Fn (newMeta s) params body
 
 parseDef :: Parser LokiVal
-parseDef = between (char '(') (char ')') $ do
-    string "def" >> spaces1
-    name <- ident
+parseDef = inLispExpr "def" $ do
+    name <- ident <* spaces >?> "def-name"
     s <- getState
-    body <- (spaces1 >> parseExpr1) <|> return (PleaseIgnore $ newMeta s)
+    body <- choice [parseExpr1 <* spaces
+                   ,return $ PleaseIgnore $ newMeta s]
+                   >?> "def-body"
     return $ Def (newMeta s) name body
 
 -- PARSE DEFCLASS
 parseClass :: Parser LokiVal
-parseClass = between (char '(') (char ')') $ do
-    string "defclass" >> spaces1
-    className <- ident <* spaces1
-    cnstr <- parseConst <* spaces
-    classFns <- many . try $ parseClassFn <* spaces
-    classVars <- many . try $ parseVars <* spaces
+parseClass = inLispExpr "defclass" $ do
+    className <- ident <* spaces1 >?> "class-name"
+    cnstr <- parseConst <* spaces >?> "class-constructor"
+    classFns <- many (try $ parseClassFn <* spaces) >?> "class-functions"
+    classVars <- many (try $ parseVars <* spaces) >?> "class-vars"
     s <- getState
     return $ DefClass (newMeta s) className cnstr classFns classVars
 
 parseClassFn :: Parser LokiVal
-parseClassFn = between (char '(') (char ')') $ do
-    fnName <- ident <* spaces1
-    args <- parseArgs <* spaces
-    body <- parseExpr1
+parseClassFn = inLispExpr_ $ do
+    fnName <- ident <* spaces1 >?> "class-fn-name"
+    args <- parseArgs <* spaces >?> "class-fn-params"
+    body <- parseExpr1 >?> "class-fn-body"
     s <- getState
     return $ Classfn (newMeta s) fnName args body
 
 parseVars :: Parser LokiVal
-parseVars = between (char '(') (char ')') $ do
-    varName <- ident <* spaces1
-    body <- parseExpr1
+parseVars = inLispExpr_ $ do
+    varName <- ident <* spaces1 >?> "class-var-name"
+    body <- parseExpr1 >?> "class-var-body"
     s <- getState
     return $ Classvar (newMeta s) varName body
 
 parseConst :: Parser LokiVal
-parseConst = between (char '(') (char ')') $ do
-    params <- parseArgs <* spaces
-    body <- many (parseProp <* spaces)
+parseConst = inLispExpr_ $ do
+    params <- parseArgs <* spaces >?> "constr-paramters"
+    body <- many (parseProp <* spaces) >?> "constr-body"
     s <- getState
     return $ Const (newMeta s) params body
     where
         parseProp :: Parser (String, LokiVal)
-        parseProp = between (char '(') (char ')') $ do
+        parseProp = inLispExpr_ $ do
                       propName <- ident <* spaces1
                       propVal <- parseExpr1
                       return (propName, propVal)
@@ -144,7 +136,7 @@ parseAnnotation = string "#+" >> many1 letter <* spaces
 
 -- PARSE PRIMITIVES
 parseAtom :: Parser LokiVal
-parseAtom = do atom <- ident
+parseAtom = do atom <- ident >?> "atom"
                return $ case atom of
                             "true"  -> Bool M.empty True
                             "false" -> Bool M.empty False
@@ -164,13 +156,15 @@ parseNumber = do s <- getState
 -- PARSE LITERALS: [], {}, ...
 parseList :: Parser LokiVal
 parseList = do s <- getState
-               List (newMeta s) <$> between (char '(') (char ')')
-                               (sepBy parseExpr1 spacesInLiteral)
+               List (newMeta s)
+                    <$> inLispExpr_
+                        (sepBy parseExpr1 spacesInLiteral)
 
 parseArray :: Parser LokiVal
 parseArray = do s <- getState
-                List (newMeta s) <$> between (char '[') (char ']')
-                                (sepBy parseExpr1 spacesInLiteral)
+                List (newMeta s)
+                    <$> between (char '[') (char ']')
+                        (sepBy parseExpr1 spacesInLiteral)
 
 parseMap :: Parser LokiVal
 parseMap = between (char '{') (char '}') $ do
@@ -180,28 +174,39 @@ parseMap = between (char '{') (char '}') $ do
     return $ Map (newMeta s) keys vals
 
 parseKeyVal :: Parser (String, LokiVal)
-parseKeyVal = do
-    key <- ident <* spaces1InLiteral
-    val <- parseExpr1 <* spacesInLiteral
-    return (key, val)
+parseKeyVal = liftM2 (,) (ident <* spaces1InLiteral >?> "key")
+                         (parseBasicExpr1 <* spacesInLiteral)
 
 ---------HELPERS--------
 newMeta :: String -> Meta
 newMeta = M.singleton "fileType"
 
 -----HELPER PARSERS-----
+inLispExpr :: String -> Parser LokiVal -> Parser LokiVal
+inLispExpr start = between (try (char '(' >> spaces
+                                >> string start <* spaces1)
+                                >?> start)
+                           (char ')')
+
+inLispExpr_ :: Parser a -> Parser a
+inLispExpr_ = between (char '(') (char ')')
+
 parseArgs :: Parser [String]
 parseArgs = between (char '[') (char ']')
                     (manyTill (ident <* spaces)
                               (lookAhead (char ']')))
 
-ident :: Parser String
-ident = (:) <$> first <*> many rest
-    where first = letter <|> symbol
-          rest  = letter <|> digit <|> symbol
+reserved :: [String]
+reserved = ["def", "defclass", "fn", "new", "if"]
 
-symbol :: Parser Char
-symbol = oneOf "!$%&|*+-/<=>?@^_~"
+ident :: Parser String
+ident = do identifier <- (:) <$> first <*> many rest
+           if identifier `elem` reserved
+               then unexpected $ "reserved word " ++ show identifier
+               else return identifier
+    where symbol = oneOf "!$%&*-_+=<>?"
+          first = letter <|> symbol >?> "start-ident"
+          rest  = letter <|> digit <|> symbol >?> "rest-ident"
 
 space' :: Parser ()
 space' = void space <|> comment
@@ -213,10 +218,17 @@ spaces1 :: Parser ()
 spaces1 = skipMany1 space'
 
 spacesInLiteral :: Parser ()
-spacesInLiteral = skipMany $ space' <|> comment <|> void (oneOf ",")
+spacesInLiteral = skipMany (choice [space'
+                                   ,void (oneOf ":,")])
+                  >?> "spaces-in-literal"
 
 spaces1InLiteral :: Parser ()
-spaces1InLiteral = skipMany1 $ space' <|> comment <|> void (oneOf ",")
+spaces1InLiteral = skipMany1 (choice [space'
+                                     ,void (oneOf ":,")])
+                   >?> "1+spaces-in-literal"
 
 comment :: Parser ()
-comment = string ";" >>= void . return (manyTill anyChar newline)
+comment = string ";"
+          >>= return (manyTill anyChar newline)
+          >>  return ()
+          >?> "comment"

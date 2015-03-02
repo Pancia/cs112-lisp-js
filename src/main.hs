@@ -83,24 +83,27 @@ main = do args <- getArgs
                               putStrLn $ prefix ++ "pyVals:\n" ++ show pyVals
                               printDivider
                               PY.formatPy $ PY.toPY 0 <$> pyVals
-          --Print out.loki.*
-          putStrLn $ prefix ++ "" ++ outFile ++ ":\n" ++ src
-          printDivider
           --Write src to outFile
           writeFile outFile src
-          --Switch on outType:
+          --Print outFile
+          printLokiSrc outFile
+          printDivider
+          --If we should run: switch on outType:
           when outRun $ case outType of
                             --Open test.html in the default browser
                             JS -> void $ openInBrowser "test.html"
                             --Execute src, printing its result
                             PY -> print =<< ("stdout: " ++) <$> execSrc outType outFile
     where
-        openInBrowser url = createProcess $ proc (U.caseWindowsOrOther "explorer" "open") [url]
+        openInBrowser url = createProcess $ proc (U.caseOS "explorer" "open") [url]
+        printLokiSrc fileName = if (U.caseOS "windows" "other") /= "windows"
+                                  then callProcess "sed" ["-n", "-e", "/END LOKI/,$p", fileName]
+                                  else callProcess "whoami" []
         prefix = ">>"
 
 execSrc :: OutputType -> String -> IO String
 execSrc outType file = do let exe = case outType of
-                                     JS -> U.caseWindowsOrOther "cscript" "jsc"
+                                     JS -> U.caseOS "cscript" "jsc"
                                      PY -> "python"
                           (_, Just hout, _, _) <- createProcess $ (proc exe [file]) { std_out = CreatePipe }
                           hGetContents hout

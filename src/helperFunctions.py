@@ -48,4 +48,4 @@ class Loki:
     def assoc(x, i, v):
         x[i] = v
 
-#END HELPER FUNCTIONS
+#END LOKI HELPER FUNCTIONS

@@ -17,7 +17,7 @@ tests :: IO [T.Test]
 tests = sequence . join $ runTest "js" <$> [testJsParser, testToJS, testExecJS]
 
 testJsParser :: LokiTests
-testJsParser = (,) <$> ["sexp"]
+testJsParser = (,) <$> ["sexp", "spaces"]
                    <*> [parseJS]
     where parseJS (_, lisp) = do
             let parsed = U.catch $ show <$> readExpr "js" lisp
@@ -39,7 +39,7 @@ testExecJS = (,) <$> ["simple", "complex"]
                   . liftM (JS.translate <$>) . readExpr "js" $ lisp
             let outFile = "tests/" ++ file ++ ".out.js"
             writeFile outFile js
-            let jsOutput = SH.inproc (T.pack $ U.caseWindowsOrOther "cscript" "jsc")
+            let jsOutput = SH.inproc (T.pack $ U.caseOS "cscript" "jsc")
                                      [FS.encode $ FS.decodeString outFile]
                                      SH.empty
             (,) <$> return "exec"

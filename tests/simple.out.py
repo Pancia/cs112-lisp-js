@@ -48,12 +48,5 @@ class Loki:
     def assoc(x, i, v):
         x[i] = v
 
-class Dog:
-    tricks = [] # mistaken use of a class variable
-    def __init__(self, name):
-        self.name = name
-    def add_trick(self, trick):
-        self.tricks.append(trick)
-
-#END HELPER FUNCTIONS
+#END LOKI HELPER FUNCTIONS
 Loki.printf(Loki.plus(2, 3, 4))

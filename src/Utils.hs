@@ -108,5 +108,5 @@ catch :: Either CompilerError a -> a
 catch (Right val) = val
 catch (Left err) = error . show $ err
 
-caseWindowsOrOther :: a -> a -> a
-caseWindowsOrOther windows other = if os == "mingw32" then windows else other
+caseOS :: a -> a -> a
+caseOS windows other = if os == "mingw32" then windows else other

@@ -75,5 +75,5 @@ var loki = (function (){
 
     return loki;
 })();
-//END HELPER FUNCTIONS
+//END LOKI HELPER FUNCTIONS
 loki.print(loki.plus(2, 3, 4));

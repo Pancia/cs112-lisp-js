@@ -120,7 +120,7 @@ defclass2py n (PyDefClass name (PyConst args body) _ vars) = "class " ++ name ++
                   addCons = (++ "\n") . concat $ body2py (n + 2) body
                   addVars = vars2py (n + 1) vars
                   vars2py :: Int -> [PyVal] -> String
-                  vars2py n' = concat . fmap (\(PyClassVar n x) -> printf (addSpacing n' ++ "%s = %s\n") n (toPY 0 x)) 
+                  vars2py n' = concat . fmap (\(PyClassVar varName x) -> printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
 defclass2py _ x = catch . throwError . TypeMismatch "PyDefClass" $ show x
 
 list2py :: Int -> PyVal -> String
@@ -150,7 +150,7 @@ dot2py n (PyObjCall fp on ps)
         params' = L.intercalate ", " $ toPY n <$> ps
 dot2py _ x = catch . throwError . TypeMismatch "PyObjCall" $ show x
 
---Use for: if, for, while, class creation, anything else. Make sure to pass 
+--Use for: if, for, while, class creation, anything else. Make sure to pass
 --around a weight and increment and decrement accordingly
 addSpacing :: Int -> String
 addSpacing weight = replicate (weight * 4) ' '

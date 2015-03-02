@@ -101,10 +101,17 @@ toJS jv = case jv of
               f@(JsFn{})       -> fn2js f
               f@(JsFnCall{})   -> fnCall2js f
               d@(JsObjCall{})  -> dot2js d
+              n@(JsNewObj{})   -> new2js n
               d@(JsDefClass{}) -> defclass2js d
               m@(JsMap{})      -> map2js m
               JsPleaseIgnore   -> ""
-              x -> error "JsVal=(" ++ show x ++ ") should not be toJS'ed"
+              x -> error $ "JsVal=(" ++ show x ++ ") should not be toJS'ed"
+
+new2js :: JsVal -> String
+new2js (JsNewObj name args) =
+        printf "new %s(%s)" name args'
+    where args' = L.intercalate ", " $ toJS <$> args
+new2js x = catch . throwError . TypeMismatch "JsNewObj" $ show x
 
 map2js :: JsVal -> String
 map2js (JsMap ks vs) = "{" ++ kvs ++ "}"
@@ -121,14 +128,14 @@ defclass2js (JsDefClass name (JsConst args ret) fns vars) =
           ret2js propVals = L.intercalate ";\n" $ (\(k,v) -> "this." ++ k ++ " = " ++ toJS v) <$> propVals
           classVars2js :: [JsVal] -> String
           classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b) -> "this." ++ s ++ " = " ++ toJS b)
-          fn2js' :: JsVal -> String
-          fn2js' (JsClassFn fn pms ob) =
+          fn2js_ :: JsVal -> String
+          fn2js_ (JsClassFn fn pms ob) =
               printf "%s.prototype.%s = function(%s) {\n return %s"
               name fn (L.intercalate ", " pms) (toJS ob)
-          fn2js' x = catch . throwError . TypeMismatch "JsClassFn" $ show x
+          fn2js_ x = catch . throwError . TypeMismatch "JsClassFn" $ show x
           fns2js :: [JsVal] -> String
           fns2js [] = []
-          fns2js l = (++ "\n};") . L.intercalate "\n};\n" $ map fn2js' l
+          fns2js l = (++ "\n};") . L.intercalate "\n};\n" $ map fn2js_ l
 defclass2js x = catch . throwError . TypeMismatch "JsDefClass" $ show x
 
 fnCall2js :: JsVal -> String

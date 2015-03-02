@@ -75,7 +75,7 @@ var loki = (function (){
 
     return loki;
 })();
-//END HELPER FUNCTIONS
+//END LOKI HELPER FUNCTIONS
 var f = function () {
 return true
 };

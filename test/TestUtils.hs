@@ -23,12 +23,12 @@ runTest type_ lt = let (files, f:_) = unzip lt
         buildTest f file = do
             fileContents <- readFile ("tests/" ++ file ++ ".loki")
             (testType, contents) <- f (file, fileContents)
-            expected <- readFile $ printf "tests/%s.%s.%s.expected"
-                                          file testType type_
+            let testName = printf "%s.%s.%s" file testType type_
+            expected <- readFile $ printf "tests/%s.expected" testName
             let clean = filter (/= '\n')
-            let contents' = clean contents
+                contents' = clean contents
                 expected' = clean expected
-            return $ testCase file (expected' @=? contents')
+            return $ testCase testName (expected' @=? contents')
 
 readExpr :: String -> String -> Either U.CompilerError [LokiVal]
 readExpr type_ input = case runParser P.parseExpr type_ ("loki-" ++ type_) input of

@@ -1,4 +1,3 @@
 [List (fromList [("fileType","py")]) [Number (fromList [("fileType","py")]) 2,Number (fromList [("fileType","py")]) 3],
 List (fromList [("fileType","py")]) [Atom (fromList [("fileType","py")]) "+",Number (fromList [("fileType","py")]) 2,Number (fromList [("fileType","py")]) 3],
-List (fromList [("fileType","py")]) [Atom (fromList [("fileType","py")]) "plus",Number (fromList [("fileType","py")]) 2,Number (fromList [("fileType","py")]) 3],
 List (fromList [("fileType","py")]) [Atom (fromList [("fileType","py")]) "x",Number (fromList [("fileType","py")]) 2,List (fromList [("fileType","py")]) [],Map (fromList [("fileType","py")]) [] [],Atom (fromList [("fileType","py")]) "q"]]
