@@ -1,6 +1,0 @@
-foo = 5
-foo = Loki.plus(3, 2)
-(lambda  : True)
-(lambda x : Loki.plus(x, 2))
-foo = (lambda x, y : Loki.minus(x, y))
-f = (lambda  : True)Loki.printf(f())

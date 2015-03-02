@@ -1,4 +1,0 @@
-[List (fromList [("fileType","js")]) [Number (fromList [("fileType","js")]) 2,Number (fromList [("fileType","js")]) 3],
-List (fromList [("fileType","js")]) [Atom (fromList [("fileType","js")]) "+",Number (fromList [("fileType","js")]) 2,Number (fromList [("fileType","js")]) 3],
-List (fromList [("fileType","js")]) [Atom (fromList [("fileType","js")]) "x",Number (fromList [("fileType","js")]) 2,List (fromList [("fileType","js")]) [],Map (fromList [("fileType","js")]) [] [],Atom (fromList [("fileType","js")]) "q"]
-]

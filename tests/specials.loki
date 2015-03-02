@@ -1,6 +1,0 @@
-(def foo 5)
-(def foo (+ 3 2))
-(fn [] true)
-(fn [x] (+ x 2))
-(def foo (fn [x y] (- x y)))
-(def f (fn [] true)) (print (f))

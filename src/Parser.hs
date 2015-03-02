@@ -17,7 +17,7 @@ infix 0 >?>
 
 -- TOP LEVEL PARSERS
 parseExpr :: Parser [LokiVal]
-parseExpr = many1 (parseExpr1 <* spaces)
+parseExpr = many (parseExpr1 <* spaces)
 
 parseExpr1 :: Parser LokiVal
 parseExpr1 = do void $ many comment
