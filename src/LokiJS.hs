@@ -46,6 +46,7 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsBool Bool                             -- true|false
            | JsNum Integer                           -- ..-1,0,1..
            | JsId String                             -- x, foo, ..
+           | JsObjCall String JsVal [JsVal]         -- .function objname parameters*
            | JsMap [String] [JsVal]                  -- {x : y, ..}
            | JsFnCall String [JsVal]                 -- foo(..)
            | JsNewObj String [JsVal]                 -- new Foo (..)
@@ -53,7 +54,6 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsConst [String] [(String, JsVal)]      -- Class(..) {..}
            | JsClassFn String [String] JsVal         -- Class.prototype.fn = function(..){..}
            | JsClassVar String JsVal                 -- Class(..) {this.var = val}
-           | JsDotThing String JsVal [JsVal]         -- .function objname parameters*
            | JsList [JsVal]                          -- [] | [x,..]
            | JsPleaseIgnore
            deriving (Eq, Show)
@@ -75,7 +75,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (Const _ s b) -> JsConst s (translateProp <$> b)
                            (Classfn _ s p b) -> JsClassFn s p (translate b)
                            (Classvar _ s b) -> JsClassVar s (translate b)
-                           (Dot _ fp on ps) -> JsDotThing fp (translate on) (translate <$> ps)
+                           (Dot _ fp on ps) -> JsObjCall fp (translate on) (translate <$> ps)
                            (Map _ ks vs) -> JsMap ks (translate <$> vs)
     where
         translateProp :: (String, LokiVal) -> (String, JsVal)
@@ -100,7 +100,7 @@ toJS jv = case jv of
               v@(JsVar{})      -> var2js v
               f@(JsFn{})       -> fn2js f
               f@(JsFnCall{})   -> fnCall2js f
-              d@(JsDotThing{}) -> dot2js d
+              d@(JsObjCall{})  -> dot2js d
               d@(JsDefClass{}) -> defclass2js d
               m@(JsMap{})      -> map2js m
               JsPleaseIgnore   -> ""
@@ -140,7 +140,7 @@ fnCall2js (JsFnCall fn args)
 fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
 
 dot2js :: JsVal -> String
-dot2js (JsDotThing fp on ps)
+dot2js (JsObjCall fp on ps)
         | ps /= [] = printf "%s.%s(%s)" (toJS on) fp args'
         | otherwise = printf "%s.%s" (toJS on) fp
      where args' = L.intercalate ", " . filter (/= "") $ toJS <$> ps
