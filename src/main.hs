@@ -6,12 +6,12 @@ import Control.Monad
 import System.Environment
 import System.IO
 import System.Process
+import System.Exit
 import System.Console.GetOpt
 
 import Text.Parsec (runParser)
 import Control.Monad.Except (throwError)
 import Data.Char (toLower)
-import Data.Maybe (fromMaybe)
 
 import qualified LokiJS as JS
 import qualified LokiPY as PY
@@ -24,7 +24,8 @@ data Options = Options {
     optOutput :: String,
     optLisp :: String,
     optType :: OutputType,
-    optRun :: Bool
+    optRun :: Bool,
+    optHelp :: Bool
     } deriving (Show)
 
 fileType :: String
@@ -36,27 +37,30 @@ defaultOptions = Options {
     optOutput = "out",
     optLisp = "",
     optType = JS,
-    optRun = True
+    optRun = True,
+    optHelp = False
     }
 
 options :: [OptDescr (Options -> Options)]
-options = [Option "i" ["input"]     (ReqArg readInput "FILE")      "input file"
-          ,Option "o" ["output"]    (ReqArg readOutput "FILE")     "output filename"
-          ,Option "l" ["lisp-expr"] (ReqArg readLispExpr "stdin")  "input lisp s-exprs"
-          ,Option "t" ["type"]      (ReqArg readOutputType "type") "output file type"
-          ,Option "c" ["compile"]   (OptArg readRun "compile?")    "should just compile"]
+options = [Option "i" ["input-file"]  (ReqArg readInput "FILE")      "input file"
+          ,Option "o" ["output-file"] (ReqArg readOutput "FILE")     "output filename"
+          ,Option "l" ["lisp-expr"]   (ReqArg readLispExpr "stdin")  "input lisp s-exprs"
+          ,Option "t" ["type"]        (ReqArg readOutputType "type") "output file type"
+          ,Option "c" ["compile"]     (NoArg readRun)                "should just compile"
+          ,Option "h" ["help"]        (NoArg readHelp)               "help with prg usage"]
     where
         readOutputType arg opts = opts {optType = read arg}
         readLispExpr arg opts = opts {optLisp = arg}
         readInput arg opts = opts {optInput = arg}
         readOutput arg opts = opts {optOutput = arg}
-        readRun arg opts = opts {optRun = readBool $ fromMaybe "no" arg}
-        readBool x = (toLower <$> x) `elem` ["y", "yes", "true"]
+        readRun opts = opts {optRun = False}
+        readHelp opts = opts {optHelp = True}
 
 main :: IO ()
 main = do args <- getArgs
           let (actions, nonOpts, msgs) = getOpt RequireOrder options args
               opts = foldl (flip ($)) defaultOptions actions
+              outHelp = optHelp opts
               outType = optType opts
               outRun = optRun opts
               outFile = if '.' `elem` tail (optOutput opts)
@@ -66,6 +70,9 @@ main = do args <- getArgs
           putStrLn $ prefix ++ "nonOpts: " ++ show nonOpts
           putStrLn $ prefix ++ "msgs: " ++ show msgs
           printDivider
+
+          when outHelp $
+              (putStrLn =<< readFile "USAGE") >> exitSuccess
 
           lispVals <- if null $ optLisp opts
                           then liftM (readExpr outType) . readFile $ optInput opts

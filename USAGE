@@ -1,0 +1,15 @@
+Usage: cabal run -- [OPTION]
+If exe: loki [OPTION]
+Example: cabal run -- -c -t py -i asdf.loki -o asdf.out.js
+Example: loki -c -t py -i asdf.loki -o asdf.out.js
+
+Options:
+  -c,      --compile            If present, should only compile (no execution)
+  -i IN,   --input-file IN      IN is the file to use as input
+  -o OUT,  --output-file OUT    OUT is the file to write the output to
+  -t TYPE, --type TYPE          TYPE[py|js] is what language to compile to
+  -l EXPR, --lisp-expr EXPR     If present, only execute EXPR
+
+Loki home page: <https://github.com/Pancia/loki-lang>
+Report bugs to: <https://github.com/Pancia/loki-lang/issues>
+General help: <https://github.com/Pancia/loki-lang/wiki>
