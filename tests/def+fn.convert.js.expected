@@ -1,0 +1,31 @@
+var x
+var y = 2
+var x = y
+var x = loki.plus(1, 2)
+var y = [1, 2]
+
+var x
+var x
+var x
+
+var x = 1
+var x = 1
+var x = 1
+
+var y = function (x) {return loki.print(x)}
+var z = function () {return loki.print("hello")}
+var a = function () {return []}
+
+var y = function (x) {return loki.print(x)}
+var y = function (x) {return loki.print(x)}
+var y = function (x) {return loki.print(x)}
+
+function () {return []}
+function (x) {return []}
+function (x) {return loki.print(x)}
+function (x, y) {return []}
+function (x, y) {return loki.print(loki.plus(x, y))}
+function (x, y, z) {loki.print("first");return loki.print(loki.plus(x, y, z))}
+
+function (x) {return loki.print(x)}
+function (x) {return loki.print(x)}

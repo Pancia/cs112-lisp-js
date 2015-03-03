@@ -26,7 +26,7 @@ testJsParser = (,) <$> ["class-object", "def+fn", "specials"
             return ("parse", parsed)
 
 testToJS :: LokiTests
-testToJS = (,) <$> ["class-object", "helpers", "specials"]
+testToJS = (,) <$> ["class-object", "helpers", "specials", "def+fn"]
                <*> [toJS]
     where toJS (_, lisp) = do
             let translated = U.catch . liftM (JS.translate <$>) $ readExpr "js" lisp
