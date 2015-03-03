@@ -1,0 +1,54 @@
+;from kivy.app import App
+;from kivy.uix.widget import Widget
+;from kivy.uix.label import Label
+;from kivy.uix.gridlayout import GridLayout
+;from kivy.uix.button import Button
+;from kivy.properties import (ListProperty, NumericProperty)
+;from kivy.uix.modalview import ModalView
+
+(defclass GridEntry
+     ([Button] (set coords (ListProperty [[0,0]]))))
+	 
+(defclass TicTacToeGrid
+     ([self *args **kwargs]
+	        (set status (new ListProperty [[0, 0, 0, 0, 0, 0, 0, 0, 0]]))
+		    (set currentPlayer (new NumericProperty 1))
+		    (. __init__ (super TicTacToeGrid self) *args **kwargs)
+			(for [row (range 3)
+				  col (range 3)]
+				(set gridEntry (new GridEntry (set coords row col))))) ;This is sketch. Finish later?
+				
+     (def buttonPressed
+	      (fn [self button]
+		       (set player {1 "X" -1 "0"}) ;Sketch line
+			   (set colors {1 {0 0 0 0} -1 {0 0 0 0}})
+			   (set row (. coords button))
+			   (set column (. coords button))
+			   (set statusIndex (+(* (3 row)) column))
+			   (set alreadyPlayed (. (get status statusIndex) self))
+			   
+			   (if (!= alreadyPlayed)
+			        (set (. (get status statusIndex) set) (. currentPlayer self))
+					; button.text = {1: 'X', -1: 'O'}[self.currentPlayer]
+					(set (. background_color button) (get colors (. currentPlayer self)))
+					(set (. currentPlayer self) (* (. currentPlayer self) -1)))))
+
+     (def reset
+	      (fn [self *args]
+		       (set (. status self) [0 for [_ (range 9)]])
+			   (for [child (. self children)]
+			        (set (. text child) "")
+					;(set (. background_color child) 1 1 1 1)
+					)
+			   (set (. currentPlayer self) 1)))
+			   
+     ;Translate on_status
+			   
+(defclass TicTacToeApp 
+     ([app])
+	 (def build 
+	      (fn [self]
+		       (return TicTacToeGrid))))
+			   
+(if (= (__name__ "__main__")) 
+     (. run (TicTacToeApp)))
