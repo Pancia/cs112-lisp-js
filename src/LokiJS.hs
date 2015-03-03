@@ -25,7 +25,11 @@ specialForms :: M.Map String SpecialForm
 specialForms = M.fromList [("if", if_)]
     where
         if_ :: SpecialForm
-        if_ [cond_, then_, else_] = "(" ++ toJS cond_ ++ " ? " ++ toJS then_ ++ " : " ++ toJS else_ ++ ")"
+        if_ [cond_, then_, else_] = do
+            let cond_' = fromJust $ toJS cond_
+                then_' = fromJust $ toJS then_
+                else_' = fromJust $ toJS else_
+            printf "(%s?%s:%s)" cond_' then_' else_'
         if_ [cond_, then_] = if_ [cond_, then_, JsId "null"]
         if_ _ = error "wrong args to if"
 
@@ -35,9 +39,9 @@ lookupFn f = fromMaybe f $ M.lookup f primitives
 lookupSpecForm :: String -> Maybe SpecialForm
 lookupSpecForm s = M.lookup s specialForms
 
-formatJs :: [String] -> IO String
+formatJs :: [Maybe String] -> IO String
 formatJs js = do helperFns <- readFile "src/helperFunctions.js"
-                 let js' = (++ ";") . L.intercalate ";\n" $ js
+                 let js' = (++ ";") . L.intercalate ";\n" $ catMaybes js
                  return $ helperFns ++ js'
 
 data JsVal = JsVar String JsVal                      -- var x = ..
@@ -46,7 +50,7 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsBool Bool                             -- true|false
            | JsNum Integer                           -- ..-1,0,1..
            | JsId String                             -- x, foo, ..
-           | JsObjCall String JsVal [JsVal]         -- .function objname parameters*
+           | JsObjCall String JsVal [JsVal]          -- .function objname parameters*
            | JsMap [String] [JsVal]                  -- {x : y, ..}
            | JsFnCall String [JsVal]                 -- foo(..)
            | JsNewObj String [JsVal]                 -- new Foo (..)
@@ -90,12 +94,12 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
 
 -- TODO: Change to ... -> Maybe String,
 -- so that JsPleaseIgnore can be ignored
-toJS :: JsVal -> String
+toJS :: JsVal -> Maybe String
 toJS jv = case jv of
               a@(JsId{})       -> id2js a
-              (JsNum n)        -> show n
-              (JsStr s)        -> "\"" ++ s ++ "\""
-              (JsBool x)       -> toLower <$> show x
+              (JsNum n)        -> Just $ show n
+              (JsStr s)        -> Just $ "\"" ++ s ++ "\""
+              (JsBool x)       -> Just $ toLower <$> show x
               l@(JsList{})     -> list2js l
               v@(JsVar{})      -> var2js v
               f@(JsFn{})       -> fn2js f
@@ -104,74 +108,96 @@ toJS jv = case jv of
               n@(JsNewObj{})   -> new2js n
               d@(JsDefClass{}) -> defclass2js d
               m@(JsMap{})      -> map2js m
-              JsPleaseIgnore   -> ""
+              JsPleaseIgnore   -> Nothing
               x -> error $ "JsVal=(" ++ show x ++ ") should not be toJS'ed"
 
-new2js :: JsVal -> String
-new2js (JsNewObj name args) =
-        printf "new %s(%s)" name args'
-    where args' = L.intercalate ", " $ toJS <$> args
+new2js :: JsVal -> Maybe String
+new2js (JsNewObj name args) = return $ printf "new %s(%s)" name args'
+    where args' = L.intercalate ", " . catMaybes $ toJS <$> args
 new2js x = catch . throwError . TypeMismatch "JsNewObj" $ show x
 
-map2js :: JsVal -> String
-map2js (JsMap ks vs) = "{" ++ kvs ++ "}"
-    where kvs = L.intercalate ", " $ zipWith (\k v -> k ++ " : " ++ toJS v) ks vs
+map2js :: JsVal -> Maybe String
+map2js (JsMap ks vs) = do let kvs = zipWith (\k v -> liftM (printf "%s:%s" k)
+                                                           (toJS v))
+                                            ks vs
+                              kvs' = L.intercalate "," . catMaybes $ kvs
+                          return $ printf "{%s}" kvs'
 map2js x = catch . throwError . TypeMismatch "JsMap" $ show x
 
-defclass2js :: JsVal -> String
-defclass2js (JsDefClass name (JsConst args ret) fns vars) =
-        printf "function %s(%s) {\n%s;\n%s\n};\n%s"
-        name params (classVars2js vars) (ret2js ret) (fns2js fns)
+defclass2js :: JsVal -> Maybe String
+defclass2js (JsDefClass name (JsConst args ret) fns vars) = do
+        vars' <- classVars2js vars
+        ret' <- ret2js ret
+        fns' <- fns2js fns
+        return $ printf "function %s(%s) {\n%s;\n%s\n};\n%s"
+                 name params vars' ret' fns'
     where params = L.intercalate ", " args
-          ret2js :: [(String, JsVal)] -> String
-          ret2js [] = []
-          ret2js propVals = L.intercalate ";\n" $ (\(k,v) -> "this." ++ k ++ " = " ++ toJS v) <$> propVals
-          classVars2js :: [JsVal] -> String
-          classVars2js = L.intercalate ";\n" . map (\(JsClassVar s b) -> "this." ++ s ++ " = " ++ toJS b)
-          fn2js_ :: JsVal -> String
-          fn2js_ (JsClassFn fn pms ob) =
-              printf "%s.prototype.%s = function(%s) {\n return %s"
-              name fn (L.intercalate ", " pms) (toJS ob)
+          propVal2js :: (String, JsVal) -> Maybe String
+          propVal2js (k,v) = do v' <- toJS v
+                                return $ printf "this.%s = %s" k v'
+          ret2js :: [(String, JsVal)] -> Maybe String
+          ret2js [] = Nothing
+          ret2js propVals = do let pvs = mapMaybe propVal2js propVals
+                               return $ L.intercalate ";\n" pvs
+          classVar2js :: JsVal -> Maybe String
+          classVar2js (JsClassVar s b) = do b' <- toJS b
+                                            return $ printf "this.%s = %s" s b'
+          classVar2js x = catch . throwError . TypeMismatch "" $ show x
+          classVars2js :: [JsVal] -> Maybe String
+          classVars2js vs = do let vs' = mapMaybe classVar2js vs
+                               return $ L.intercalate ";\n" vs'
+          fn2js_ :: JsVal -> Maybe String
+          fn2js_ (JsClassFn fn pms ob) = do
+              ob' <- toJS ob
+              return $ printf "%s.prototype.%s = function(%s) {\n return %s"
+                name fn (L.intercalate ", " pms) ob'
           fn2js_ x = catch . throwError . TypeMismatch "JsClassFn" $ show x
-          fns2js :: [JsVal] -> String
-          fns2js [] = []
-          fns2js l = (++ "\n};") . L.intercalate "\n};\n" $ map fn2js_ l
+          fns2js :: [JsVal] -> Maybe String
+          fns2js [] = Nothing
+          fns2js l = Just $ (++ "\n};") . L.intercalate "\n};\n" . catMaybes $ map fn2js_ l
 defclass2js x = catch . throwError . TypeMismatch "JsDefClass" $ show x
 
-fnCall2js :: JsVal -> String
+fnCall2js :: JsVal -> Maybe String
 fnCall2js (JsFnCall fn args)
-        | isJust specForm = fromJust specForm args
-        | otherwise = lookupFn fn ++ "(" ++ args' ++ ")"
-    where args' = L.intercalate ", " . filter (/= "") $ toJS <$> args
+        | isJust specForm = specForm <*> Just args
+        | otherwise = return $ printf "%s(%s)" (lookupFn fn) args'
+    where args' = L.intercalate ", " . catMaybes $ toJS <$> args
           specForm = lookupSpecForm fn
 fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
 
-dot2js :: JsVal -> String
-dot2js (JsObjCall fp on ps)
-        | ps /= [] = printf "%s.%s(%s)" (toJS on) fp args'
-        | otherwise = printf "%s.%s" (toJS on) fp
-     where args' = L.intercalate ", " . filter (/= "") $ toJS <$> ps
+dot2js :: JsVal -> Maybe String
+dot2js (JsObjCall fp on args)
+        | args /= [] = do on' <- toJS on
+                          return $ printf "%s.%s(%s)" on' fp args'
+        | otherwise = do on' <- toJS on
+                         return $ printf "%s.%s" on' fp
+     where args' = L.intercalate ", " . catMaybes $ toJS <$> args
 dot2js x = catch . throwError . TypeMismatch "JsDotThing" $ show x
 
-id2js :: JsVal -> String
-id2js (JsId a) = a
+id2js :: JsVal -> Maybe String
+id2js (JsId a) = Just a
 id2js x = catch . throwError . TypeMismatch "JsId" $ show x
 
-fn2js :: JsVal -> String
-fn2js (JsFn params body) = printf "function (%s) {\n%s\n}" params' (showBody body)
+fn2js :: JsVal -> Maybe String
+fn2js (JsFn params body) = do body' <- showBody body
+                              return $ printf "function (%s) {\n%s\n}" params' body'
     where params' = L.intercalate ", " params
-          showBody [] = []
-          showBody (b:q:bs) = toJS b ++ ";\n" ++ showBody (q:bs)
-          showBody [b] = "return " ++ toJS b
+          showBody :: [JsVal] -> Maybe String
+          showBody [] = Nothing
+          showBody (b:q:bs) = do b' <- toJS b
+                                 b'' <- showBody (q:bs)
+                                 return $ b' ++ ";\n" ++ b''
+          showBody [b] = liftM ("return " ++) $ toJS b
 fn2js x = catch . throwError . TypeMismatch "JsFn" $ show x
 
-var2js :: JsVal -> String
-var2js (JsVar name JsPleaseIgnore) = printf "var %s" name
-var2js (JsVar name body) = printf "var %s = %s" name (toJS body)
+var2js :: JsVal -> Maybe String
+var2js (JsVar name JsPleaseIgnore) = return $ printf "var %s" name
+var2js (JsVar name body) = do body' <- toJS body
+                              return $ printf "var %s = %s" name body'
 var2js x = catch . throwError . TypeMismatch "JsVar" $ show x
 
-list2js :: JsVal -> String
+list2js :: JsVal -> Maybe String
 list2js l = case l of
                (JsList [JsId "quote", ql]) -> toJS ql
-               (JsList xs) -> "[" ++ L.intercalate ", " (fmap toJS xs) ++ "]"
+               (JsList xs) -> Just $ printf "[%s]" $ L.intercalate ", " (catMaybes $ toJS <$> xs)
                x -> catch . throwError . TypeMismatch "JsList" $ show x

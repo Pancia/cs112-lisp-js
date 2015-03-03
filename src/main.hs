@@ -85,7 +85,7 @@ main = do args <- getArgs
                      JS -> do let jsVals = U.catch . liftM (JS.translate <$>) $ lispVals
                               putStrLn $ prefix ++ "jsVals:\n" ++ show jsVals
                               printDivider
-                              JS.formatJs . filter (/= "") $ JS.toJS <$> jsVals
+                              JS.formatJs $ JS.toJS <$> jsVals
                      PY -> do let pyVals = U.catch . liftM (PY.translate <$>) $ lispVals
                               putStrLn $ prefix ++ "pyVals:\n" ++ show pyVals
                               printDivider

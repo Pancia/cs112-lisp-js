@@ -1,5 +1,6 @@
 module TestLokiJS where
 
+import Data.Maybe
 import Control.Applicative hiding (Const)
 import Control.Monad
 import Test.Framework.Providers.QuickCheck2()
@@ -29,7 +30,7 @@ testToJS = (,) <$> ["helpers", "specials"]
                <*> [toJS]
     where toJS (_, lisp) = do
             let translated = U.catch . liftM (JS.translate <$>) $ readExpr "js" lisp
-                jsStr = concat . fmap JS.toJS $ translated
+                jsStr = concat . mapMaybe JS.toJS $ translated
             return ("convert", jsStr)
 
 testExecJS :: LokiTests
