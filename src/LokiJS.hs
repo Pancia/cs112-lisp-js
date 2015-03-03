@@ -59,19 +59,19 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsClassFn String [String] JsVal         -- Class.prototype.fn = function(..){..}
            | JsClassVar String JsVal                 -- Class(..) {this.var = val}
            | JsList [JsVal]                          -- [] | [x,..]
-           | JsPleaseIgnore
+           | JsNothing
            deriving (Eq, Show)
 
 translate :: LokiVal -> JsVal
 translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
-                  then JsPleaseIgnore
+                  then JsNothing
                   else case v of
-                           (PleaseIgnore _) -> JsPleaseIgnore
+                           (LkiNothing _) -> JsNothing
                            (Atom _ a) -> JsId a
                            (Bool _ b) -> JsBool b
                            (Def _ n b) -> JsVar n (translate b)
                            (Fn _ xs b) -> JsFn xs (translate <$> b)
-                           l@(List {}) -> list2jsVal l
+                           l@(List{}) -> list2jsVal l
                            (Number _ n) -> JsNum n
                            (String _ s) -> JsStr s
                            (New _ s l) -> JsNewObj s (translate <$> l)
@@ -92,8 +92,6 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                         (List _ xs) -> JsList $ translate <$> xs
                         x -> catch . throwError . TypeMismatch "List" $ show x
 
--- TODO: Change to ... -> Maybe String,
--- so that JsPleaseIgnore can be ignored
 toJS :: JsVal -> Maybe String
 toJS jv = case jv of
               a@(JsId{})       -> id2js a
@@ -108,7 +106,7 @@ toJS jv = case jv of
               n@(JsNewObj{})   -> new2js n
               d@(JsDefClass{}) -> defclass2js d
               m@(JsMap{})      -> map2js m
-              JsPleaseIgnore   -> Nothing
+              JsNothing        -> Nothing
               x -> error $ "JsVal=(" ++ show x ++ ") should not be toJS'ed"
 
 new2js :: JsVal -> Maybe String
@@ -191,7 +189,7 @@ fn2js (JsFn params body) = do body' <- showBody body
 fn2js x = catch . throwError . TypeMismatch "JsFn" $ show x
 
 var2js :: JsVal -> Maybe String
-var2js (JsVar name JsPleaseIgnore) = return $ printf "var %s" name
+var2js (JsVar name JsNothing) = return $ printf "var %s" name
 var2js (JsVar name body) = do body' <- toJS body
                               return $ printf "var %s = %s" name body'
 var2js x = catch . throwError . TypeMismatch "JsVar" $ show x

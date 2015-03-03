@@ -73,7 +73,7 @@ parseDef = inLispExpr "def" $ do
     name <- ident <* spaces >?> "def-name"
     s <- getState
     body <- choice [parseExpr1 <* spaces
-                   ,return $ PleaseIgnore $ newMeta s]
+                   ,return $ LkiNothing $ newMeta s]
                    >?> "def-body"
     return $ Def (newMeta s) name body
 
