@@ -46,14 +46,14 @@ options = [Option "i" ["input-file"]  (ReqArg readInput "FILE")      "input file
           ,Option "o" ["output-file"] (ReqArg readOutput "FILE")     "output filename"
           ,Option "l" ["lisp-expr"]   (ReqArg readLispExpr "stdin")  "input lisp s-exprs"
           ,Option "t" ["type"]        (ReqArg readOutputType "type") "output file type"
-          ,Option "c" ["compile"]     (NoArg readRun)                "should just compile"
+          ,Option "c" ["compile"]     (NoArg readCompile)            "should just compile"
           ,Option "h" ["help"]        (NoArg readHelp)               "help with prg usage"]
     where
         readOutputType arg opts = opts {optType = read arg}
         readLispExpr arg opts = opts {optLisp = arg}
         readInput arg opts = opts {optInput = arg}
         readOutput arg opts = opts {optOutput = arg}
-        readRun opts = opts {optRun = False}
+        readCompile opts = opts {optRun = False}
         readHelp opts = opts {optHelp = True}
 
 main :: IO ()
