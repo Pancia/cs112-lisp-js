@@ -15,15 +15,23 @@ primitives :: M.Map String String
 primitives = M.fromList $ fmap addLokiPrefix $
         [("+", "plus"),("-", "minus"),("*", "mult"),("/", "div"),("=", "eq")
         ,("!=", "neq"),("<", "lt"),("<=", "lte"),(">", "gt"),(">=", "gte")]
-        ++ (dupl <$> ["print","mod","assoc","set","range","get"])
+        ++ (dupl <$> ["print","mod","assoc","range","get"])
     where
         addLokiPrefix (q,s) = (q,"loki." ++ s)
         dupl x = (x,x)
 
 type SpecialForm = [JsVal] -> String
 specialForms :: M.Map String SpecialForm
-specialForms = M.fromList [("if", if_)]
+specialForms = M.fromList [("if", if_),("set", set),("setp", setp)]
     where
+        setp :: SpecialForm
+        setp [JsId var, JsId prop, val] = let val' = fromJust $ toJS val
+                                          in printf "%s.%s = %s" var prop val'
+        setp _ = error "wrong args to setp"
+        set :: SpecialForm
+        set [JsId var, val] = let val' = fromJust $ toJS val
+                              in printf "%s = %s" var val'
+        set _ = error "wrong args to set"
         if_ :: SpecialForm
         if_ [cond_, then_, else_] = do
             let cond_' = fromJust $ toJS cond_

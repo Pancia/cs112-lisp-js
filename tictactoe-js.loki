@@ -9,52 +9,79 @@
 (def w)
 (def y)
 
-(.onload window (fn []
-                (set painted [])
-                (set content [])
-                (set winningCombos [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]])
-                (.forEach (range 9) (fn [] 
-                                    (set painted false
-                                    (set content ''))))))
-                                   
-(def canvasClicked (fn [canvasNum]
-                   (set theCanvas (+ "canvas" canvasNum))
-                   (set c (.getElementById document theCanvas)
-                   (set cxt (.getContext c "2d")
-                   (if (= (get painted (- canvasNum 1)) false) 
-                       (if (= (mod turn 2))
-                           ((.beginPath cxt)
-                            (.moveTo cxt)
-                            (.lineTo cxt)
-                            (.moveTo cxt)
-                            (.lineTo cxt)
-                            (.stroke cxt)
-                            (.closePath cxt)
-                            (set (get content (- canvasNum 1)) 'X'))
-                           ((.beginPath cxt)
-                            (.arc cxt 25 25 20 0 (* 3.1415926535 2) true)     ;Not sure about this one
-                            (.stroke cxt)
-                            (.closePath cxt)
-                            (set (get content (- canvasNum 1)) 'O')))
-                       (set turn (+ turn 1))
-                       (set (get painted (- canvasNum 1)) true)
-                       (set squaresFilled (+ squaresFilled 1))
-                       (checkForWinners (get content (- canvasNum 1)))
-                       (if (= squaresFilled 9)
-                           ((alert "Draw!")
-                            (.reload location true)))
-                    (alert "Invalid move!"))))))
+(set myObj {})
+(print myObj)
+(setp myObj foo 5)
 
-;I'm a little sketch about the if statement on and accessing a 2D array in this function                       
-(def checkForWinners (fn [symbol]
-                     (.forEach (range 6) (fn []
-                                         (if (&& (&& (= (get content (get winningCombos a (get winningCombos 0)) symbol) 
-                                                     (= (get content (get winningCombos a (get winningCombos 1)) symbol)
-                                                     (= (get content (get winningCombos a (get winningCombos 2)) symbol))))))
-                                             (alert (+ symbol " won!")
-                                             (playAgain))))))) ; Is this how you call a function?
-                       
-(def playAgain (fn []
-               (set y (confirm "Play again?"))
-               (if (= y true)
-                   (.reload location true))))
+;(setp window onload
+;     (fn []
+;       (set painted [])
+;       (set content [])
+;       (set winningCombos [[0,1,2],[3,4,5],[6,7,8],[0,3,6],
+;                           [1,4,7],[2,5,8],[0,4,8],[2,4,6]])
+;       (.forEach (range 9)
+;                 (fn []
+;                   (set painted false)
+;                   (set content "")))))
+
+(def t1
+  (fn [cn]
+    (.beginPath cxt)
+    (.moveTo cxt)
+    (.lineTo cxt)
+    (.moveTo cxt)
+    (.lineTo cxt)
+    (.stroke cxt)
+    (.closePath cxt)
+    (set (get content (- cn 1)) "X")))
+
+(def t2
+  (fn [cn]
+    (.beginPath cxt)
+    (.arc cxt 25 25 20 0 (* 3 2) true) ;;should be (* Math/PI 2)
+    (.stroke cxt)
+    (.closePath cxt)
+    (set (get content (- cn 1)) "O")))
+
+(def t3
+  (fn [cn]
+    (set turn (+ turn 1))
+    (set (get painted (- cn 1)) true)
+    (set squaresFilled (+ squaresFilled 1))
+    (checkForWinners (get content (- cn 1)))
+    (if (= squaresFilled 9)
+      (alert "Draw!")
+      (.reload location true))
+    (alert "Invalid move!")))
+
+(def canvasClicked
+  (fn [cn]
+    (def theCanvas (+ "canvas" cn))
+    (def c (.getElementById document theCanvas))
+    (set cxt (.getContext c "2d"))
+    (if (= (get painted (- cn 1)) false)
+      (if (= (mod turn 2))
+        (t1 cn)
+        (t2 cn))
+      (t3 cn))))
+
+(def t4
+  (fn []
+    (alert (+ symbol " won!"))
+    (playAgain)))
+
+;How to access 2D array?
+(def checkForWinners
+  (fn [symbol]
+    (.forEach (range 6)
+              (fn []
+                (if (and (= (get content (get winningCombos a (get winningCombos 0))) symbol)
+                         (= (get content (get winningCombos a (get winningCombos 1))) symbol)
+                         (= (get content (get winningCombos a (get winningCombos 2))) symbol))
+                  (t4))))))
+
+(def playAgain
+  (fn []
+    (set y (confirm "Play again?"))
+    (if (= y true)
+      (.reload location true))))
