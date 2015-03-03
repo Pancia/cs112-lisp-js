@@ -9,15 +9,15 @@ import qualified Control.Foldl as F
 import qualified Data.Text as T
 import qualified Filesystem.Path.CurrentOS as FS
 import qualified LokiJS as JS
-import qualified Test.Framework as T
+import qualified Test.Framework as TF
 import qualified Turtle as SH
 import qualified Utils as U
 
-tests :: IO [T.Test]
+tests :: IO [TF.Test]
 tests = sequence . join $ runTest "js" <$> [testJsParser, testToJS, testExecJS]
 
 testJsParser :: LokiTests
-testJsParser = (,) <$> ["class-object", "def+fn", "specials" 
+testJsParser = (,) <$> ["class-object", "def+fn", "specials"
                        ,"primitives", "literals"]
                    <*> [parseJS]
     where parseJS (_, lisp) = do
@@ -40,7 +40,7 @@ testExecJS = (,) <$> ["simple", "complex"]
                   . liftM (JS.translate <$>) . readExpr "js" $ lisp
             let outFile = "tests/" ++ file ++ ".out.js"
             writeFile outFile js
-            let jsOutput = SH.inproc (T.pack $ U.caseOS "node" "jsc")
+            let jsOutput = SH.inproc (T.pack "node")
                                      [FS.encode $ FS.decodeString outFile]
                                      SH.empty
             (,) <$> return "exec"

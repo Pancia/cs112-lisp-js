@@ -110,7 +110,7 @@ main = do args <- getArgs
 
 execSrc :: OutputType -> String -> IO String
 execSrc outType file = do let exe = case outType of
-                                     JS -> U.caseOS "node" "jsc"
+                                     JS -> "node"
                                      PY -> "python"
                           (_, Just hout, _, _) <- createProcess $ (proc exe [file]) { std_out = CreatePipe }
                           hGetContents hout
