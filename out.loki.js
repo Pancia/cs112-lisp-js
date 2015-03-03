@@ -75,7 +75,70 @@ var loki = (function (){
 
     return loki;
 })();
-//END HELPER FUNCTIONS
-[function () {
-return 5
-}];
+//END LOKI HELPER FUNCTIONS
+var painted;
+var content;
+var winningCombos;
+var turn = 0;
+var theCanvas;
+var c;
+var cxt;
+var squaresFilled = 0;
+var w;
+var y;
+myObj = {};
+myObj.foo = 5;
+loki.print(myObj);
+window.onload = function () {
+painted = [];
+content = [];
+winningCombos = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+return loki.range(9).forEach(function () {
+painted = false;
+return content = ""
+})
+};
+var t1 = function (cn) {
+cxt.beginPath;
+cxt.moveTo;
+cxt.lineTo;
+cxt.moveTo;
+cxt.lineTo;
+cxt.stroke;
+cxt.closePath;
+return loki.assoc(content, loki.minus(cn, 1), "X")
+};
+var t2 = function (cn) {
+cxt.beginPath;
+cxt.arc(25, 25, 20, 0, loki.mult(3, 2), true);
+cxt.stroke;
+cxt.closePath;
+return loki.assoc(content, loki.minus(cn, 1), "O")
+};
+var t3 = function (cn) {
+turn = loki.plus(turn, 1);
+loki.assoc(painted, loki.minus(cn, 1), true);
+squaresFilled = loki.plus(squaresFilled, 1);
+checkForWinners(loki.get(content, loki.minus(cn, 1)));
+(loki.eq(squaresFilled, 9)?alert("Draw!"):location.reload(true));
+return alert("Invalid move!")
+};
+var canvasClicked = function (cn) {
+theCanvas = loki.plus("canvas", cn);
+c = document.getElementById(theCanvas);
+cxt = c.getContext("2d");
+return (loki.eq(loki.get(painted, loki.minus(cn, 1)), false)?(loki.eq(loki.mod(turn, 2))?t1(cn):t2(cn)):t3(cn))
+};
+var t4 = function () {
+alert(loki.plus(symbol, " won!"));
+return playAgain()
+};
+var checkForWinners = function (symbol) {
+return loki.range(6).forEach(function () {
+return (and(loki.eq(loki.get(content, loki.get(winningCombos, a, loki.get(winningCombos, 0))), symbol), loki.eq(loki.get(content, loki.get(winningCombos, a, loki.get(winningCombos, 1))), symbol), loki.eq(loki.get(content, loki.get(winningCombos, a, loki.get(winningCombos, 2))), symbol))?t4():null)
+})
+};
+var playAgain = function () {
+y = confirm("Play again?");
+return (loki.eq(y, true)?location.reload(true):null)
+};

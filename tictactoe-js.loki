@@ -2,7 +2,6 @@
 (def content)
 (def winningCombos)
 (def turn 0)
-(def theCanvas)
 (def c)
 (def cxt)
 (def squaresFilled 0)
@@ -10,78 +9,85 @@
 (def y)
 
 (set myObj {})
-(print myObj)
 (setp myObj foo 5)
+(print myObj)
 
-;(setp window onload
-;     (fn []
-;       (set painted [])
-;       (set content [])
-;       (set winningCombos [[0,1,2],[3,4,5],[6,7,8],[0,3,6],
-;                           [1,4,7],[2,5,8],[0,4,8],[2,4,6]])
-;       (.forEach (range 9)
-;                 (fn []
-;                   (set painted false)
-;                   (set content "")))))
+(setp window onload
+      (fn []
+        (set painted [])
+        (set content [])
+        (set winningCombos [[0,1,2],[3,4,5],[6,7,8],[0,3,6],
+                            [1,4,7],[2,5,8],[0,4,8],[2,4,6]])
+        (. forEach (range 9)
+           (fn [l]
+             (assoc painted l false)
+             (assoc content l "")))))
 
-(def t1
+(def movePlayer
   (fn [cn]
-    (.beginPath cxt)
-    (.moveTo cxt)
-    (.lineTo cxt)
-    (.moveTo cxt)
-    (.lineTo cxt)
-    (.stroke cxt)
-    (.closePath cxt)
-    (set (get content (- cn 1)) "X")))
+    (alert "movePlayer")
+    (. beginPath cxt)
+    (. moveTo cxt 10 10)
+    (. lineTo cxt 40 40)
+    (. moveTo cxt 40 10)
+    (. lineTo cxt 10 40)
+    (. stroke cxt)
+    (. closePath cxt)
+    (assoc content (- cn 1) "X")
+    (onEndTurn cn)))
 
-(def t2
+(def moveComputer
   (fn [cn]
-    (.beginPath cxt)
-    (.arc cxt 25 25 20 0 (* 3 2) true) ;;should be (* Math/PI 2)
-    (.stroke cxt)
-    (.closePath cxt)
-    (set (get content (- cn 1)) "O")))
+    (alert "moveComputer")
+    (. beginPath cxt)
+    (. arc cxt 25 25 20 0 (* (. PI Math) 2) true)
+    (. stroke cxt)
+    (. closePath cxt)
+    (assoc content (- cn 1) "O")
+    (onEndTurn cn)))
 
-(def t3
+(def onEndTurn
   (fn [cn]
+    (alert "onEndTurn")
     (set turn (+ turn 1))
-    (set (get painted (- cn 1)) true)
+    (assoc painted (- cn 1) true)
     (set squaresFilled (+ squaresFilled 1))
     (checkForWinners (get content (- cn 1)))
     (if (= squaresFilled 9)
       (alert "Draw!")
-      (.reload location true))
-    (alert "Invalid move!")))
+      (. reload location true))))
 
+(def theCanvas)
 (def canvasClicked
   (fn [cn]
-    (def theCanvas (+ "canvas" cn))
-    (def c (.getElementById document theCanvas))
-    (set cxt (.getContext c "2d"))
+    (set theCanvas (+ "canvas" cn))
+    (set c (. getElementById document theCanvas))
+    (set cxt (. getContext c "2d"))
     (if (= (get painted (- cn 1)) false)
       (if (= (mod turn 2))
-        (t1 cn)
-        (t2 cn))
-      (t3 cn))))
+        (movePlayer cn)
+        (moveComputer cn))
+      (alert "Invalid move!"))))
 
-(def t4
-  (fn []
-    (alert (+ symbol " won!"))
+(def onVictory
+  (fn [sym]
+    (alert (+ sym " won!"))
     (playAgain)))
 
 ;How to access 2D array?
 (def checkForWinners
-  (fn [symbol]
-    (.forEach (range 6)
-              (fn []
-                (if (and (= (get content (get winningCombos a (get winningCombos 0))) symbol)
-                         (= (get content (get winningCombos a (get winningCombos 1))) symbol)
-                         (= (get content (get winningCombos a (get winningCombos 2))) symbol))
-                  (t4))))))
+  (fn [sym]
+    (. forEach (range 6)
+       (fn [a]
+         (alert content)
+         (alert (get (get winningCombos a) 0))
+         (if (and (= (get content (get (get winningCombos a) 0)) sym)
+                  (= (get content (get (get winningCombos a) 1)) sym)
+                  (= (get content (get (get winningCombos a) 2)) sym))
+           (onVictory sym))))))
 
 (def playAgain
   (fn []
     (set y (confirm "Play again?"))
     (if (= y true)
-      (.reload location true))))
+      (. reload location true))))

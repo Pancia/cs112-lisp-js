@@ -75,18 +75,76 @@ var loki = (function (){
 
     return loki;
 })();
-//END HELPER FUNCTIONS
+//END LOKI HELPER FUNCTIONS
 var painted;
 var content;
 var winningCombos;
 var turn = 0;
-var theCanvas;
 var c;
 var cxt;
 var squaresFilled = 0;
 var w;
 var y;
 myObj = {};
+myObj.foo = 5;
 loki.print(myObj);
-myObj = 5;
-loki.print(myObj);
+window.onload = function () {
+painted = [];
+content = [];
+winningCombos = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+return loki.range(9).forEach(function (l) {
+loki.assoc(painted, l, false);
+return loki.assoc(content, l, "")
+})
+};
+var movePlayer = function (cn) {
+alert("movePlayer");
+cxt.beginPath;
+cxt.moveTo(10, 10);
+cxt.lineTo(40, 40);
+cxt.moveTo(40, 10);
+cxt.lineTo(10, 40);
+cxt.stroke;
+cxt.closePath;
+loki.assoc(content, loki.minus(cn, 1), "X");
+return onEndTurn(cn)
+};
+var moveComputer = function (cn) {
+alert("moveComputer");
+cxt.beginPath;
+cxt.arc(25, 25, 20, 0, loki.mult(Math.PI, 2), true);
+cxt.stroke;
+cxt.closePath;
+loki.assoc(content, loki.minus(cn, 1), "O");
+return onEndTurn(cn)
+};
+var onEndTurn = function (cn) {
+alert("onEndTurn");
+turn = loki.plus(turn, 1);
+loki.assoc(painted, loki.minus(cn, 1), true);
+squaresFilled = loki.plus(squaresFilled, 1);
+checkForWinners(loki.get(content, loki.minus(cn, 1)));
+return (loki.eq(squaresFilled, 9)?alert("Draw!"):location.reload(true))
+};
+var theCanvas;
+var canvasClicked = function (cn) {
+theCanvas = loki.plus("canvas", cn);
+c = document.getElementById(theCanvas);
+cxt = c.getContext("2d");
+return (loki.eq(loki.get(painted, loki.minus(cn, 1)), false)?(loki.eq(loki.mod(turn, 2))?movePlayer(cn):moveComputer(cn)):alert("Invalid move!"))
+};
+var onVictory = function (sym) {
+alert(loki.plus(sym, " won!"));
+return playAgain()
+};
+var checkForWinners = function (sym) {
+return loki.range(6).forEach(function (a) {
+alert(content);
+alert(loki.get(loki.get(winningCombos, a), 0));
+return (loki.and(loki.eq(loki.get(content, loki.get(loki.get(winningCombos, a), 0)), sym), loki.eq(loki.get(content, loki.get(loki.get(winningCombos, a), 1)), sym), loki.eq(loki.get(content, loki.get(loki.get(winningCombos, a), 2)), sym))?onVictory(sym):null)
+})
+};
+var playAgain = function () {
+y = confirm("Play again?");
+return (loki.eq(y, true)?location.reload(true):null)
+};

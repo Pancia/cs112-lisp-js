@@ -47,11 +47,11 @@ parseBasicExpr1 = do void $ many comment
 -- PARSE OO RELATED
 parseDot :: Parser LokiVal
 parseDot = inLispExpr "." $ do
-    funcName <- ident <* spaces1 >?> "func-name"
-    objName <- parseBasicExpr1 <* spaces >?> "obj-name"
-    params <- liftM (fromMaybe []) (optionMaybe $ many parseExpr1) >?> "args"
+    funcName <- ident <* spaces1 >?> "dot-func-name"
+    objName <- parseBasicExpr1 <* spaces >?> "dot-obj-name"
+    args <- liftM (fromMaybe []) (optionMaybe . many $ parseBasicExpr1 <* spaces) >?> "dot-args"
     s <- getState
-    return $ Dot (newMeta s) funcName objName params
+    return $ Dot (newMeta s) funcName objName args
 
 parseNew :: Parser LokiVal
 parseNew = inLispExpr "new" $ do
@@ -197,7 +197,7 @@ parseArgs = between (char '[') (char ']')
                               (lookAhead (char ']')))
 
 reserved :: [String]
-reserved = ["def", "defclass", "fn", "new", "if"]
+reserved = ["def", "defclass", "fn", "new"]
 
 ident :: Parser String
 ident = do identifier <- (:) <$> first <*> many rest
