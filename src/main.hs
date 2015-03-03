@@ -15,7 +15,7 @@ import Data.Char (toLower)
 
 import qualified LokiJS as JS
 import qualified LokiPY as PY
-import Utils (OutputType(JS,PY))
+import Utils (OutputType(JS,PY,HTML))
 import qualified Utils as U
 import qualified Parser as P
 
@@ -28,12 +28,10 @@ data Options = Options {
     optHelp :: Bool
     } deriving (Show)
 
-fileType :: String
-fileType = "loki"
 
 defaultOptions :: Options
 defaultOptions = Options {
-    optInput  = "in." ++ fileType,
+    optInput  = "in.loki",
     optOutput = "out",
     optLisp = "",
     optType = JS,
@@ -65,7 +63,7 @@ main = do args <- getArgs
               outRun = optRun opts
               outFile = if '.' `elem` tail (optOutput opts)
                             then optOutput opts
-                            else optOutput opts ++ "." ++ fileType ++ "." ++ (toLower <$> show outType)
+                            else optOutput opts ++ ".loki." ++ (toLower <$> show outType)
           putStrLn $ prefix ++ "opts: " ++ show opts
           putStrLn $ prefix ++ "nonOpts: " ++ show nonOpts
           putStrLn $ prefix ++ "msgs: " ++ show msgs
@@ -74,44 +72,51 @@ main = do args <- getArgs
           when outHelp $
               (putStrLn =<< readFile "USAGE") >> exitSuccess
 
+          --If outType is HTML we should parse the input as JS
+          let outType' = if outType == HTML then JS else outType
+          --If optLisp parse only the passed expression, else use the file
           lispVals <- if null $ optLisp opts
-                          then liftM (readExpr outType) . readFile $ optInput opts
-                          else return . readExpr outType $ optLisp opts
+                          then liftM (readExpr outType') . readFile $ optInput opts
+                          else return . readExpr outType' $ optLisp opts
           --Show lokiVal
           putStrLn . ((prefix ++ "lispVals:\n") ++) . U.catch . liftM show $ lispVals
           printDivider
           --Convert to outType
           src <- case outType of
-                     JS -> do let jsVals = U.catch . liftM (JS.translate <$>) $ lispVals
-                              putStrLn $ prefix ++ "jsVals:\n" ++ show jsVals
-                              printDivider
-                              JS.formatJs $ JS.toJS <$> jsVals
                      PY -> do let pyVals = U.catch . liftM (PY.translate <$>) $ lispVals
                               putStrLn $ prefix ++ "pyVals:\n" ++ show pyVals
                               printDivider
                               PY.formatPy $ PY.toPY 0 <$> pyVals
-          --Write src to outFile
-          writeFile outFile src
+                     -- if out is JS or HTML, translate as JS
+                     _ -> do let jsVals = U.catch . liftM (JS.translate <$>) $ lispVals
+                             putStrLn $ prefix ++ "jsVals:\n" ++ show jsVals
+                             printDivider
+                             JS.formatJs $ JS.toJS <$> jsVals
+          --If HTML, write js first, then html
+          --else write file
+          outSrc <- if outType == HTML
+                        then do let outFileJs = optOutput opts ++ ".loki.js"
+                                writeFile outFileJs src
+                                return $ formatHtml outFileJs
+                        else return src
+          writeFile outFile outSrc
           --Print outFile
-          printLokiSrc outFile
+          printLokiOutput outFile
           printDivider
-          --If we should run: switch on outType:
-          when outRun $ case outType of
-                            --Open test.html in the default browser
-                            JS -> void $ openInBrowser "test.html"
-                            --Execute src, printing its result
-                            PY -> print =<< ("stdout: " ++) <$> execSrc outType outFile
+          --If we should run: execSrc based on outType
+          when outRun $ print =<< ("stdout: " ++) <$> execSrc outType outFile
     where
-        openInBrowser url = createProcess $ proc (U.caseOS "explorer" "open") [url]
         printAfterHelperFns f = callProcess "sed" ["-n", "-e", "/END LOKI/,$p", f]
-        printLokiSrc fileName = U.caseOS (putStrLn =<< readFile fileName)
-                                         (printAfterHelperFns fileName)
+        printLokiOutput fileName = U.caseOS (putStrLn =<< readFile fileName)
+                                            (printAfterHelperFns fileName)
         prefix = ">>"
 
+--TODO: try just printing, ie no `-> IO String`
 execSrc :: OutputType -> String -> IO String
 execSrc outType file = do let exe = case outType of
                                      JS -> "node"
                                      PY -> "python"
+                                     HTML -> U.caseOS "explorer" "open"
                           (_, Just hout, _, _) <- createProcess $ (proc exe [file]) { std_out = CreatePipe }
                           hGetContents hout
 
@@ -122,3 +127,15 @@ readExpr outType input = case runParser P.parseExpr (show outType) "lisp-js" inp
 
 printDivider :: IO ()
 printDivider = putStrLn . take 60 $ repeat '#'
+
+formatHtml :: String -> String
+formatHtml jsSrcFile = "<!DOCTYPE html>\n"
+                    ++ "<html>\n"
+                    ++ "<head>\n"
+                    ++ "\t<title>Page Title</title>\n"
+                    ++ "\t<script src=\"https://code.jquery.com/jquery-1.10.2.js\"></script>\n"
+                    ++ "</head>\n"
+                    ++ "<body>\n"
+                    ++ "\t<script src=\"" ++ jsSrcFile ++ "\"></script>\n"
+                    ++ "</body>\n"
+                    ++ "</html>\n"

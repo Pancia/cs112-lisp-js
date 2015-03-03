@@ -1,0 +1,10 @@
+(defclass Rocket
+  ([x] (speed x))
+  (lift_off []
+    (print (+ "I'm flying @"
+              (. speed this)
+              " speed"))))
+
+(def r (new Rocket 5))
+(print r)
+(. lift_off r null)

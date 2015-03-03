@@ -16,7 +16,7 @@ tests :: IO [T.Test]
 tests = sequence . join $ runTest "py" <$> [testPyParser, testToPY, testExecPY]
 
 testPyParser :: LokiTests
-testPyParser = (,) <$> ["class-object", "def+fn", "specials" 
+testPyParser = (,) <$> ["class-object", "def+fn", "specials"
                        ,"primitives", "literals"]
                    <*> [parsePY]
     where parsePY (_, lisp) = do

@@ -40,7 +40,7 @@ data LokiVal = Atom   { getMeta :: Meta, getAtom :: String }
                       , getDotProp :: LokiVal
                       , getDotArgs :: [LokiVal] }
              | DefClass { getMeta :: Meta
-                        , gegettClassName :: String
+                        , getClassName :: String
                         , getClassConstr :: LokiVal
                         , getClassFns :: [LokiVal]
                         , getClassVars :: [LokiVal] }
@@ -57,13 +57,14 @@ data LokiVal = Atom   { getMeta :: Meta, getAtom :: String }
              | LkiNothing { getMeta :: Meta }
              deriving (Eq, Show)
 
-data OutputType = JS | PY
+data OutputType = JS | PY | HTML
                 deriving (Eq, Show)
 
 instance Read OutputType where
         readsPrec _ s = case toLower <$> s of
                             "js" -> [(JS,"")]
                             "py" -> [(PY,"")]
+                            "html" -> [(HTML,"")]
                             _ -> []
 
 data CompilerError = NumArgs        Integer [String]
