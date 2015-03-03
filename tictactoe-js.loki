@@ -8,10 +8,6 @@
 (def w)
 (def y)
 
-(set myObj {})
-(setp myObj foo 5)
-(print myObj)
-
 (setp window onload
       (fn []
         (set painted [])
@@ -25,7 +21,6 @@
 
 (def movePlayer
   (fn [cn]
-    (alert "movePlayer")
     (. beginPath cxt)
     (. moveTo cxt 10 10)
     (. lineTo cxt 40 40)
@@ -38,7 +33,6 @@
 
 (def moveComputer
   (fn [cn]
-    (alert "moveComputer")
     (. beginPath cxt)
     (. arc cxt 25 25 20 0 (* (. PI Math) 2) true)
     (. stroke cxt)
@@ -46,16 +40,18 @@
     (assoc content (- cn 1) "O")
     (onEndTurn cn)))
 
+(def onEndGame
+  (fn []
+    (. reload location true)))
+
 (def onEndTurn
   (fn [cn]
-    (alert "onEndTurn")
     (set turn (+ turn 1))
     (assoc painted (- cn 1) true)
     (set squaresFilled (+ squaresFilled 1))
     (checkForWinners (get content (- cn 1)))
     (if (= squaresFilled 9)
-      (alert "Draw!")
-      (. reload location true))))
+      (onEndGame))))
 
 (def theCanvas)
 (def canvasClicked
@@ -64,23 +60,21 @@
     (set c (. getElementById document theCanvas))
     (set cxt (. getContext c "2d"))
     (if (= (get painted (- cn 1)) false)
-      (if (= (mod turn 2))
+      (if (= (mod turn 2) 0)
         (movePlayer cn)
         (moveComputer cn))
-      (alert "Invalid move!"))))
+      (print "Invalid move!"))))
 
 (def onVictory
   (fn [sym]
-    (alert (+ sym " won!"))
+    (print (+ sym " won!"))
     (playAgain)))
 
 ;How to access 2D array?
 (def checkForWinners
   (fn [sym]
-    (. forEach (range 6)
+    (. forEach (range (. length winningCombos))
        (fn [a]
-         (alert content)
-         (alert (get (get winningCombos a) 0))
          (if (and (= (get content (get (get winningCombos a) 0)) sym)
                   (= (get content (get (get winningCombos a) 1)) sym)
                   (= (get content (get (get winningCombos a) 2)) sym))

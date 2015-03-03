@@ -172,11 +172,10 @@ fnCall2js (JsFnCall fn args)
 fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
 
 dot2js :: JsVal -> Maybe String
-dot2js (JsObjCall fp on args)
-        | args /= [] = do on' <- toJS on
-                          return $ printf "%s.%s(%s)" on' fp args'
-        | otherwise = do on' <- toJS on
-                         return $ printf "%s.%s" on' fp
+dot2js (JsObjCall fp on args) = do
+        on' <- toJS on
+        return $ printf "(typeof %s.%s === \"function\" ? %s.%s(%s) : %s.%s)"
+                 on' fp on' fp args' on' fp
      where args' = L.intercalate ", " . catMaybes $ toJS <$> args
 dot2js x = catch . throwError . TypeMismatch "JsDotThing" $ show x
 
