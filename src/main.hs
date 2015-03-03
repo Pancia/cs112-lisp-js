@@ -103,9 +103,9 @@ main = do args <- getArgs
                             PY -> print =<< ("stdout: " ++) <$> execSrc outType outFile
     where
         openInBrowser url = createProcess $ proc (U.caseOS "explorer" "open") [url]
-        printLokiSrc fileName = if (U.caseOS "windows" "other") /= "windows"
-                                  then callProcess "sed" ["-n", "-e", "/END LOKI/,$p", fileName]
-                                  else putStrLn =<< readFile fileName
+        printAfterHelperFns f = callProcess "sed" ["-n", "-e", "/END LOKI/,$p", f]
+        printLokiSrc fileName = U.caseOS (putStrLn =<< readFile fileName)
+                                         (printAfterHelperFns fileName)
         prefix = ">>"
 
 execSrc :: OutputType -> String -> IO String
