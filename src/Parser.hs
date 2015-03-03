@@ -21,16 +21,16 @@ parseExpr = many (parseExpr1 <* spaces)
 
 parseExpr1 :: Parser LokiVal
 parseExpr1 = do void $ many comment
-                meta <- getFileType
+                extra <- getFileType
                 lispVal <- choice [parseDef
                                   ,parseClass
                                   ,parseBasicExpr1]
                 void $ many comment
-                return (setMeta meta lispVal) >?> "1-expr"
+                return (lispVal {getMeta=extra}) >?> "1-expr"
 
 parseBasicExpr1 :: Parser LokiVal
 parseBasicExpr1 = do void $ many comment
-                     meta <- getFileType
+                     extra <- getFileType
                      lispVal <- choice [parseAtom
                                        ,parseString
                                        ,parseNumber
@@ -42,7 +42,7 @@ parseBasicExpr1 = do void $ many comment
                                        ,parseList
                                        ,parseArray]
                      void $ many comment
-                     return (setMeta meta lispVal) >?> "1-basic-expr"
+                     return (lispVal {getMeta=extra}) >?> "1-basic-expr"
 
 -- PARSE OO RELATED
 parseDot :: Parser LokiVal
@@ -107,7 +107,7 @@ parseConst = inLispExpr_ $ do
     params <- parseArgs <* spaces >?> "constr-paramters"
     body <- many (parseProp <* spaces) >?> "constr-body"
     s <- getState
-    return $ Const (newMeta s) params body
+    return $ Constr (newMeta s) params body
     where
         parseProp :: Parser (String, LokiVal)
         parseProp = inLispExpr_ $ do

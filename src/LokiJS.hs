@@ -1,6 +1,6 @@
 module LokiJS where
 
-import Control.Applicative hiding (many, (<|>), Const)
+import Control.Applicative hiding (many, (<|>))
 import Control.Monad.Except
 
 import qualified Data.List as L
@@ -76,7 +76,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (String _ s) -> JsStr s
                            (New _ s l) -> JsNewObj s (translate <$> l)
                            (DefClass _ n c lf lv) -> JsDefClass n (translate c) (translate <$> lf) (translate <$> lv)
-                           (Const _ s b) -> JsConst s (translateProp <$> b)
+                           (Constr _ s b) -> JsConst s (translateProp <$> b)
                            (Classfn _ s p b) -> JsClassFn s p (translate b)
                            (Classvar _ s b) -> JsClassVar s (translate b)
                            (Dot _ fp on ps) -> JsObjCall fp (translate on) (translate <$> ps)

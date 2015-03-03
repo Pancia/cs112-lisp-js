@@ -1,6 +1,6 @@
 module LokiPY where
 
-import Control.Applicative hiding (many, (<|>), Const)
+import Control.Applicative hiding (many, (<|>))
 import Control.Monad.Except
 
 import qualified Data.List as L
@@ -59,7 +59,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (Fn _ xs b)            -> PyFn xs (translate <$> b)
                       (New _ s l)            -> PyNewObj s (translate <$> l)
                       (DefClass _ n c lf lv) -> PyDefClass n (translate c) (translate <$> lf) (translate <$> lv)
-                      (Const _ s b)          -> PyConst s (translateProp <$> b)
+                      (Constr _ s b)          -> PyConst s (translateProp <$> b)
                       (Classfn _ s p b)      -> PyClassFn s p (translate b)
                       (Classvar _ s b)       -> PyClassVar s (translate b)
                       l@(List{})             -> list2pyVal l

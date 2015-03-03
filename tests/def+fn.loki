@@ -4,36 +4,30 @@
 (def x y)
 (def x (+ 1 2))
 (def y [1 2])
-
 ; DEF WITH SPACES AND NO VALUE
 ( def x)
 (def x )
 ( def x )
-
 ; DEF WITH SPACES AND VALUE
 ( def x 1)
 (def x 1 )
 ( def x 1 )
-
+; DEF WITH FN
+(def y (fn [x] (print x)))
+(def z (fn [] (print "hello")))
+(def a (fn [] ()))
+; DEF WITH FN AND SPACES
+( def y (fn [x] (print x)))
+(def y (fn [x] (print x)) )
+( def y (fn [x] (print x)) )
 ; FN
 (fn [] ())
 (fn [x] ())
 (fn [x] (print x))
 (fn [x y] ())
 (fn [x y] (print (+ x y)))
-(fn [x y z] (print "first")
-			(print (+ x y z)))
-
+(fn [x y z] (print "first") (print (+ x y z)))
 ; FN WITH SPACES
 ( fn [x] (print x))
 (fn [x] (print x) )
 
-; DEF WITH FN
-(def y (fn [x] (print x)))
-(def z (fn [] (print "hello")))
-(def a (fn [] ()))
-
-; DEF WITH FN AND SPACES
-( def y (fn [x] (print x)))
-(def y (fn [x] (print x)) )
-( def y (fn [x] (print x)) )
