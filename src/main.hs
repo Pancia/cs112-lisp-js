@@ -2,7 +2,7 @@ module Main where
 
 import Control.Applicative
 import Control.Monad
-
+import Data.List (isSuffixOf)
 import System.Environment
 import System.IO
 import System.Process
@@ -11,7 +11,6 @@ import System.Console.GetOpt
 
 import Text.Parsec (runParser)
 import Control.Monad.Except (throwError)
-import Data.Char (toLower)
 
 import qualified LokiJS as JS
 import qualified LokiPY as PY
@@ -61,9 +60,9 @@ main = do args <- getArgs
               outHelp = optHelp opts
               outType = optType opts
               outRun = optRun opts
-              outFile = if '.' `elem` tail (optOutput opts)
+              outFile = if (".loki." ++ show outType) `isSuffixOf` optOutput opts
                             then optOutput opts
-                            else optOutput opts ++ ".loki." ++ (toLower <$> show outType)
+                            else optOutput opts ++ ".loki." ++ (show outType)
           putStrLn $ prefix ++ "opts: " ++ show opts
           putStrLn $ prefix ++ "nonOpts: " ++ show nonOpts
           putStrLn $ prefix ++ "msgs: " ++ show msgs

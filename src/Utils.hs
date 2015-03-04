@@ -58,8 +58,12 @@ data LokiVal = Atom   { getMeta :: Meta, getAtom :: String }
              deriving (Eq, Show)
 
 data OutputType = JS | PY | HTML
-                deriving (Eq, Show)
-
+                deriving (Eq)
+instance Show OutputType where
+        show t = case t of
+                     JS -> "js"
+                     PY -> "py"
+                     HTML -> "html"
 instance Read OutputType where
         readsPrec _ s = case toLower <$> s of
                             "js" -> [(JS,"")]
