@@ -19,7 +19,7 @@ tests = sequence . join $ runTest "js" <$> [testJsParser, testToJS, testExecJS]
 
 testJsParser :: LokiTests
 testJsParser = (,) <$> ["class-object", "def+fn", "specials"
-                       ,"primitives", "literals"]
+                       ,"primitives", "literals", "helpers"]
                    <*> [parseJS]
     where parseJS (_, lisp) = do
             let parsed = U.catch $ show <$> readExpr "js" lisp
@@ -34,7 +34,7 @@ testToJS = (,) <$> ["class-object", "helpers", "specials", "def+fn"]
             return ("convert", jsStr)
 
 testExecJS :: LokiTests
-testExecJS = (,) <$> ["class-object", "simple", "complex"]
+testExecJS = (,) <$> ["class-object", "simple", "complex", "helpers"]
                  <*> [execJS]
     where execJS (file, lisp) = do
             js <- JS.formatJs . fmap JS.toJS . U.catch

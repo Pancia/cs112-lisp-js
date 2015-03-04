@@ -55,7 +55,7 @@ var loki = (function (){
 
     loki.get = function(e, i) {return e[i];};
     loki.set = function(x, v) {x = v;};
-    loki.assoc = function(x, i, v) {x[i] = v;};
+    loki.assoc = function(x, i, v) {x[i] = v;return x};
     loki.range = function(N) {return Array.apply(null, {length: N}).map(Number.call, Number);};
 
     //Arithmetic

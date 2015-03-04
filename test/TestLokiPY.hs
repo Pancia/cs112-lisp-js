@@ -17,7 +17,7 @@ tests = sequence . join $ runTest "py" <$> [testPyParser, testToPY, testExecPY]
 
 testPyParser :: LokiTests
 testPyParser = (,) <$> ["class-object", "def+fn", "specials"
-                       ,"primitives", "literals"]
+                       ,"primitives", "literals", "helpers"]
                    <*> [parsePY]
     where parsePY (_, lisp) = do
             let parsed = U.catch $ show <$> readExpr "py" lisp
@@ -32,7 +32,7 @@ testToPY = (,) <$> ["helpers", "specials", "def+fn"]
             return ("convert", pyStr)
 
 testExecPY :: LokiTests
-testExecPY = (,) <$> ["simple", "complex"]
+testExecPY = (,) <$> ["simple", "complex", "helpers"]
                  <*> [execPY]
     where execPY (file, lisp) = do
             py <- PY.formatPy . fmap (PY.toPY 0) . U.catch

@@ -55,7 +55,7 @@ var loki = (function (){
 
     loki.get = function(e, i) {return e[i];};
     loki.set = function(x, v) {x = v;};
-    loki.assoc = function(x, i, v) {x[i] = v;};
+    loki.assoc = function(x, i, v) {x[i] = v;return x};
     loki.range = function(N) {return Array.apply(null, {length: N}).map(Number.call, Number);};
 
     //Arithmetic
@@ -87,4 +87,4 @@ Rocket.prototype.lift_off = function() {
 };;
 var r = new Rocket(5);
 loki.print(r);
-(typeof r.lift_off === "function" ? r.lift_off(null) : r.lift_off);
+(typeof r.lift_off === "function" ? r.lift_off() : r.lift_off);

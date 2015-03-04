@@ -174,8 +174,11 @@ parseMap = between (char '{') (char '}') $ do
     return $ Map (newMeta s) keys vals
 
 parseKeyVal :: Parser (String, LokiVal)
-parseKeyVal = liftM2 (,) (ident <* spaces1InLiteral >?> "key")
+parseKeyVal = liftM2 (,) (choice [try ident,
+                                 return . pad "\"". getString =<< parseString]
+                                 <* spaces1InLiteral >?> "key")
                          (parseBasicExpr1 <* spacesInLiteral)
+    where pad x = (x ++) . (++ x)
 
 ---------HELPERS--------
 newMeta :: String -> Meta
@@ -204,7 +207,7 @@ ident = do identifier <- (:) <$> first <*> many rest
            if identifier `elem` reserved
                then unexpected $ "reserved word " ++ show identifier
                else return identifier
-    where symbol = oneOf "!$%&*-_+=<>?"
+    where symbol = oneOf "!$%&*-_+=<>/?"
           first = letter <|> symbol >?> "start-ident"
           rest  = letter <|> digit <|> symbol >?> "rest-ident"
 

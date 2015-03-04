@@ -7,4 +7,4 @@
 
 (def r (new Rocket 5))
 (print r)
-(. lift_off r null)
+(. lift_off r)

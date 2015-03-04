@@ -1,6 +1,6 @@
 function Rocket(x) {;this.speed = x};
 Rocket.prototype.lift_off = function() {
- return loki.print(loki.plus("I'm flying @", this.speed, " speed"))};
+ return loki.print(loki.plus("I'm flying @", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))};
 var r = new Rocket(5)
 loki.print(r)
-r.lift_off(null)
+(typeof r.lift_off === "function" ? r.lift_off() : r.lift_off)

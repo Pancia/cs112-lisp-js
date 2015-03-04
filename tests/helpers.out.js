@@ -78,15 +78,24 @@ var loki = (function (){
     return loki;
 })();
 //END LOKI HELPER FUNCTIONS
-var f = function () {
-return true
-};
-loki.print(f());
-var f = function () {
-return loki.plus(2, 3)
-};
-loki.print(f());
-var f = function (x) {
-return loki.plus(x, 1)
-};
-loki.print(f(9));
+loki.print(5);
+loki.print("print");
+loki.print(loki.get([0, 1, 2], 1));
+loki.print(loki.get({"x":5}, "x"));
+loki.print(loki.assoc({}, "x", "y"));
+loki.print(loki.range(5));
+loki.print(loki.plus(1, 2, 3));
+loki.print(loki.minus(1, 2, 3));
+loki.print(loki.mult(1, 2, 3));
+loki.print(loki.div(1, 2, 3));
+loki.print(loki.mod(1, 2));
+loki.print(loki.and(true, false));
+loki.print(loki.or(true, false));
+loki.print(loki.eq(5, 5));
+loki.print(loki.eq(5, "5"));
+loki.print(loki.neq(5, 3));
+loki.print(loki.neq(3, "3"));
+loki.print(loki.lt(1, 3, 5, 7));
+loki.print(loki.lte(1, 3, 3, 7));
+loki.print(loki.gt(5, 4, 3));
+loki.print(loki.gte(6, 6, 6, 0));

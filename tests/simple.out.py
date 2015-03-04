@@ -39,6 +39,12 @@ class Loki:
     def gte(*args):
         return reduce((lambda x, y : x >= y), args)
     @staticmethod
+    def mod(x, y):
+        return x % y
+    @staticmethod
+    def range(n):
+        return range(n)
+    @staticmethod
     def get(e, i):
         return e[i]
     @staticmethod
