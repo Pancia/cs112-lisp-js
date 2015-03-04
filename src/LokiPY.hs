@@ -51,46 +51,49 @@ translate :: LokiVal -> PyVal
 translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                   then PyPleaseIgnore
                   else case v of
-                      (Atom _ a)             -> PyId a
-                      (Number _ n)           -> PyNum n
-                      (String _ s)           -> PyStr s
-                      (Bool _ b)             -> PyBool b
-                      (Def _ n b)            -> PyVar n (translate b)
-                      (Fn _ xs b)            -> PyFn xs (translate <$> b)
-                      (New _ s l)            -> PyNewObj s (translate <$> l)
-                      (DefClass _ n c lf lv) -> PyDefClass n (translate c) (translate <$> lf) (translate <$> lv)
-                      (Constr _ s b)          -> PyConst s (translateProp <$> b)
-                      (Classfn _ s p b)      -> PyClassFn s p (translate b)
-                      (Classvar _ s b)       -> PyClassVar s (translate b)
-                      l@(List{})             -> list2pyVal l
-                      (Dot _ fp on ps)       -> PyObjCall fp (translate on) (translate <$> ps)
-                      (Map _ ks vs)          -> PyMap ks (translate <$> vs)
-                      _                      -> PyThing $ show v
+                      (Atom _ a)               -> PyId a
+                      (Number _ n)             -> PyNum n
+                      (String _ s)             -> PyStr s
+                      (Bool _ b)               -> PyBool b
+                      (Def _ n (LkiNothing{})) -> PyVar n (PyId "None")
+                      (Def _ n b)              -> PyVar n (translate b)
+                      (Fn _ xs b)              -> PyFn xs (translate <$> b)
+                      (New _ s l)              -> PyNewObj s (translate <$> l)
+                      (DefClass _ n c lf lv)   -> PyDefClass n (translate c) (translate <$> lf) (translate <$> lv)
+                      (Constr _ s b)           -> PyConst s (translateProp <$> b)
+                      (Classfn _ s p b)        -> PyClassFn s p (translate b)
+                      (Classvar _ s b)         -> PyClassVar s (translate b)
+                      l@(List{})               -> list2pyVal l
+                      (Dot _ fp on ps)         -> PyObjCall fp (translate on) (translate <$> ps)
+                      (Map _ ks vs)            -> PyMap ks (translate <$> vs)
+                      _                        -> PyThing $ show v
       where
           translateProp :: (String, LokiVal) -> (String, PyVal)
           translateProp (s, l) = (s, translate l)
           list2pyVal :: LokiVal -> PyVal
           list2pyVal l = case l of
                              (List _ (Atom _ a:args)) -> PyFnCall a $ translate <$> args
+                             (List _ (f@(Fn{}):args)) -> PyFnCall (toPY 0 (translate f)) $ translate <$> args 
                              (List _ xs) -> PyList $ translate <$> xs
                              x -> catch . throwError . TypeMismatch "List" $ show x
 
 toPY :: Int -> PyVal -> String
 toPY n pv = case pv of
-              a@(PyId{})       -> id2py n a
-              (PyNum n1)       -> show n1
-              (PyStr s)        -> "\"" ++ s ++ "\""
-              (PyBool b)       -> show b
-              l@(PyList{})     -> list2py n l
-              (PyVar n1 b)     -> n1 ++ " = " ++ toPY n b
-              f@(PyFn{})       -> fn2py n f
-              o@(PyNewObj{})   -> new2py n o
-              d@(PyObjCall{})  -> dot2py n d
-              d@(PyDefClass{}) -> defclass2py n d
-              m@(PyMap{})      -> map2py n m
-              PyPleaseIgnore   -> ""
-              f@(PyFnCall{})   -> fnCall2py n f
-              x -> error "PyVal=(" ++ show x ++ ") should not be toPY'ed"
+              a@(PyId{})            -> id2py n a
+              (PyNum n1)            -> show n1
+              (PyStr s)             -> "\"" ++ s ++ "\""
+              (PyBool b)            -> show b
+              l@(PyList{})          -> list2py n l
+              (PyVar n1 b@(PyFn{})) -> fn2py n n1 b
+              (PyVar n1 b)          -> n1 ++ " = " ++ toPY n b
+              f@(PyFn{})            -> lfn2py n f
+              o@(PyNewObj{})        -> new2py n o
+              d@(PyObjCall{})       -> dot2py n d
+              d@(PyDefClass{})      -> defclass2py n d
+              m@(PyMap{})           -> map2py n m
+              PyPleaseIgnore        -> ""
+              f@(PyFnCall{})        -> fnCall2py n f
+              x -> error $ "PyVal=(" ++ show x ++ ") should not be toPY'ed"
 
 fnCall2py :: Int -> PyVal -> String
 fnCall2py n (PyFnCall fn args) = lookupFn fn ++ "(" ++ args' ++ ")"
@@ -108,9 +111,9 @@ new2py n (PyNewObj className args) = className ++ "(" ++ args' ++ ")"
 new2py _ x = catch . throwError . TypeMismatch "PyNewObj" $ show x
 
 defclass2py :: Int -> PyVal -> String
-defclass2py n (PyDefClass name (PyConst args body) _ vars) = "class " ++ name ++ ":\n"
+defclass2py n (PyDefClass name (PyConst args body) fs vars) = "class " ++ name ++ ":\n"
                 ++ addSpacing (n + 1) ++ "def __init__(self" ++ args' ++ "):\n" ++
-                addCons ++ addVars
+                addCons ++ addVars ++ (fns2py (n + 1) fs)
                 where
                   args' = if null args
                             then ""
@@ -120,7 +123,16 @@ defclass2py n (PyDefClass name (PyConst args body) _ vars) = "class " ++ name ++
                   addCons = (++ "\n") . concat $ body2py (n + 2) body
                   addVars = vars2py (n + 1) vars
                   vars2py :: Int -> [PyVal] -> String
-                  vars2py n' = concat . fmap (\(PyClassVar varName x) -> printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
+                  vars2py n' = concat . fmap (\(PyClassVar varName x) -> 
+                    printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
+                  fn2py_ :: Int -> PyVal -> String
+                  fn2py_ n' (PyClassFn fn pms body) =
+                      printf "%sdef %s (self, %s): \n" (addSpacing n') fn (L.intercalate ", " pms) ++ 
+                      printf "%sreturn %s \n" (addSpacing (n'+ 1)) (toPY n' body)
+                  fn2pys_ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
+                  fns2py :: Int -> [PyVal] -> String
+                  fns2py n' [] = []
+                  fns2py n' l = (++ "\n") . L.intercalate "\n" $ map (fn2py_ n') l
 defclass2py _ x = catch . throwError . TypeMismatch "PyDefClass" $ show x
 
 list2py :: Int -> PyVal -> String
@@ -133,14 +145,23 @@ id2py :: Int -> PyVal -> String
 id2py _ (PyId pv) = pv
 id2py _ x = catch . throwError . TypeMismatch "PyId" $ show x
 
-fn2py :: Int -> PyVal -> String
-fn2py n (PyFn params body) = "(lambda " ++ params' ++ " : " ++ showBody body ++ ")"
+fn2py :: Int -> String -> PyVal -> String
+fn2py n n1 (PyFn params body) = "def " ++ n1 ++ " (" ++ params' ++ "):\n" ++ body'
       where
         params' = L.intercalate ", " params
+        body' = addSpacing (n + 1) ++ showBody body
         showBody [] = []
-        showBody (b:q:bs) = toPY n b ++ "\n" ++ showBody (q:bs)
-        showBody [b] = toPY n b
-fn2py _ x = catch . throwError . TypeMismatch "PyFn" $ show x
+        showBody (b:q:bs) = let b' = toPY n b
+                                b'' = showBody (q:bs)
+                            in b' ++ "\n" ++ addSpacing (n + 1) ++ b''
+        showBody [b] = "return " ++ toPY n b
+fn2py _ _ x = catch . throwError . TypeMismatch "PyFn" $ show x
+
+lfn2py :: Int -> PyVal -> String
+lfn2py n (PyFn params body) = printf "(lambda %s : [%s])" params' body' 
+      where 
+        params' = L.intercalate ", " params
+        body' = L.intercalate ", " $ toPY 0 <$> body
 
 dot2py :: Int -> PyVal -> String
 dot2py n (PyObjCall fp on ps)
