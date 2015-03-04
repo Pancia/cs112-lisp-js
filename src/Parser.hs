@@ -19,30 +19,40 @@ infix 0 >?>
 parseExpr :: Parser [LokiVal]
 parseExpr = many (parseExpr1 <* spaces)
 
+-- LokiVals that are valid in the top level
 parseExpr1 :: Parser LokiVal
 parseExpr1 = do void $ many comment
-                extra <- getFileType
+                extra <- getMetaData
                 lispVal <- choice [parseDef
                                   ,parseClass
                                   ,parseBasicExpr1]
                 void $ many comment
                 return (lispVal {getMeta=extra}) >?> "1-expr"
 
+-- LokiVals that are valid in a Def
 parseBasicExpr1 :: Parser LokiVal
 parseBasicExpr1 = do void $ many comment
-                     extra <- getFileType
-                     lispVal <- choice [parseAtom
-                                       ,parseString
-                                       ,parseNumber
-                                       ,parseQuoted
+                     extra <- getMetaData
+                     lispVal <- choice [parseQuoted
                                        ,parseDot
                                        ,parseFn
                                        ,parseNew
                                        ,parseMap
                                        ,parseList
-                                       ,parseArray]
+                                       ,parseArray
+                                       ,parseLiteralExpr1]
                      void $ many comment
                      return (lispVal {getMeta=extra}) >?> "1-basic-expr"
+
+-- LokiVals that are valid in a Map
+parseLiteralExpr1 :: Parser LokiVal
+parseLiteralExpr1 = do void $ many comment
+                       extra <- getMetaData
+                       lispVal <- choice [parseAtom
+                                         ,parseString
+                                         ,parseNumber]
+                       void $ many comment
+                       return (lispVal {getMeta=extra}) >?> "1-literal-expr"
 
 -- PARSE OO RELATED
 parseDot :: Parser LokiVal
@@ -126,8 +136,8 @@ parseQuoted = do void $ char '\''
                  s <- getState
                  return $ List m [Atom (newMeta s) "quote", toQuote']
 
-getFileType :: Parser Meta
-getFileType =  do tag <- optionMaybe parseAnnotation
+getMetaData :: Parser Meta
+getMetaData =  do tag <- optionMaybe parseAnnotation
                   s <- getState
                   return . fromMaybe (newMeta s) $ newMeta <$> tag
 
