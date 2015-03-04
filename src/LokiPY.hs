@@ -127,7 +127,7 @@ defclass2py n (PyDefClass name (PyConst args body) fs vars) = "class " ++ name +
                     printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
                   fn2py_ :: Int -> PyVal -> String
                   fn2py_ n' (PyClassFn fn pms body) =
-                      printf "%sdef %s (self, %s): \n" (addSpacing n') fn (L.intercalate ", " pms) ++ 
+                      printf "%sdef %s (%s): \n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++ 
                       printf "%sreturn %s \n" (addSpacing (n'+ 1)) (toPY n' body)
                   fn2pys_ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
                   fns2py :: Int -> [PyVal] -> String
@@ -164,12 +164,19 @@ lfn2py n (PyFn params body) = printf "(lambda %s : [%s])" params' body'
         body' = L.intercalate ", " $ toPY 0 <$> body
 
 dot2py :: Int -> PyVal -> String
-dot2py n (PyObjCall fp on ps)
-      | ps /= [] = toPY n on ++ "." ++ fp ++ "(" ++ params' ++ ")"
-      | otherwise = toPY n on ++ "." ++ fp
+dot2py n (PyObjCall fp on ps) = printf "%s.%s(%s) if callable(%s.%s) else %s.%s" 
+                                      (toPY n on) fp params' (toPY n on) fp (toPY n on) fp
       where
         params' = L.intercalate ", " $ toPY n <$> ps
 dot2py _ x = catch . throwError . TypeMismatch "PyObjCall" $ show x
+
+--dot2js :: JsVal -> Maybe String
+--dot2js (JsObjCall fp on args) = do
+--        on' <- toJS on
+--        return $ printf "(typeof %s.%s === \"function\" ? %s.%s(%s) : %s.%s)"
+--                 on' fp on' fp args' on' fp
+--     where args' = L.intercalate ", " . catMaybes $ toJS <$> args
+--dot2js x = catch . throwError . TypeMismatch "JsDotThing" $ show x
 
 --Use for: if, for, while, class creation, anything else. Make sure to pass
 --around a weight and increment and decrement accordingly
