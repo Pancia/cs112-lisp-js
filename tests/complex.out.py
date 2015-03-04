@@ -50,11 +50,11 @@ class Loki:
 
 #END LOKI HELPER FUNCTIONS
 def f ():
-return True
+    return True
 Loki.printf(f())
 def f ():
-return Loki.plus(2, 3)
+    return Loki.plus(2, 3)
 Loki.printf(f())
 def f (x):
-return Loki.plus(x, 1)
+    return Loki.plus(x, 1)
 Loki.printf(f(9))

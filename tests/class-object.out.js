@@ -1,8 +1,9 @@
 var loki = (function (){
     var loki = {};
 
-    var sliceArgs = function (args) {
-        return args.length > 0 ? [].slice.call(args, 0) : [];
+    var sliceArgs = function (args, start) {
+        start = typeof start !== 'undefined' ? start : 0;
+        return args.length > start ? [].slice.call(args, start) : [];
     };
 
     var assertIsFunction = function (f) {
@@ -51,6 +52,7 @@ var loki = (function (){
         var args = sliceArgs(arguments);
         args.forEach(_log);
     };
+
     loki.get = function(e, i) {return e[i];};
     loki.set = function(x, v) {x = v;};
     loki.assoc = function(x, i, v) {x[i] = v;};
@@ -81,8 +83,8 @@ function Rocket(x) {
 this.speed = x
 };
 Rocket.prototype.lift_off = function() {
- return loki.print(loki.plus("I'm flying @", this.speed, " speed"))
+ return loki.print(loki.plus("I'm flying @", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))
 };;
 var r = new Rocket(5);
 loki.print(r);
-r.lift_off(null);
+(typeof r.lift_off === "function" ? r.lift_off(null) : r.lift_off);
