@@ -96,49 +96,49 @@ toPY n pv = case pv of
               x -> error $ "PyVal=(" ++ show x ++ ") should not be toPY'ed"
 
 fnCall2py :: Int -> PyVal -> String
-fnCall2py n (PyFnCall fn args) = lookupFn fn ++ "(" ++ args' ++ ")"
+fnCall2py n (PyFnCall fn args) = printf "%s(%s)" (lookupFn fn) args'
     where args' = L.intercalate ", " . filter (/= "") $ toPY n <$> args
 fnCall2py _ x = catch . throwError . TypeMismatch "JsFnCall" $ show x
 
 map2py :: Int -> PyVal -> String
-map2py n (PyMap ks vs) = "{" ++ kvs ++ "}"
+map2py n (PyMap ks vs) = printf "{%s}" kvs
     where kvs = L.intercalate ", " $ zipWith (\k v -> k ++ " : " ++ toPY n v) ks vs
 map2py _ x = catch . throwError . TypeMismatch "PyMap" $ show x
 
 new2py :: Int -> PyVal -> String
-new2py n (PyNewObj className args) = className ++ "(" ++ args' ++ ")"
+new2py n (PyNewObj className args) = printf "%s(%s)" className args'
   where args' = L.intercalate ", " $ toPY n <$> args
 new2py _ x = catch . throwError . TypeMismatch "PyNewObj" $ show x
 
 defclass2py :: Int -> PyVal -> String
-defclass2py n (PyDefClass name (PyConst args body) fs vars) = "class " ++ name ++ ":\n"
-                ++ addSpacing (n + 1) ++ "def __init__(self" ++ args' ++ "):\n" ++
-                addCons ++ addVars ++ (fns2py (n + 1) fs)
-                where
-                  args' = if null args
-                            then ""
-                            else ", " ++ L.intercalate ", " args
-                  body2py :: Int -> [(String, PyVal)] -> [String]
-                  body2py n' = fmap (\(p,v) -> printf (addSpacing n' ++ "self.%s = %s\n") p (toPY 0 v))
-                  addCons = (++ "\n") . concat $ body2py (n + 2) body
-                  addVars = vars2py (n + 1) vars
-                  vars2py :: Int -> [PyVal] -> String
-                  vars2py n' = concat . fmap (\(PyClassVar varName x) -> 
-                    printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
-                  fn2py_ :: Int -> PyVal -> String
-                  fn2py_ n' (PyClassFn fn pms body) =
-                      printf "%sdef %s (%s): \n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++ 
-                      printf "%sreturn %s \n" (addSpacing (n'+ 1)) (toPY n' body)
-                  fn2pys_ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
-                  fns2py :: Int -> [PyVal] -> String
-                  fns2py n' [] = []
-                  fns2py n' l = (++ "\n") . L.intercalate "\n" $ map (fn2py_ n') l
+defclass2py n (PyDefClass name (PyConst args body) fs vars) = 
+                printf "class %s:\n%sdef __init__(self%s):\n%s%s%s" 
+                name (addSpacing (n + 1)) args' addCons addVars (fns2py (n + 1) fs)
+            where
+              args' = if null args
+                        then ""
+                        else ", " ++ L.intercalate ", " args
+              body2py :: Int -> [(String, PyVal)] -> [String]
+              body2py n' = fmap (\(p,v) -> printf (addSpacing n' ++ "self.%s = %s\n") p (toPY 0 v))
+              addCons = (++ "\n") . concat $ body2py (n + 2) body
+              addVars = vars2py (n + 1) vars
+              vars2py :: Int -> [PyVal] -> String
+              vars2py n' = concat . fmap (\(PyClassVar varName x) -> 
+                printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
+              fn2py_ :: Int -> PyVal -> String
+              fn2py_ n' (PyClassFn fn pms body) =
+                  printf "%sdef %s (%s): \n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++ 
+                  printf "%sreturn %s \n" (addSpacing (n'+ 1)) (toPY n' body)
+              fn2pys_ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
+              fns2py :: Int -> [PyVal] -> String
+              fns2py n' [] = []
+              fns2py n' l = (++ "\n") . L.intercalate "\n" $ map (fn2py_ n') l
 defclass2py _ x = catch . throwError . TypeMismatch "PyDefClass" $ show x
 
 list2py :: Int -> PyVal -> String
 list2py n l = case l of
               (PyList [PyId "quote", ql]) -> toPY n ql
-              (PyList xs) -> "[" ++ L.intercalate ", " (fmap (toPY n) xs) ++ "]"
+              (PyList xs) -> printf "[%s]" (L.intercalate ", " (fmap (toPY n) xs))
               x -> catch . throwError . TypeMismatch "PyList" $ show x
 
 id2py :: Int -> PyVal -> String
@@ -146,7 +146,7 @@ id2py _ (PyId pv) = pv
 id2py _ x = catch . throwError . TypeMismatch "PyId" $ show x
 
 fn2py :: Int -> String -> PyVal -> String
-fn2py n n1 (PyFn params body) = "def " ++ n1 ++ " (" ++ params' ++ "):\n" ++ body'
+fn2py n n1 (PyFn params body) = printf "def %s (%s):\n%s" n1 params' body'
       where
         params' = L.intercalate ", " params
         body' = addSpacing (n + 1) ++ showBody body
