@@ -1,8 +1,9 @@
 var loki = (function (){
     var loki = {};
 
-    var sliceArgs = function (args) {
-        return args.length > 0 ? [].slice.call(args, 0) : [];
+    var sliceArgs = function (args, start) {
+        start = typeof start !== 'undefined' ? start : 0;
+        return args.length > start ? [].slice.call(args, start) : [];
     };
 
     var assertIsFunction = function (f) {
@@ -51,9 +52,10 @@ var loki = (function (){
         var args = sliceArgs(arguments);
         args.forEach(_log);
     };
+
     loki.get = function(e, i) {return e[i];};
     loki.set = function(x, v) {x = v;};
-    loki.assoc = function(x, i, v) {x[i] = v;};
+    loki.assoc = function(x, i, v) {x[i] = v;return x};
     loki.range = function(N) {return Array.apply(null, {length: N}).map(Number.call, Number);};
 
     //Arithmetic
@@ -76,7 +78,18 @@ var loki = (function (){
     return loki;
 })();
 //END LOKI HELPER FUNCTIONS
-function (x, y) {
-return loki.print(loki.plus(x, y))
+function Rocket(x) {
+this.speed = 5;
+this.p = x;
+this.f = 0
 };
-var x;
+Rocket.prototype.fe = function() {
+ return loki.print("ehhhh")
+};
+Rocket.prototype.funct = function(x, y) {
+ return loki.print(loki.plus(x, y))
+};;
+var r = new Rocket(5);
+(typeof r.funct === "function" ? r.funct(4, 2) : r.funct);
+(typeof r.fe === "function" ? r.fe() : r.fe);
+loki.print((typeof r.speed === "function" ? r.speed() : r.speed));

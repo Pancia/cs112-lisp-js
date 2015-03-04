@@ -55,12 +55,14 @@ class Loki:
         x[i] = v
 
 #END LOKI HELPER FUNCTIONS
-def f ():
-    return True
-Loki.printf(f())
-def f ():
-    return Loki.plus(2, 3)
-Loki.printf(f())
-def f (x):
-    return Loki.plus(x, 1)
-Loki.printf(f(9))
+class Rocket:
+    def __init__(self, x):
+        self.speed = x
+
+    def lift_off (self): 
+        return Loki.printf(Loki.plus("I'm flying @", this.speed() if callable(this.speed) else this.speed, " speed")) 
+
+
+r = Rocket(5)
+Loki.printf(r)
+r.lift_off() if callable(r.lift_off) else r.lift_off

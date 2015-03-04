@@ -1,46 +1,61 @@
+{-# OPTIONS_GHC -F -pgmF htfpp #-}
 module TestLokiPY where
 
 import Control.Applicative hiding (Const)
 import Control.Monad
-import TestUtils
 
 import qualified Control.Foldl as F
 import qualified Data.Text as T
 import qualified Filesystem.Path.CurrentOS as FS
 import qualified LokiPY as PY
-import qualified Test.Framework as T
+import qualified Test.Framework as TF
 import qualified Turtle as SH
+import qualified TestUtils as TU
 import qualified Utils as U
 
-tests :: IO [T.Test]
-tests = sequence . join $ runTest "py" <$> [testPyParser, testToPY, testExecPY]
+test_PyParser :: IO ()
+test_PyParser = void $ mapM testParser ["class-object","def+fn","specials"
+                                       ,"primitives","literals","helpers"]
+    where
+        testParser :: String -> IO ()
+        testParser testName = do
+            lisp <- liftM (TU.readExpr "py") $ readFile inFile
+            let parsed = TU.clean . U.catch $ show <$> lisp
+            expected <- liftM TU.clean $ readFile xpFile
+            TF.assertEqual_ (TF.makeLoc xpFile 0) expected parsed
+          where
+              inFile = TU.getInFile testName
+              xpFile = TU.getXpFile testName "parse" "py"
 
-testPyParser :: LokiTests
-testPyParser = (,) <$> ["class-object", "def+fn", "specials"
-                       ,"primitives", "literals", "helpers"]
-                   <*> [parsePY]
-    where parsePY (_, lisp) = do
-            let parsed = U.catch $ show <$> readExpr "py" lisp
-            return ("parse", parsed)
+test_ToPY :: IO ()
+test_ToPY = void $ mapM testToPY ["helpers", "specials", "def+fn"]
+    where
+        testToPY testName = do
+            lisp <- liftM (TU.readExpr "py") $ readFile inFile
+            let translated'' = U.catch . liftM (PY.translate <$>) $ lisp
+                translated' = concat . fmap (PY.toPY 0) $ translated''
+                translated = TU.clean translated'
+            expected <- liftM TU.clean $ readFile xpFile
+            TF.assertEqual_ (TF.makeLoc xpFile 0) expected translated
+          where
+              inFile = TU.getInFile testName
+              xpFile = TU.getXpFile testName "convert" "py"
 
-testToPY :: LokiTests
-testToPY = (,) <$> ["helpers", "specials", "def+fn"]
-               <*> [toPY]
-    where toPY (_, lisp) = do
-            let translated = U.catch . liftM (PY.translate <$>) $ readExpr "py" lisp
-                pyStr = concat . fmap (PY.toPY 0) $ translated
-            return ("convert", pyStr)
-
-testExecPY :: LokiTests
-testExecPY = (,) <$> ["simple", "complex", "helpers"]
-                 <*> [execPY]
-    where execPY (file, lisp) = do
+test_ExecPY :: IO ()
+test_ExecPY = void $ mapM testExecPY ["helpers"]
+    where
+        testExecPY testName = do
+            lisp <- liftM (TU.readExpr "py") $ readFile inFile
             py <- PY.formatPy . fmap (PY.toPY 0) . U.catch
-                  . liftM (PY.translate <$>) . readExpr "py" $ lisp
-            let outFile = "tests/" ++ file ++ ".out.py"
+                  . liftM (PY.translate <$>) $ lisp
             writeFile outFile py
             let pyOutput = SH.inproc (T.pack "python")
                                      [FS.encode $ FS.decodeString outFile]
                                      SH.empty
-            (,) <$> return "exec"
-                <*> SH.fold pyOutput (T.unpack <$> F.mconcat)
+            executed <- liftM TU.clean $ SH.fold pyOutput (T.unpack <$> F.mconcat)
+            expected <- liftM TU.clean $ readFile xpFile
+            TF.assertEqual_ (TF.makeLoc xpFile 0) expected executed
+          where
+              inFile = TU.getInFile testName
+              xpFile = TU.getXpFile testName "exec" "py"
+              outFile = "tests/" ++ testName ++ ".out.py"

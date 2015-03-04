@@ -1,11 +1,13 @@
-import Data.Monoid
+{-# OPTIONS_GHC -F -pgmF htfpp #-}
+module Main where
 
-import qualified Test.Framework as T
+import Test.Framework
+--import Test.Framework.BlackBoxTest
+import {-@ HTF_TESTS @-} TestLokiJS
+import {-@ HTF_TESTS @-} TestLokiPY
 
-import qualified TestLokiJS as TJS
-import qualified TestLokiPY as TPY
+import System.Environment
 
 main :: IO ()
-main = do jsTests <- TJS.tests
-          pyTests <- TPY.tests
-          T.defaultMainWithOpts (jsTests ++ pyTests) mempty
+main = do args <- getArgs
+          htfMainWithArgs args htf_importedTests

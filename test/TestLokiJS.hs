@@ -1,10 +1,9 @@
+{-# OPTIONS_GHC -F -pgmF htfpp #-}
 module TestLokiJS where
 
 import Data.Maybe
 import Control.Applicative hiding (Const)
 import Control.Monad
-import Test.Framework.Providers.QuickCheck2()
-import TestUtils
 
 import qualified Control.Foldl as F
 import qualified Data.Text as T
@@ -12,37 +11,53 @@ import qualified Filesystem.Path.CurrentOS as FS
 import qualified LokiJS as JS
 import qualified Test.Framework as TF
 import qualified Turtle as SH
+import qualified TestUtils as TU
 import qualified Utils as U
 
-tests :: IO [TF.Test]
-tests = sequence . join $ runTest "js" <$> [testJsParser, testToJS, testExecJS]
+test_JsParser :: IO ()
+test_JsParser = void $ mapM testParser ["class-object","def+fn","specials"
+                                       ,"primitives","literals","helpers"]
+    where
+        testParser :: String -> IO ()
+        testParser testName = do
+            lisp <- liftM (TU.readExpr "js") $ readFile inFile
+            let parsed = TU.clean . U.catch $ show <$> lisp
+            expected <- liftM TU.clean $ readFile xpFile
+            TF.assertEqual_ (TF.makeLoc xpFile 0) expected parsed
+          where
+              inFile = TU.getInFile testName
+              xpFile = TU.getXpFile testName "parse" "js"
 
-testJsParser :: LokiTests
-testJsParser = (,) <$> ["class-object", "def+fn", "specials"
-                       ,"primitives", "literals", "helpers"]
-                   <*> [parseJS]
-    where parseJS (_, lisp) = do
-            let parsed = U.catch $ show <$> readExpr "js" lisp
-            return ("parse", parsed)
+test_ToJS :: IO ()
+test_ToJS = void $ mapM testToJS ["class-object","helpers","specials"
+                                 ,"def+fn"]
+    where
+        testToJS testName = do
+            lisp <- liftM (TU.readExpr "js") $ readFile inFile
+            let translated'' = U.catch . liftM (JS.translate <$>) $ lisp
+                translated' = concat . mapMaybe JS.toJS $ translated''
+                translated = TU.clean translated'
+            expected <- liftM TU.clean $ readFile xpFile
+            TF.assertEqual_ (TF.makeLoc xpFile 0) expected translated
+          where
+              inFile = TU.getInFile testName
+              xpFile = TU.getXpFile testName "convert" "js"
 
-testToJS :: LokiTests
-testToJS = (,) <$> ["class-object", "helpers", "specials", "def+fn"]
-               <*> [toJS]
-    where toJS (_, lisp) = do
-            let translated = U.catch . liftM (JS.translate <$>) $ readExpr "js" lisp
-                jsStr = concat . mapMaybe JS.toJS $ translated
-            return ("convert", jsStr)
-
-testExecJS :: LokiTests
-testExecJS = (,) <$> ["class-object", "simple", "complex", "helpers"]
-                 <*> [execJS]
-    where execJS (file, lisp) = do
+test_ExecJS :: IO ()
+test_ExecJS = void $ mapM testExecJS ["class-object","helpers"]
+    where
+        testExecJS testName = do
+            lisp <- liftM (TU.readExpr "js") $ readFile inFile
             js <- JS.formatJs . fmap JS.toJS . U.catch
-                  . liftM (JS.translate <$>) . readExpr "js" $ lisp
-            let outFile = "tests/" ++ file ++ ".out.js"
+                  . liftM (JS.translate <$>) $ lisp
             writeFile outFile js
             let jsOutput = SH.inproc (T.pack "node")
                                      [FS.encode $ FS.decodeString outFile]
                                      SH.empty
-            (,) <$> return "exec"
-                <*> SH.fold jsOutput (T.unpack <$> F.mconcat)
+            exec_ed <- liftM TU.clean $ SH.fold jsOutput (T.unpack <$> F.mconcat)
+            expected <- liftM TU.clean $ readFile xpFile
+            TF.assertEqual_ (TF.makeLoc xpFile 0) expected exec_ed
+          where
+              inFile = TU.getInFile testName
+              xpFile = TU.getXpFile testName "exec" "js"
+              outFile = "tests/" ++ testName ++ ".out.js"
