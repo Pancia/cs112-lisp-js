@@ -24,7 +24,7 @@ testPyParser = (,) <$> ["class-object", "def+fn", "specials"
             return ("parse", parsed)
 
 testToPY :: LokiTests
-testToPY = (,) <$> ["helpers", "specials"]
+testToPY = (,) <$> ["helpers", "specials", "def+fn"]
                <*> [toPY]
     where toPY (_, lisp) = do
             let translated = U.catch . liftM (PY.translate <$>) $ readExpr "py" lisp

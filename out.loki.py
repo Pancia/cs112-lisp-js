@@ -49,4 +49,21 @@ class Loki:
         x[i] = v
 
 #END LOKI HELPER FUNCTIONS
-Loki.printf(Loki.plus(2, 3, 4))
+def x (x, y):
+    Loki.printf(Loki.plus(x, y))
+    return Loki.minus(x, y)
+(lambda  : [Loki.printf("lambda"), Loki.printf(Loki.plus(1, 2)), Loki.printf(Loki.minus(22, 3))])()
+Loki.printf(x(17, 12))
+x = 4
+class Rocket:
+    def __init__(self, x):
+        self.p = x
+        self.f = 0
+
+    speed = 5
+    def funct (self, x, y): 
+        return Loki.printf(Loki.plus(x, y)) 
+
+
+r = Rocket(5)
+r.funct(Loki.mult(50, r.speed), 2)

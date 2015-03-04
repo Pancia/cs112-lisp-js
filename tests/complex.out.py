@@ -49,9 +49,12 @@ class Loki:
         x[i] = v
 
 #END LOKI HELPER FUNCTIONS
-f = (lambda  : True)
+def f ():
+return True
 Loki.printf(f())
-f = (lambda  : Loki.plus(2, 3))
+def f ():
+return Loki.plus(2, 3)
 Loki.printf(f())
-f = (lambda x : Loki.plus(x, 1))
+def f (x):
+return Loki.plus(x, 1)
 Loki.printf(f(9))

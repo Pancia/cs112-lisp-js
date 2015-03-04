@@ -1,0 +1,31 @@
+x = None
+y = 2
+x = y
+x = Loki.plus(1, 2)
+y = [1, 2]
+
+x = None
+x = None
+x = None
+
+x = 1
+x = 1
+x = 1
+
+y = (lambda x : return Loki.printf(x))
+z = (lambda  : return Loki.printf("hello"))
+a = (lambda  : return [])
+
+y = (lambda x : return Loki.printf(x))
+y = (lambda x : return Loki.printf(x))
+y = (lambda x : return Loki.printf(x))
+
+(lambda  : return [])
+(lambda x : return [])
+(lambda x : return Loki.printf(x))
+(lambda x, y : return [])
+(lambda x, y : return Loki.printf(Loki.plus(x, y)))
+(lambda x, y, z : Loki.printf("first")return Loki.printf(Loki.plus(x, y, z)))
+
+(lambda x : return Loki.printf(x))
+(lambda x : return Loki.printf(x))

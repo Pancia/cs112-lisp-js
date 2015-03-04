@@ -1,19 +1,17 @@
+(def x (fn [x y]
+			(print(+ x y)) 
+			(- x y)
+			))
+((fn [] (print "lambda")
+		(print (+ 1 2))
+		(print (- 22 3))))
+(print (x 17 12))
+(def x 4)
+
 (defclass Rocket
   ([x] (p x)
    (f 0))
+  (funct [x y] (print (+ x y)))
   (speed 5))
-
-(def hello_world (fn []
-                   (print "foobar")
-                   #+js (alert (+ 2 3 5))))
-#+js (.click ($ "img")
-             (fn []
-               (alert "img")))
-(def printLang (fn []
-                 (print #+js"js" #+py"py")))
-(printLang)
-(print 5)
-(def r (new Rocket 7))
-(print (. speed r))
-(print (. p r))
-(print (. f r))
+(def r (new Rocket 5))
+(. funct r (* 50 (. speed r)) 2)
