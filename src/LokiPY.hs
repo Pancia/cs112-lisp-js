@@ -73,7 +73,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
           list2pyVal :: LokiVal -> PyVal
           list2pyVal l = case l of
                              (List _ (Atom _ a:args)) -> PyFnCall a $ translate <$> args
-                             (List _ (f@(Fn{}):args)) -> PyFnCall (toPY 0 (translate f)) $ translate <$> args 
+                             (List _ (f@(Fn{}):args)) -> PyFnCall (toPY 0 (translate f)) $ translate <$> args
                              (List _ xs) -> PyList $ translate <$> xs
                              x -> catch . throwError . TypeMismatch "List" $ show x
 
@@ -111,8 +111,8 @@ new2py n (PyNewObj className args) = printf "%s(%s)" className args'
 new2py _ x = catch . throwError . TypeMismatch "PyNewObj" $ show x
 
 defclass2py :: Int -> PyVal -> String
-defclass2py n (PyDefClass name (PyConst args body) fs vars) = 
-                printf "class %s:\n%sdef __init__(self%s):\n%s%s%s" 
+defclass2py n (PyDefClass name (PyConst args cbody) fs vars) =
+                printf "class %s:\n%sdef __init__(self%s):\n%s%s%s"
                 name (addSpacing (n + 1)) args' addCons addVars (fns2py (n + 1) fs)
             where
               args' = if null args
@@ -120,18 +120,18 @@ defclass2py n (PyDefClass name (PyConst args body) fs vars) =
                         else ", " ++ L.intercalate ", " args
               body2py :: Int -> [(String, PyVal)] -> [String]
               body2py n' = fmap (\(p,v) -> printf (addSpacing n' ++ "self.%s = %s\n") p (toPY 0 v))
-              addCons = (++ "\n") . concat $ body2py (n + 2) body
+              addCons = (++ "\n") . concat $ body2py (n + 2) cbody
               addVars = vars2py (n + 1) vars
               vars2py :: Int -> [PyVal] -> String
-              vars2py n' = concat . fmap (\(PyClassVar varName x) -> 
+              vars2py n' = concat . fmap (\(PyClassVar varName x) ->
                 printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
               fn2py_ :: Int -> PyVal -> String
               fn2py_ n' (PyClassFn fn pms body) =
-                  printf "%sdef %s (%s): \n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++ 
+                  printf "%sdef %s (%s): \n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++
                   printf "%sreturn %s \n" (addSpacing (n'+ 1)) (toPY n' body)
-              fn2pys_ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
+              fn2py_ _ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
               fns2py :: Int -> [PyVal] -> String
-              fns2py n' [] = []
+              fns2py _ [] = []
               fns2py n' l = (++ "\n") . L.intercalate "\n" $ map (fn2py_ n') l
 defclass2py _ x = catch . throwError . TypeMismatch "PyDefClass" $ show x
 
@@ -158,13 +158,14 @@ fn2py n n1 (PyFn params body) = printf "def %s (%s):\n%s" n1 params' body'
 fn2py _ _ x = catch . throwError . TypeMismatch "PyFn" $ show x
 
 lfn2py :: Int -> PyVal -> String
-lfn2py n (PyFn params body) = printf "(lambda %s : [%s])" params' body' 
-      where 
+lfn2py _ (PyFn params body) = printf "(lambda %s : [%s])" params' body'
+      where
         params' = L.intercalate ", " params
         body' = L.intercalate ", " $ toPY 0 <$> body
+lfn2py _ x = catch .throwError . TypeMismatch "PyFn" $ show x
 
 dot2py :: Int -> PyVal -> String
-dot2py n (PyObjCall fp on ps) = printf "%s.%s(%s) if callable(%s.%s) else %s.%s" 
+dot2py n (PyObjCall fp on ps) = printf "%s.%s(%s) if callable(%s.%s) else %s.%s"
                                       (toPY n on) fp params' (toPY n on) fp (toPY n on) fp
       where
         params' = L.intercalate ", " $ toPY n <$> ps
