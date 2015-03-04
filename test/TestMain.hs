@@ -6,8 +6,5 @@ import Test.Framework
 import {-@ HTF_TESTS @-} TestLokiJS
 import {-@ HTF_TESTS @-} TestLokiPY
 
-import System.Environment
-
 main :: IO ()
-main = do args <- getArgs
-          htfMainWithArgs args htf_importedTests
+main = htfMainWithArgs ["--colors=true"] htf_importedTests

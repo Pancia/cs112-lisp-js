@@ -13,8 +13,8 @@ import qualified Turtle as SH
 import qualified TestUtils as TU
 import qualified Utils as U
 
-test_PyParser :: IO ()
-test_PyParser = void $ mapM testParser ["class-object","def+fn","specials"
+test_pyParser :: IO ()
+test_pyParser = void $ mapM testParser ["class-object","def+fn","specials"
                                        ,"primitives","literals","helpers"]
     where
         testParser :: String -> IO ()
@@ -27,8 +27,8 @@ test_PyParser = void $ mapM testParser ["class-object","def+fn","specials"
               inFile = TU.getInFile testName
               xpFile = TU.getXpFile testName "parse" "py"
 
-test_ToPY :: IO ()
-test_ToPY = void $ mapM testToPY ["helpers", "specials", "def+fn"]
+test_toPY :: IO ()
+test_toPY = void $ mapM testToPY ["helpers", "specials", "def+fn"]
     where
         testToPY testName = do
             lisp <- liftM (TU.readExpr "py") $ readFile inFile
@@ -41,8 +41,8 @@ test_ToPY = void $ mapM testToPY ["helpers", "specials", "def+fn"]
               inFile = TU.getInFile testName
               xpFile = TU.getXpFile testName "convert" "py"
 
-test_ExecPY :: IO ()
-test_ExecPY = void $ mapM testExecPY ["helpers"]
+test_execPY :: IO ()
+test_execPY = void $ mapM testExecPY ["helpers"]
     where
         testExecPY testName = do
             lisp <- liftM (TU.readExpr "py") $ readFile inFile
