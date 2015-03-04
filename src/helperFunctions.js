@@ -68,8 +68,8 @@ var loki = (function (){
     //Logic
     loki.and = curry(function(x, y) {return x && y});
     loki.or  = curry(function(x, y) {return x || y});
-    loki.eq  = curry(function(x, y) {return x == y});
-    loki.neq = curry(function(x, y) {return x != y});
+    loki.eq  = curry(function(x, y) {return x === y});
+    loki.neq = curry(function(x, y) {return x !== y});
     loki.lt  = curry(function(x, y) {return x < y});
     loki.lte = curry(function(x, y) {return x <= y});
     loki.gt  = curry(function(x, y) {return x > y});
