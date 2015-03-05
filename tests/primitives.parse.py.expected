@@ -1,1 +1,21 @@
-[]
+[Def {getMeta = fromList [("fileType","py")], getDefName = "a", getDefBody = Number {getMeta = fromList [("fileType","py")], getNumber = 7}}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Atom {getMeta = fromList [("fileType","py")], getAtom = "a"}]}
+,Def {getMeta = fromList [("fileType","py")], getDefName = "camelCase", getDefBody = Number {getMeta = fromList [("fileType","py")], getNumber = 9}}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Atom {getMeta = fromList [("fileType","py")], getAtom = "camelCase"}]}
+,Def {getMeta = fromList [("fileType","py")], getDefName = "snake_case", getDefBody = Number {getMeta = fromList [("fileType","py")], getNumber = 10}}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Atom {getMeta = fromList [("fileType","py")], getAtom = "snake_case"}]}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","py")], getString = "hello"}]}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","py")], getString = "string with spaces"}]}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","py")], getString = "punctuation!"}]}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","py")], getString = "printing numbers 128292838723"}]}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 4}]}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 9128390}]}]

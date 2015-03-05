@@ -1,1 +1,21 @@
-[]
+[Def {getMeta = fromList [("fileType","js")], getDefName = "a", getDefBody = Number {getMeta = fromList [("fileType","js")], getNumber = 7}}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Atom {getMeta = fromList [("fileType","js")], getAtom = "a"}]}
+,Def {getMeta = fromList [("fileType","js")], getDefName = "camelCase", getDefBody = Number {getMeta = fromList [("fileType","js")], getNumber = 9}}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Atom {getMeta = fromList [("fileType","js")], getAtom = "camelCase"}]}
+,Def {getMeta = fromList [("fileType","js")], getDefName = "snake_case", getDefBody = Number {getMeta = fromList [("fileType","js")], getNumber = 10}}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Atom {getMeta = fromList [("fileType","js")], getAtom = "snake_case"}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","js")], getString = "hello"}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","js")], getString = "string with spaces"}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","js")], getString = "punctuation!"}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","js")], getString = "printing numbers 128292838723"}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 4}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 9128390}]}]
