@@ -19,7 +19,7 @@ primitives :: M.Map String String
 primitives = M.fromList $ fmap addLokiPrefix $
         [("+", "plus"),("-", "minus"),("*", "mult"),("/", "div"),("=", "eq")
         ,("!=", "neq"),("<", "lt"),("<=", "lte"),(">", "gt"),(">=", "gte")
-        ,("print", "printf"),("and", "and_"),("or", "or_"),("sc","sc"),("dc","dc"),("in", "in_")]
+        ,("print", "printf"),("and", "and_"),("or", "or_"),("sc","sc"),("dc","dc"),("in", "in_"), ("dcm", "dubColMid"), ("!in", "notIn")]
         ++ (dupl <$> ["mod","assoc","set","range","get"])
     where
         addLokiPrefix (q,s) = (q,"Loki." ++ s)

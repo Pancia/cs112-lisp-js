@@ -20,16 +20,16 @@
 				
      (def buttonPressed
 	      (fn [self button]
-		       (set player {1 "X" -1 "0"}) ;Sketch line
-			   (set colors {1 {0 0 0 0} -1 {0 0 0 0}})
-			   (set row (. coords button))
-			   (set column (. coords button))
+		       (set player {1: "X" -1: "0"})
+			   (set colors {1: {0 0 0 0} -1: {0 0 0 0}})
+			   (set row (. coords (get button 0)))
+			   (set column (. coords (get button 1)))
 			   (set statusIndex (+(* (3 row)) column))
 			   (set alreadyPlayed (. (get status statusIndex) self))
 			   
 			   (if (!= alreadyPlayed)
 			        (set (. (get status statusIndex) set) (. currentPlayer self))
-					; button.text = {1: 'X', -1: 'O'}[self.currentPlayer]
+					(set (. text button) (get player (. currentPlayer self)))
 					(set (. background_color button) (get colors (. currentPlayer self)))
 					(set (. currentPlayer self) (* (. currentPlayer self) -1)))))
 
@@ -38,11 +38,30 @@
 		       (set (. status self) [0 for [_ (range 9)]])
 			   (for [child (. self children)]
 			        (set (. text child) "")
-					;(set (. background_color child) 1 1 1 1)
+					(set (. background_color child) 1 1 1 1) ; python line: child.background_color = (1,1,1,1)
 					)
 			   (set (. currentPlayer self) 1)))
-			   
-     ;Translate on_status
+			
+	 (def on_status
+          (fn [self instance newVal]
+		       (set status newVal)
+			   (set sums [(+ (sc 0 3)) 
+			              (+ (sc 3 6)) (+ (sc 6 9)) (+ (dc 0 3))
+						  (+ (dc 1 4)) (+ (dc 2 3)) (+ (dc 0 4))
+						  (+ (dcm 2 -2 2))])
+			   (set winner "")
+			   (if (in 3 sums)
+			       (set winner "Xs win!"))
+			   (if (in -3 sums)
+			       (set winner "Os win!"))
+			   (if (!in 0 (.status self))
+			       (set winner "Draw!"))
+			   (if (!= winner "")
+			       (set popup (ModalView (set size_hint .75 5))) ;Sketch line
+				   (set victoryLabel (Label (set text winner) (set font_size 50)))
+				   (. add_widget popup victoryLabel)
+				   (. bind popup (set on_dismiss (.reset self)))
+				   (. open popup))))
 			   
 (defclass TicTacToeApp 
      ([app])
