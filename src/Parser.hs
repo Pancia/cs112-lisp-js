@@ -173,19 +173,22 @@ parseList = do s <- getState
 parseArray :: Parser LokiVal
 parseArray = do s <- getState
                 List (newMeta s)
-                    <$> between (char '[') (char ']')
-                        (sepBy parseExpr1 spacesInLiteral)
+                    <$> between (char '[' >> spacesInLiteral)
+                                (char ']')
+                                (manyTill (parseExpr1 <* spacesInLiteral)
+                                          (lookAhead (char ']')))
 
 parseMap :: Parser LokiVal
-parseMap = between (char '{') (char '}') $ do
-    keyVals <- manyTill parseKeyVal (lookAhead (char '}'))
+parseMap = between (char '{' >> spacesInLiteral) (char '}') $ do
+    keyVals <- manyTill (spacesInLiteral >> parseKeyVal)
+                        (lookAhead (char '}'))
     let (keys, vals) = foldl (\(ks, vs) (k, v) -> (k:ks, v:vs)) ([],[]) keyVals
     s <- getState
     return $ Map (newMeta s) keys vals
 
 parseKeyVal :: Parser (String, LokiVal)
 parseKeyVal = liftM2 (,) (choice [try ident,
-                                 return . pad "\"". getString =<< parseString]
+                                 return . pad "\"" . getString =<< parseString]
                                  <* spaces1InLiteral >?> "key")
                          (parseBasicExpr1 <* spacesInLiteral)
     where pad x = (x ++) . (++ x)

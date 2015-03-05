@@ -1,1 +1,32 @@
-[]
+[List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,List {getMeta = fromList [("fileType","js")], getList = []}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,List {getMeta = fromList [("fileType","js")], getList = []}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,List {getMeta = fromList [("fileType","js")], getList = [Number {getMeta = fromList [("fileType","js")], getNumber = 1}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 2}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 3}]}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,List {getMeta = fromList [("fileType","js")], getList = [Number {getMeta = fromList [("fileType","js")], getNumber = 4}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 5}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 6}]}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,List {getMeta = fromList [("fileType","js")], getList = [Number {getMeta = fromList [("fileType","js")], getNumber = 7}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 8}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 9}]}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","js")], getMapKeys = [], getMapVals = []}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","js")], getMapKeys = [], getMapVals = []}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","js")], getMapKeys = ["\"x\""], getMapVals = [Number {getMeta = fromList [("fileType","js")], getNumber = 1}]}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","js")], getMapKeys = ["\"z\"","\"y\""], getMapVals = [Number {getMeta = fromList [("fileType","js")], getNumber = 3}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 2}]}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","js")], getMapKeys = ["\"c\"","\"b\"","\"a\""], getMapVals = [Number {getMeta = fromList [("fileType","js")], getNumber = 6}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 5}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 4}]}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","js")], getMapKeys = ["\"e\"","\"d\""], getMapVals = [Number {getMeta = fromList [("fileType","js")], getNumber = 8}
+,Number {getMeta = fromList [("fileType","js")], getNumber = 7}]}]}]

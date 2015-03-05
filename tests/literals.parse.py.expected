@@ -1,1 +1,47 @@
-[]
+[List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+
+,List {getMeta = fromList [("fileType","py")], getList = []}]}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+
+,List {getMeta = fromList [("fileType","py")], getList = []}]}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Number {getMeta = fromList [("fileType","py")], getNumber = 1}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 2}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 3}]}]}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Number {getMeta = fromList [("fileType","py")], getNumber = 4}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 5}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 6}]}]}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Number {getMeta = fromList [("fileType","py")], getNumber = 7}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 8}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 9}]}]}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","py")], getMapKeys = [], getMapVals = []}]}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","py")], getMapKeys = [], getMapVals = []}]}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","py")], getMapKeys = ["\"x\""], getMapVals = [Number {getMeta = fromList [("fileType","py")], getNumber = 1}]}]}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","py")], getMapKeys = ["\"z\"","\"y\""], getMapVals = [Number {getMeta = fromList [("fileType","py")], getNumber = 3}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 2}]}]}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","py")], getMapKeys = ["\"c\"","\"b\"","\"a\""], getMapVals = [Number {getMeta = fromList [("fileType","py")], getNumber = 6}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 5}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 4}]}]}
+
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,Map {getMeta = fromList [("fileType","py")], getMapKeys = ["\"e\"","\"d\""], getMapVals = [Number {getMeta = fromList [("fileType","py")], getNumber = 8}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 7}]}]}]
