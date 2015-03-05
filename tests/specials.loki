@@ -1,0 +1,8 @@
+; QUOTED
+(print "TODO QUOTED")
+
+; METADATA
+#+js (print "js") 
+#+py (print "py")
+
+(print (#+js - #+py + 1 2 3))

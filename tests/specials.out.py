@@ -55,4 +55,7 @@ class Loki:
         x[i] = v
 
 #END LOKI HELPER FUNCTIONS
-quote(1)
+Loki.printf("TODO QUOTED")
+
+Loki.printf("py")
+Loki.printf(Loki.minus(+, 1, 2, 3))

@@ -30,7 +30,7 @@ test_jsParser = void $ mapM testParser ["class-object","specials","def+fn"
 
 test_toJS :: IO ()
 test_toJS = void $ mapM testToJS ["class-object","helpers","specials"
-                                 ,"def+fn","literals"]
+                                 ,"def+fn","literals","primitives"]
     where
         testToJS testName = do
             lisp <- liftM (TU.readExpr "js") $ readFile inFile
@@ -45,7 +45,7 @@ test_toJS = void $ mapM testToJS ["class-object","helpers","specials"
 
 test_execJS :: IO ()
 test_execJS = void $ mapM testExecJS ["class-object","helpers","def+fn"
-                                     ,"literals"]
+                                     ,"specials","primitives","literals"]
     where
         testExecJS testName = do
             lisp <- liftM (TU.readExpr "js") $ readFile inFile

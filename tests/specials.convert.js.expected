@@ -1,0 +1,4 @@
+loki.print("TODO QUOTED")
+
+loki.print("js")
+loki.print(loki.minus(1, 2, 3))

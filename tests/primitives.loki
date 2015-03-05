@@ -1,1 +1,19 @@
+; ATOM
+(def a 7)
+(print a)
 
+(def camelCase 9)
+(print camelCase)
+
+(def snake_case 10)
+(print snake_case)
+
+; STRING
+(print "hello")
+(print "string with spaces")
+(print "punctuation!")
+(print "printing numbers 128292838723")
+
+; NUMBER
+(print 4)
+(print 9128390)

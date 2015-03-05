@@ -55,4 +55,15 @@ class Loki:
         x[i] = v
 
 #END LOKI HELPER FUNCTIONS
-quote(1)
+a = 7
+Loki.printf(a)
+camelCase = 9
+Loki.printf(camelCase)
+snake_case = 10
+Loki.printf(snake_case)
+Loki.printf("hello")
+Loki.printf("string with spaces")
+Loki.printf("punctuation!")
+Loki.printf("printing numbers 128292838723")
+Loki.printf(4)
+Loki.printf(9128390)

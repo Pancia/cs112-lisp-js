@@ -78,4 +78,15 @@ var loki = (function (){
     return loki;
 })();
 //END LOKI HELPER FUNCTIONS
-1;
+var a = 7;
+loki.print(a);
+var camelCase = 9;
+loki.print(camelCase);
+var snake_case = 10;
+loki.print(snake_case);
+loki.print("hello");
+loki.print("string with spaces");
+loki.print("punctuation!");
+loki.print("printing numbers 128292838723");
+loki.print(4);
+loki.print(9128390);
