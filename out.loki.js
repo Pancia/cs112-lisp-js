@@ -68,8 +68,8 @@ var loki = (function (){
     //Logic
     loki.and = curry(function(x, y) {return x && y});
     loki.or  = curry(function(x, y) {return x || y});
-    loki.eq  = curry(function(x, y) {return x == y});
-    loki.neq = curry(function(x, y) {return x != y});
+    loki.eq  = curry(function(x, y) {return x === y});
+    loki.neq = curry(function(x, y) {return x !== y});
     loki.lt  = curry(function(x, y) {return x < y});
     loki.lte = curry(function(x, y) {return x <= y});
     loki.gt  = curry(function(x, y) {return x > y});
@@ -79,17 +79,19 @@ var loki = (function (){
 })();
 //END LOKI HELPER FUNCTIONS
 function Rocket(x) {
-this.speed = 5;
-this.p = x;
-this.f = 0
+this.color = "red";
+this.fuel = 5;
+this.speed = x
 };
-Rocket.prototype.fe = function() {
- return loki.print("ehhhh")
+Rocket.prototype.lift_off = function() {
+ return loki.print(loki.plus("I'm flying @ ", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))
 };
-Rocket.prototype.funct = function(x, y) {
- return loki.print(loki.plus(x, y))
+Rocket.prototype.toString = function() {
+ return loki.plus("I'm a ", (typeof this.color === "function" ? this.color() : this.color), " rocket")
 };;
-var r = new Rocket(5);
-(typeof r.funct === "function" ? r.funct(4, 2) : r.funct);
-(typeof r.fe === "function" ? r.fe() : r.fe);
+var r = new Rocket("5");
+loki.print((typeof r.color === "function" ? r.color() : r.color));
 loki.print((typeof r.speed === "function" ? r.speed() : r.speed));
+loki.print((typeof r.toString === "function" ? r.toString() : r.toString));
+loki.print((typeof r.fuel === "function" ? r.fuel() : r.fuel));
+(typeof r.lift_off === "function" ? r.lift_off() : r.lift_off);

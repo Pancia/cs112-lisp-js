@@ -1,10 +1,19 @@
 (defclass Rocket
   ([x] (speed x))
   (lift_off []
-    (print (+ "I'm flying @"
+    (print (+ "I'm flying @ "
               (. speed this)
-              " speed"))))
+              " speed")))
+  (toString []
+  	(+ "I'm a " 
+  	    (. color this) 
+  	    " rocket"))
+  (color "red")
+  (fuel 7))
 
-(def r (new Rocket 5))
-(print r)
+(def r (new Rocket "5"))
+(print (. color r))
+(print (. speed r))
+(print (. toString r))
+(print (. fuel r))
 (. lift_off r)

@@ -25,8 +25,14 @@ primitives = M.fromList $ fmap addLokiPrefix $
         addLokiPrefix (q,s) = (q,"Loki." ++ s)
         dupl x = (x,x)
 
+keywords :: M.Map String String
+keywords = M.fromList [("this", "self")]
+
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
+
+lookupKeyword :: String -> String
+lookupKeyword k = fromMaybe k $ M.lookup k keywords
 
 data PyVal = PyVar String PyVal                -- x = ...
            | PyFn [String] [PyVal]             -- function(...){...}
@@ -142,7 +148,7 @@ list2py n l = case l of
               x -> catch . throwError . TypeMismatch "PyList" $ show x
 
 id2py :: Int -> PyVal -> String
-id2py _ (PyId pv) = pv
+id2py _ (PyId pv) = lookupKeyword pv
 id2py _ x = catch . throwError . TypeMismatch "PyId" $ show x
 
 fn2py :: Int -> String -> PyVal -> String
@@ -170,14 +176,6 @@ dot2py n (PyObjCall fp on ps) = printf "%s.%s(%s) if callable(%s.%s) else %s.%s"
       where
         params' = L.intercalate ", " $ toPY n <$> ps
 dot2py _ x = catch . throwError . TypeMismatch "PyObjCall" $ show x
-
---dot2js :: JsVal -> Maybe String
---dot2js (JsObjCall fp on args) = do
---        on' <- toJS on
---        return $ printf "(typeof %s.%s === \"function\" ? %s.%s(%s) : %s.%s)"
---                 on' fp on' fp args' on' fp
---     where args' = L.intercalate ", " . catMaybes $ toJS <$> args
---dot2js x = catch . throwError . TypeMismatch "JsDotThing" $ show x
 
 --Use for: if, for, while, class creation, anything else. Make sure to pass
 --around a weight and increment and decrement accordingly

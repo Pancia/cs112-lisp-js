@@ -57,18 +57,20 @@ class Loki:
 #END LOKI HELPER FUNCTIONS
 class Rocket:
     def __init__(self, x):
-        self.p = x
-        self.f = 0
+        self.speed = x
 
-    speed = 5
-    def fe (self): 
-        return Loki.printf("ehhhh") 
+    color = "red"
+    fuel = 5
+    def lift_off (self): 
+        return Loki.printf(Loki.plus("I'm flying @ ", self.speed() if callable(self.speed) else self.speed, " speed")) 
 
-    def funct (self, x, y): 
-        return Loki.printf(Loki.plus(x, y)) 
+    def toString (self): 
+        return Loki.plus("I'm a ", self.color() if callable(self.color) else self.color, " rocket") 
 
 
-r = Rocket(5)
-r.funct(4, 2) if callable(r.funct) else r.funct
-r.fe() if callable(r.fe) else r.fe
+r = Rocket("5")
+Loki.printf(r.color() if callable(r.color) else r.color)
 Loki.printf(r.speed() if callable(r.speed) else r.speed)
+Loki.printf(r.toString() if callable(r.toString) else r.toString)
+Loki.printf(r.fuel() if callable(r.fuel) else r.fuel)
+r.lift_off() if callable(r.lift_off) else r.lift_off

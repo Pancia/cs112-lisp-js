@@ -1,6 +1,1 @@
-function Rocket(x) {;this.speed = x};
-Rocket.prototype.lift_off = function() {
- return loki.print(loki.plus("I'm flying @", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))};
-var r = new Rocket(5)
-loki.print(r)
-(typeof r.lift_off === "function" ? r.lift_off() : r.lift_off)
+function Rocket(x) {this.color = "red";this.fuel = 7;this.speed = x};Rocket.prototype.lift_off = function() { return loki.print(loki.plus("I'm flying @ ", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))};Rocket.prototype.toString = function() { return loki.plus("I'm a ", (typeof this.color === "function" ? this.color() : this.color), " rocket")};var r = new Rocket("5")loki.print((typeof r.color === "function" ? r.color() : r.color))loki.print((typeof r.speed === "function" ? r.speed() : r.speed))loki.print((typeof r.toString === "function" ? r.toString() : r.toString))loki.print((typeof r.fuel === "function" ? r.fuel() : r.fuel))(typeof r.lift_off === "function" ? r.lift_off() : r.lift_off)
