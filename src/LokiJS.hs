@@ -26,11 +26,10 @@ specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
                           ,("import", import_)]
     where
         import_ :: SpecialForm
-        import_ = undefined
-      --import_ [JsStr importMe] = printf "import %s" importMe
-      --import_ [JsStr importMe, JsId "from", JsStr fromMe] =
-      --    printf "from %s import %s" fromMe importMe
-      --import_ x = error $ (show x ?> "import_: ") ++ "wrong args to import_"
+        import_ [JsStr importMe] = printf "import %s" importMe
+        import_ [JsStr importMe, JsStr "from", JsStr fromMe] =
+            printf "var %s = require('%s')" fromMe importMe
+        import_ x = error $ (show x ?> "import_") ++ "wrong args to import_"
         setp :: SpecialForm
         setp [JsId var, JsId prop, val] = let val' = fromJust $ toJS val
                                           in printf "%s.%s = %s" var prop val'
@@ -83,7 +82,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                   else case v of
                            (LkiNothing _) -> JsNothing
                            (Atom _ a) -> JsId a
-                           (Keyword _ k) -> JsStr k --TODO: could be wrong
+                           (Keyword _ k) -> JsStr k
                            (Bool _ b) -> JsBool b
                            (Def _ n b) -> JsVar n (translate b)
                            (Fn _ xs b) -> JsFn xs (translate <$> b)

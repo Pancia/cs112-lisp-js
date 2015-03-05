@@ -30,8 +30,14 @@ keywords = M.fromList [("this", "self")]
 
 type SpecialForm = [PyVal] -> String
 specialForms :: M.Map String SpecialForm
-specialForms = M.fromList [("if", if_),("set", set),("setp", setp),("for", for_)]
+specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
+                          ,("for", for_),("import", import_)]
     where
+        import_ :: SpecialForm
+        import_ [PyStr importMe] = printf "import %s" importMe
+        import_ [PyStr importMe, PyStr "from", PyStr fromMe] =
+            printf "from %s import %s" fromMe importMe
+        import_ x = error $ (show x ?> "import_") ++ "wrong args to import_"
         setp :: SpecialForm
         setp [PyId var, PyId prop, val] = let val' = toPY 0 val
                                           in printf "%s.%s = %s" var prop val'
