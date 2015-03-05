@@ -19,7 +19,7 @@ primitives :: M.Map String String
 primitives = M.fromList $ fmap addLokiPrefix $
         [("+", "plus"),("-", "minus"),("*", "mult"),("/", "div"),("=", "eq")
         ,("!=", "neq"),("<", "lt"),("<=", "lte"),(">", "gt"),(">=", "gte")
-        ,("print", "printf"),("and", "and_"),("or", "or_")]
+        ,("print", "printf"),("and", "and_"),("or", "or_"),("sc","sc"),("dc","dc"),("in", "in_")]
         ++ (dupl <$> ["mod","assoc","set","range","get"])
     where
         addLokiPrefix (q,s) = (q,"Loki." ++ s)
@@ -55,6 +55,10 @@ specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
         if_ [cond_, then_] = if_ [cond_, then_, PyId "None"]
         if_ _ = error "wrong args to if"
         for_ :: SpecialForm
+        for_ [cond_, body_] = do
+            let cond_' = toPY 0 cond_
+                body_' = toPY 0 body_
+            printf "for %s:\n%s%s" cond_' (addSpacing 1) body_'
         for_ _ = error "wrong args to for"
 
 lookupFn :: String -> String

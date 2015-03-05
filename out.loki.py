@@ -53,6 +53,15 @@ class Loki:
     @staticmethod
     def assoc(x, i, v):
         x[i] = v
+    @staticmethod
+    def in_(x, l):
+        return (x in l)
+    @staticmethod
+    def sc(n, x, l):
+        return n[x:l]
+    @staticmethod
+    def dc(n, x, l):
+        return n[x::l]
 
 #END LOKI HELPER FUNCTIONS
 class Rocket:
@@ -70,7 +79,7 @@ class Rocket:
 
 x = 5
 r = Rocket(5)
-Loki.printf("this") if Loki.lt(-3, 2) else Loki.printf("that")
+Loki.printf("this") if Loki.in_("h", "hello") else Loki.printf("that")
 Loki.printf(r.f() if callable(r.f) else r.f)
 r.f = 7
 Loki.printf(r.f() if callable(r.f) else r.f)
@@ -79,3 +88,6 @@ x = 10
 Loki.printf(x)
 r.fe() if callable(r.fe) else r.fe
 Loki.printf(r.speed() if callable(r.speed) else r.speed)
+xy = [1, 2, 3, 4, 5]
+Loki.printf(Loki.sc(xy, 1, 3))
+Loki.printf(Loki.dc(xy, 1, 3))

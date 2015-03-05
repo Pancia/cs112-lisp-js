@@ -4,5 +4,38 @@
 ; METADATA
 #+js (print "js") 
 #+py (print "py")
-
 (print (#+js - #+py + 1 2 3))
+
+; IF STATEMENTS
+(if (< 1 2)
+	(print "print this!")
+	(print "do not print this!"))
+
+(def x 5)
+(if (> x 10)
+	(print "this is wrong")
+	(print "this is right"))
+
+; SET
+(print x)
+(set x 7)
+(print x)
+
+; SETP
+(defclass Rocket
+  ([x] (speed x))
+  (lift_off []
+    (print (+ "I'm flying @ "
+              (. speed this)
+              " speed")))
+  (toString []
+  	(+ "I'm a " 
+  	    (. color this) 
+  	    " rocket"))
+  (color "red")
+  (fuel 7))
+
+(def r (new Rocket 7))
+(print (. speed r))
+(setp r speed 10)
+(print (. speed r))
