@@ -84,6 +84,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                   then PyPleaseIgnore
                   else case v of
                       (Atom _ a)               -> PyId a
+                      (Keyword _ k)            -> PyStr k --TODO: Could be wrong
                       (Number _ n)             -> PyNum n
                       (String _ s)             -> PyStr s
                       (Bool _ b)               -> PyBool b
@@ -98,7 +99,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       l@(List{})               -> list2pyVal l
                       (Dot _ fp on ps)         -> PyObjCall fp (translate on) (translate <$> ps)
                       (Map _ ks vs)            -> PyMap ks (translate <$> vs)
-                      _                        -> PyThing $ show v
+                      (LkiNothing _)           -> PyThing ""
       where
           translateProp :: (String, LokiVal) -> (String, PyVal)
           translateProp (s, l) = (s, translate l)

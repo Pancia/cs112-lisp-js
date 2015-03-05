@@ -14,31 +14,33 @@ import Debug.Trace
 (?>) a s = trace (s ++ show a) a
 
 type Meta = M.Map String String
-data LokiVal = Atom   { getMeta :: Meta, getAtom :: String }
-             | List   { getMeta :: Meta
-                      , getList :: [LokiVal] }
-             | Number { getMeta :: Meta
-                      , getNumber :: Integer }
-             | String { getMeta :: Meta
-                      , getString :: String }
-             | Bool   { getMeta :: Meta
-                      , getBool :: Bool }
-             | Def    { getMeta :: Meta
-                      , getDefName :: String
-                      , getDefBody :: LokiVal }
-             | Fn     { getMeta :: Meta
-                      , getFnArgs :: [String]
-                      , getFnBody :: [LokiVal] }
-             | Map    { getMeta :: Meta
-                      , getMapKeys :: [String]
-                      , getMapVals :: [LokiVal] }
-             | New    { getMeta :: Meta
-                      , getNewClass :: String
-                      , getNewArgs :: [LokiVal] }
-             | Dot    { getMeta :: Meta
-                      , getDotObj :: String
-                      , getDotProp :: LokiVal
-                      , getDotArgs :: [LokiVal] }
+data LokiVal = Atom    { getMeta :: Meta, getAtom :: String }
+             | List    { getMeta :: Meta
+                       , getList :: [LokiVal] }
+             | Number  { getMeta :: Meta
+                       , getNumber :: Integer }
+             | String  { getMeta :: Meta
+                       , getString :: String }
+             | Keyword { getMeta :: Meta
+                       , getKeyword :: String }
+             | Bool    { getMeta :: Meta
+                       , getBool :: Bool }
+             | Def     { getMeta :: Meta
+                       , getDefName :: String
+                       , getDefBody :: LokiVal }
+             | Fn      { getMeta :: Meta
+                       , getFnArgs :: [String]
+                       , getFnBody :: [LokiVal] }
+             | Map     { getMeta :: Meta
+                       , getMapKeys :: [String]
+                       , getMapVals :: [LokiVal] }
+             | New     { getMeta :: Meta
+                       , getNewClass :: String
+                       , getNewArgs :: [LokiVal] }
+             | Dot     { getMeta :: Meta
+                       , getDotObj :: String
+                       , getDotProp :: LokiVal
+                       , getDotArgs :: [LokiVal] }
              | DefClass { getMeta :: Meta
                         , getClassName :: String
                         , getClassConstr :: LokiVal

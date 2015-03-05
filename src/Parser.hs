@@ -49,6 +49,7 @@ parseLiteralExpr1 :: Parser LokiVal
 parseLiteralExpr1 = do void $ many comment
                        extra <- getMetaData
                        lispVal <- choice [parseAtom
+                                         ,parseKeyword
                                          ,parseString
                                          ,parseNumber]
                        void $ many comment
@@ -163,12 +164,24 @@ parseNumber :: Parser LokiVal
 parseNumber = do s <- getState
                  liftM (Number (newMeta s) . read) $ many1 digit
 
+parseKeyword :: Parser LokiVal
+parseKeyword = do void $ char ':'
+                  k <- keyword >?> "keyword"
+                  s <- getState
+                  return $ Keyword (newMeta s) k
+    where
+        keyword :: Parser String
+        keyword = (:) <$> first <*> many rest
+        symbol = oneOf ".!$%&*-_+=<>/?"
+        first = letter <|> symbol >?> "start-ident"
+        rest  = letter <|> digit <|> symbol >?> "rest-ident"
+
 -- PARSE LITERALS: [], {}, ...
 parseList :: Parser LokiVal
 parseList = do s <- getState
                List (newMeta s)
                     <$> inLispExpr_
-                        (sepBy parseExpr1 spacesInLiteral)
+                        (sepBy parseExpr1 spaces)
 
 parseArray :: Parser LokiVal
 parseArray = do s <- getState

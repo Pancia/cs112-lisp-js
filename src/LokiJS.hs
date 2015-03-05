@@ -22,8 +22,15 @@ primitives = M.fromList $ fmap addLokiPrefix $
 
 type SpecialForm = [JsVal] -> String
 specialForms :: M.Map String SpecialForm
-specialForms = M.fromList [("if", if_),("set", set),("setp", setp)]
+specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
+                          ,("import", import_)]
     where
+        import_ :: SpecialForm
+        import_ = undefined
+      --import_ [JsStr importMe] = printf "import %s" importMe
+      --import_ [JsStr importMe, JsId "from", JsStr fromMe] =
+      --    printf "from %s import %s" fromMe importMe
+      --import_ x = error $ (show x ?> "import_: ") ++ "wrong args to import_"
         setp :: SpecialForm
         setp [JsId var, JsId prop, val] = let val' = fromJust $ toJS val
                                           in printf "%s.%s = %s" var prop val'
@@ -31,7 +38,7 @@ specialForms = M.fromList [("if", if_),("set", set),("setp", setp)]
         set :: SpecialForm
         set [JsId var, val] = let val' = fromJust $ toJS val
                               in printf "%s = %s" var val'
-        set x = error $ (show x ?> "set-x") ++ "wrong args to set"
+        set x = error $ (show x ?> "set: ") ++ "wrong args to set"
         if_ :: SpecialForm
         if_ [cond_, then_, else_] = do
             let cond_' = fromJust $ toJS cond_
@@ -76,6 +83,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                   else case v of
                            (LkiNothing _) -> JsNothing
                            (Atom _ a) -> JsId a
+                           (Keyword _ k) -> JsStr k --TODO: could be wrong
                            (Bool _ b) -> JsBool b
                            (Def _ n b) -> JsVar n (translate b)
                            (Fn _ xs b) -> JsFn xs (translate <$> b)
