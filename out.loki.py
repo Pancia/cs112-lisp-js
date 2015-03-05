@@ -55,4 +55,27 @@ class Loki:
         x[i] = v
 
 #END LOKI HELPER FUNCTIONS
-quote(1)
+class Rocket:
+    def __init__(self, x):
+        self.p = x
+        self.f = 0
+
+    speed = 5
+    def fe (self): 
+        return Loki.printf("ehhhh") 
+
+    def funct (self, x, y): 
+        return Loki.printf(Loki.plus(x, y)) 
+
+
+x = 5
+r = Rocket(5)
+Loki.printf("this") if Loki.lt(-3, 2) else Loki.printf("that")
+Loki.printf(r.f() if callable(r.f) else r.f)
+r.f = 7
+Loki.printf(r.f() if callable(r.f) else r.f)
+Loki.printf(x)
+x = 10
+Loki.printf(x)
+r.fe() if callable(r.fe) else r.fe
+Loki.printf(r.speed() if callable(r.speed) else r.speed)

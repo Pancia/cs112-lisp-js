@@ -28,11 +28,37 @@ primitives = M.fromList $ fmap addLokiPrefix $
 keywords :: M.Map String String
 keywords = M.fromList [("this", "self")]
 
+type SpecialForm = [PyVal] -> String
+specialForms :: M.Map String SpecialForm
+specialForms = M.fromList [("if", if_),("set", set),("setp", setp),("for", for_)]
+    where
+        setp :: SpecialForm
+        setp [PyId var, PyId prop, val] = let val' = toPY 0 val
+                                          in printf "%s.%s = %s" var prop val'
+        setp _ = error "wrong args to setp"
+        set :: SpecialForm
+        set [PyId var, val] = let val' = toPY 0 val
+                              in printf "%s = %s" var val'
+        set x = error $ (show x ?> "set-x") ++ "wrong args to set"
+        if_ :: SpecialForm
+        if_ [cond_, then_, else_] = do
+            let cond_' = toPY 0 cond_
+                then_' = toPY 0 then_
+                else_' = toPY 0 else_
+            printf "%s if %s else %s" then_' cond_' else_'
+        if_ [cond_, then_] = if_ [cond_, then_, PyId "None"]
+        if_ _ = error "wrong args to if"
+        for_ :: SpecialForm
+        for_ _ = error "wrong args to for"
+
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
 
 lookupKeyword :: String -> String
 lookupKeyword k = fromMaybe k $ M.lookup k keywords
+
+lookupSpecForm :: String -> Maybe SpecialForm
+lookupSpecForm s = M.lookup s specialForms
 
 data PyVal = PyVar String PyVal                -- x = ...
            | PyFn [String] [PyVal]             -- function(...){...}
@@ -102,9 +128,12 @@ toPY n pv = case pv of
               x -> error $ "PyVal=(" ++ show x ++ ") should not be toPY'ed"
 
 fnCall2py :: Int -> PyVal -> String
-fnCall2py n (PyFnCall fn args) = printf "%s(%s)" (lookupFn fn) args'
+fnCall2py n (PyFnCall fn args)
+          | isJust specForm = fromJust $ specForm <*> Just args
+          | otherwise       = printf "%s(%s)" (lookupFn fn) args'
     where args' = L.intercalate ", " . filter (/= "") $ toPY n <$> args
-fnCall2py _ x = catch . throwError . TypeMismatch "JsFnCall" $ show x
+          specForm = lookupSpecForm fn
+fnCall2py _ x = catch . throwError . TypeMismatch "PyFnCall" $ show x
 
 map2py :: Int -> PyVal -> String
 map2py n (PyMap ks vs) = printf "{%s}" kvs
