@@ -78,4 +78,6 @@ var loki = (function (){
     return loki;
 })();
 //END LOKI HELPER FUNCTIONS
-1;
+loki.print("TODO QUOTED");
+loki.print("js");
+loki.print(loki.minus(1, 2, 3));

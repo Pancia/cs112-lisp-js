@@ -1,1 +1,12 @@
-[]
+[List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","py")], getString = "TODO QUOTED"}]}
+,List {getMeta = fromList [("fileType","js")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","py")], getString = "js"}]}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,String {getMeta = fromList [("fileType","py")], getString = "py"}]}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","py")], getAtom = "print"}
+,List {getMeta = fromList [("fileType","py")], getList = [Atom {getMeta = fromList [("fileType","js")], getAtom = "-"}
+,Atom {getMeta = fromList [("fileType","py")], getAtom = "+"}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 1}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 2}
+,Number {getMeta = fromList [("fileType","py")], getNumber = 3}]}]}]

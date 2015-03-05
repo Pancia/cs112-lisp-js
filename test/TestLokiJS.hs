@@ -44,7 +44,7 @@ test_toJS = void $ mapM testToJS ["class-object","helpers","specials","def+fn"
               xpFile = TU.getXpFile testName "convert" "js"
 
 test_execJS :: IO ()
-test_execJS = void $ mapM testExecJS ["class-object","helpers", "def+fn"
+test_execJS = void $ mapM testExecJS ["class-object","helpers","def+fn","specials"
                                      ,"primitives"]
     where
         testExecJS testName = do
