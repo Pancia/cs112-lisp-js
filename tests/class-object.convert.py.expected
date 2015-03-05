@@ -1,1 +1,14 @@
-class Rocket:    def __init__(self, x):        self.speed = x    color = "red"    fuel = 7    def lift_off (self):         return Loki.printf(Loki.plus("I'm flying @ ", self.speed() if callable(self.speed) else self.speed, " speed"))     def toString (self):         return Loki.plus("I'm a ", self.color() if callable(self.color) else self.color, " rocket") r = Rocket("5")Loki.printf(r.color() if callable(r.color) else r.color)Loki.printf(r.speed() if callable(r.speed) else r.speed)Loki.printf(r.toString() if callable(r.toString) else r.toString)Loki.printf(r.fuel() if callable(r.fuel) else r.fuel)r.lift_off() if callable(r.lift_off) else r.lift_off
+class Rocket:
+    def __init__(self, x):
+        self.speed = x
+    color = "red"
+    fuel = 7
+    def lift_off (self):
+         return Loki.printf(Loki.plus("I'm flying @ ", self.speed() if callable(self.speed) else self.speed, " speed"))
+     def toString (self):
+         return Loki.plus("I'm a ", self.color() if callable(self.color) else self.color, " rocket")
+ r = Rocket("5")
+Loki.printf(r.color() if callable(r.color) else r.color)
+Loki.printf(r.speed() if callable(r.speed) else r.speed)
+Loki.printf(r.toString() if callable(r.toString) else r.toString)
+Loki.printf(r.fuel() if callable(r.fuel) else r.fuel)r.lift_off() if callable(r.lift_off) else r.lift_off
