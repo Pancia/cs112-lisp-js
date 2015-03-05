@@ -20,12 +20,11 @@ var y = function (x) {return loki.print(x)}
 var y = function (x) {return loki.print(x)}
 var y = function (x) {return loki.print(x)}
 
-function () {return []}
-function (x) {return []}
-function (x) {return loki.print(x)}
-function (x, y) {return []}
-function (x, y) {return loki.print(loki.plus(x, y))}
-function (x, y, z) {loki.print("first");return loki.print(loki.plus(x, y, z))}
-
-function (x) {return loki.print(x)}
-function (x) {return loki.print(x)}
+loki.print(function () {return []}())
+loki.print(function (x) {return []}(1))
+loki.print(function (x) {return loki.print(x)}(4))
+loki.print(function (x, y) {return []}(2, 5))
+loki.print(function (x, y) {return loki.print(loki.plus(x, y))}(1, 9))
+loki.print(function (x, y, z) {loki.print("first");return loki.print(loki.plus(x, y, z))}(1, 1, 1))
+loki.print(function (x) {return loki.print(x)}(7))
+loki.print(function (x) {return loki.print(x)}(12))

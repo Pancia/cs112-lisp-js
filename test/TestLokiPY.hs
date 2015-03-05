@@ -14,7 +14,7 @@ import qualified TestUtils as TU
 import qualified Utils as U
 
 test_pyParser :: IO ()
-test_pyParser = void $ mapM testParser ["class-object","def+fn","specials"
+test_pyParser = void $ mapM testParser ["class-object","specials","def+fn"
                                        ,"primitives","literals","helpers"]
     where
         testParser :: String -> IO ()
@@ -28,7 +28,7 @@ test_pyParser = void $ mapM testParser ["class-object","def+fn","specials"
               xpFile = TU.getXpFile testName "parse" "py"
 
 test_toPY :: IO ()
-test_toPY = void $ mapM testToPY ["helpers", "specials", "def+fn"]
+test_toPY = void $ mapM testToPY ["helpers","specials","def+fn"]
     where
         testToPY testName = do
             lisp <- liftM (TU.readExpr "py") $ readFile inFile
@@ -42,7 +42,7 @@ test_toPY = void $ mapM testToPY ["helpers", "specials", "def+fn"]
               xpFile = TU.getXpFile testName "convert" "py"
 
 test_execPY :: IO ()
-test_execPY = void $ mapM testExecPY ["helpers"]
+test_execPY = void $ mapM testExecPY ["helpers","def+fn"]
     where
         testExecPY testName = do
             lisp <- liftM (TU.readExpr "py") $ readFile inFile

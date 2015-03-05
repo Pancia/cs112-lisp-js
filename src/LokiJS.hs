@@ -97,6 +97,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                         (List _ [Atom _ "quote", ql]) -> translate ql
                         (List _ [Atom _ a]) -> JsFnCall a []
                         (List _ (Atom _ a:(arg:args))) -> JsFnCall a $ translate <$> (arg:args)
+                        (List _ (f@(Fn{}):args)) -> JsFnCall (fromJust . toJS $ translate f) $ translate <$> args
                         (List _ xs) -> JsList $ translate <$> xs
                         x -> catch . throwError . TypeMismatch "List" $ show x
 

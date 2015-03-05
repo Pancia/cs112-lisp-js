@@ -21,13 +21,13 @@
 (def y (fn [x] (print x)) )
 ( def y (fn [x] (print x)) )
 ; FN
-(fn [] ())
-(fn [x] ())
-(fn [x] (print x))
-(fn [x y] ())
-(fn [x y] (print (+ x y)))
-(fn [x y z] (print "first") (print (+ x y z)))
+(print ((fn [] ())))
+(print ((fn [x] ()) 1))
+(print ((fn [x] (print x)) 4))
+(print ((fn [x y] ()) 2 5))
+(print ((fn [x y] (print (+ x y))) 1 9))
+(print ((fn [x y z] (print "first") (print (+ x y z))) 1 1 1))
 ; FN WITH SPACES
-( fn [x] (print x))
-(fn [x] (print x) )
+(print (( fn [x] (print x)) 7))
+(print ((fn [x] (print x) ) 12))
 

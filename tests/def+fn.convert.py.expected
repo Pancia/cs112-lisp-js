@@ -12,18 +12,23 @@ x = 1
 x = 1
 x = 1
 
-def y (x):    return Loki.printf(x)
-def z ():    return Loki.printf("hello")
-def a ():    return []
+def y (x):
+    return Loki.printf(x)
+def z ():
+    return Loki.printf("hello")
+def a ():
+    return []
 
-def y (x):    return Loki.printf(x)
-def y (x):    return Loki.printf(x)
-def y (x):    return Loki.printf(x)
+def y (x):
+    return Loki.printf(x)
+def y (x):
+    return Loki.printf(x)
+def y (x):
+    return Loki.printf(x)
 
-(lambda  : [[]])
-(lambda x : [[]])
-(lambda x : [Loki.printf(x)])
-(lambda x, y : [[]])
-(lambda x, y : [Loki.printf(Loki.plus(x, y))])
-(lambda x, y, z : [Loki.printf("first"), Loki.printf(Loki.plus(x, y, z))])
-(lambda x : [Loki.printf(x)])(lambda x : [Loki.printf(x)])
+Loki.printf((lambda  : [[]])())
+Loki.printf((lambda x : [[]])(1))
+Loki.printf((lambda x : [Loki.printf(x)])(4))
+Loki.printf((lambda x, y : [[]])(2, 5))
+Loki.printf((lambda x, y : [Loki.printf(Loki.plus(x, y))])(1, 9))
+Loki.printf((lambda x, y, z : [Loki.printf("first"), Loki.printf(Loki.plus(x, y, z))])(1, 1, 1))Loki.printf((lambda x : [Loki.printf(x)])(7))Loki.printf((lambda x : [Loki.printf(x)])(12))
