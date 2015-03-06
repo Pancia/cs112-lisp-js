@@ -55,7 +55,27 @@ class Loki:
         x[i] = v
 
 #END LOKI HELPER FUNCTIONS
-class Rocket:
+class Object():
+    def __init__(self):
+        self.obj = 5
+
+    def get_object (self): 
+        return "object" 
+
+
+o = Object()
+Loki.printf(o.get_object() if callable(o.get_object) else o.get_object)
+class Thing():
+    def __init__(self):
+        self.thing = 5
+
+    def get_thing (self): 
+        return "thing" 
+
+
+t = Thing()
+Loki.printf(t.get_thing() if callable(t.get_thing) else t.get_thing)
+class Rocket(Object, Thing):
     def __init__(self, x):
         self.p = x
         self.f = 0
@@ -68,14 +88,7 @@ class Rocket:
         return Loki.printf(Loki.plus(x, y)) 
 
 
-x = 5
 r = Rocket(5)
-Loki.printf("this") if Loki.lt(-3, 2) else Loki.printf("that")
 Loki.printf(r.f() if callable(r.f) else r.f)
-r.f = 7
-Loki.printf(r.f() if callable(r.f) else r.f)
-Loki.printf(x)
-x = 10
-Loki.printf(x)
-r.fe() if callable(r.fe) else r.fe
-Loki.printf(r.speed() if callable(r.speed) else r.speed)
+Loki.printf(r.get_object() if callable(r.get_object) else r.get_object)
+Loki.printf(r.get_thing() if callable(r.get_thing) else r.get_thing)

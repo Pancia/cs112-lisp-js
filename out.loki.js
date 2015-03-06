@@ -44,6 +44,15 @@ var loki = (function (){
         return acc;
     });
 
+    loki.extend = function (destination, source) {
+        for (var k in source) {
+            if (source.hasOwnProperty(k)) {
+                destination[k] = source[k];
+            }
+        }
+        return destination;
+    }
+
     loki.print = function() {
         var _log = function(x) {
             if (typeof console === "object") {console.log(x);}
@@ -78,4 +87,41 @@ var loki = (function (){
     return loki;
 })();
 //END LOKI HELPER FUNCTIONS
-1;
+MyObject.prototype.constructor = MyObject;
+function MyObject() {
+;
+this.obj = 5
+};
+MyObject.prototype.get_object = function() {
+ return "object"
+};;
+var o = new MyObject();
+loki.print((typeof o.get_object === "function" ? o.get_object() : o.get_object));
+Thing.prototype.constructor = Thing;
+function Thing() {
+;
+this.thing = 5
+};
+Thing.prototype.get_thing = function() {
+ return "thing"
+};;
+var t = new Thing();
+loki.print((typeof t.get_thing === "function" ? t.get_thing() : t.get_thing));
+loki.extend(Rocket.prototype, MyObject.prototype);
+loki.extend(Rocket.prototype, Thing.prototype);
+Rocket.prototype.constructor = Rocket;
+function Rocket(x) {
+this.speed = 5;
+this.p = x;
+this.f = 0
+};
+Rocket.prototype.fe = function() {
+ return loki.print("ehhhh")
+};
+Rocket.prototype.funct = function(x, y) {
+ return loki.print(loki.plus(x, y))
+};;
+var r = new Rocket(5);
+loki.print((typeof r.f === "function" ? r.f() : r.f));
+loki.print((typeof r.get_object === "function" ? r.get_object() : r.get_object));
+loki.print((typeof r.get_thing === "function" ? r.get_thing() : r.get_thing));

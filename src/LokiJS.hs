@@ -68,7 +68,7 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsMap [String] [JsVal]                  -- {x : y, ..}
            | JsFnCall String [JsVal]                 -- foo(..)
            | JsNewObj String [JsVal]                 -- new Foo (..)
-           | JsDefClass String JsVal [JsVal] [JsVal] -- function Class(..) {..}
+           | JsDefClass String [String] JsVal [JsVal] [JsVal] -- function Class(..) {..}
            | JsConst [String] [(String, JsVal)]      -- Class(..) {..}
            | JsClassFn String [String] JsVal         -- Class.prototype.fn = function(..){..}
            | JsClassVar String JsVal                 -- Class(..) {this.var = val}
@@ -90,7 +90,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (Number _ n) -> JsNum n
                            (String _ s) -> JsStr s
                            (New _ s l) -> JsNewObj s (translate <$> l)
-                           (DefClass _ n c lf lv) -> JsDefClass n (translate c) (translate <$> lf) (translate <$> lv)
+                           (DefClass _ n s c lf lv) -> JsDefClass n s (translate c) (translate <$> lf) (translate <$> lv)
                            (Constr _ s b) -> JsConst s (translateProp <$> b)
                            (Classfn _ s p b) -> JsClassFn s p (translate b)
                            (Classvar _ s b) -> JsClassVar s (translate b)
@@ -139,11 +139,13 @@ map2js (JsMap ks vs) = do let kvs = zipWith (\k v -> liftM (printf "%s:%s" k)
 map2js x = catch . throwError . TypeMismatch "JsMap" $ show x
 
 defclass2js :: JsVal -> Maybe String
-defclass2js (JsDefClass name (JsConst args ret) fns vars) = do
+defclass2js (JsDefClass name superClasses (JsConst args ret) fns vars) = do
         vars' <- classVars2js vars
         ret' <- ret2js ret
         fns' <- fns2js fns
-        return $ printf "function %s(%s) {\n%s;\n%s\n};\n%s"
+        return $ concatMap (\super -> printf "loki.extend(%s.prototype, %s.prototype);\n" name super) superClasses
+                 ++ printf "%s.prototype.constructor = %s;\n" name name ++
+                 printf "function %s(%s) {\n%s;\n%s\n};\n%s"
                  name params vars' ret' fns'
     where params = L.intercalate ", " args
           propVal2js :: (String, JsVal) -> Maybe String

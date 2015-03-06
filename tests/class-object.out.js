@@ -44,6 +44,15 @@ var loki = (function (){
         return acc;
     });
 
+    loki.extend = function (destination, source) {
+        for (var k in source) {
+            if (source.hasOwnProperty(k)) {
+                destination[k] = source[k];
+            }
+        }
+        return destination;
+    }
+
     loki.print = function() {
         var _log = function(x) {
             if (typeof console === "object") {console.log(x);}
@@ -78,6 +87,7 @@ var loki = (function (){
     return loki;
 })();
 //END LOKI HELPER FUNCTIONS
+Rocket.prototype.constructor = Rocket;
 function Rocket(x) {
 this.color = "red";
 this.fuel = 7;

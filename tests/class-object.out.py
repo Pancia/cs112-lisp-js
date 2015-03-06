@@ -55,7 +55,7 @@ class Loki:
         x[i] = v
 
 #END LOKI HELPER FUNCTIONS
-class Rocket:
+class Rocket():
     def __init__(self, x):
         self.speed = x
 

@@ -43,6 +43,7 @@ data LokiVal = Atom    { getMeta :: Meta, getAtom :: String }
                        , getDotArgs :: [LokiVal] }
              | DefClass { getMeta :: Meta
                         , getClassName :: String
+                        , getSuperClasses :: [String]
                         , getClassConstr :: LokiVal
                         , getClassFns :: [LokiVal]
                         , getClassVars :: [LokiVal] }
