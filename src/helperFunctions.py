@@ -22,22 +22,22 @@ class Loki:
         return reduce((lambda x, y : x or y), args)
     @staticmethod
     def eq(*args):
-        return reduce((lambda x, y : x == y), args)
+        return not not reduce((lambda x, y : x if x == y else False), args)
     @staticmethod
     def neq(*args):
-        return reduce((lambda x, y : x != y), args)
+        return not Loki.eq(args)
     @staticmethod
     def lt(*args):
-        return reduce((lambda x, y : x < y), args)
+        return not not reduce((lambda x, y : y if x < y else False), args)
     @staticmethod
     def lte(*args):
-        return reduce((lambda x, y : x <= y), args)
+        return not not reduce((lambda x, y : y if x <= y else False), args)
     @staticmethod
     def gt(*args):
-        return reduce((lambda x, y : x > y), args)
+        return not not reduce((lambda x, y : y if x > y else False), args)
     @staticmethod
     def gte(*args):
-        return reduce((lambda x, y : x >= y), args)
+        return not not reduce((lambda x, y : y if x >= y else False), args)
     @staticmethod
     def mod(x, y):
         return x % y
@@ -66,7 +66,7 @@ class Loki:
 	def dubColMid(n, x, m, l):
 		return n[x:m:l]
 	@staticmethod
-	def notIn(x, l):
-		return (x not in l)
+	def not_ (x):
+		return not x
 
 #END LOKI HELPER FUNCTIONS
