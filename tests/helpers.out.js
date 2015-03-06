@@ -68,12 +68,17 @@ var loki = (function (){
     //Logic
     loki.and = curry(function(x, y) {return x && y});
     loki.or  = curry(function(x, y) {return x || y});
-    loki.eq  = curry(function(x, y) {return x === y});
-    loki.neq = curry(function(x, y) {return x !== y});
-    loki.lt  = curry(function(x, y) {return x < y});
-    loki.lte = curry(function(x, y) {return x <= y});
-    loki.gt  = curry(function(x, y) {return x > y});
-    loki.gte = curry(function(x, y) {return x >= y});
+    var eq = curry(function(x, y) {return (x === y ? x : false)});
+    loki.eq  = function(x,y) {return !!eq(x,y);}
+    loki.neq  = function(x,y) {return !eq(x,y);}
+    var lt = curry(function(x, y) {return (x < y ? y : false)});
+    loki.lt  = function(x,y) {return !!lt(x,y);}
+    var lte = curry(function(x, y) {return (x <= y ? y : false)});
+    loki.lte  = function(x,y) {return !!lte(x,y);}
+    var gt = curry(function(x, y) {return (x > y ? y : false)});
+    loki.gt  = function(x,y) {return !!gt(x,y);}
+    var gte = curry(function(x, y) {return (x >= y ? y : false)});
+    loki.gte  = function(x,y) {return !!gte(x,y);}
 
     return loki;
 })();
@@ -91,8 +96,8 @@ loki.print(loki.div(1, 2, 3));
 loki.print(loki.mod(1, 2));
 loki.print(loki.and(true, false));
 loki.print(loki.or(true, false));
-loki.print(loki.eq(5, 5));
-loki.print(loki.eq(5, "5"));
+loki.print(loki.eq(5, 3));
+loki.print(loki.eq(3, "3"));
 loki.print(loki.neq(5, 3));
 loki.print(loki.neq(3, "3"));
 loki.print(loki.lt(1, 3, 5, 7));

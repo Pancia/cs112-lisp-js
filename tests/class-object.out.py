@@ -22,22 +22,22 @@ class Loki:
         return reduce((lambda x, y : x or y), args)
     @staticmethod
     def eq(*args):
-        return reduce((lambda x, y : x == y), args)
+        return not not reduce((lambda x, y : x if x == y else False), args)
     @staticmethod
     def neq(*args):
-        return reduce((lambda x, y : x != y), args)
+        return not Loki.eq(*args)
     @staticmethod
     def lt(*args):
-        return reduce((lambda x, y : x < y), args)
+        return not not reduce((lambda x, y : y if x < y else False), args)
     @staticmethod
     def lte(*args):
-        return reduce((lambda x, y : x <= y), args)
+        return not not reduce((lambda x, y : y if x <= y else False), args)
     @staticmethod
     def gt(*args):
-        return reduce((lambda x, y : x > y), args)
+        return not not reduce((lambda x, y : y if x > y else False), args)
     @staticmethod
     def gte(*args):
-        return reduce((lambda x, y : x >= y), args)
+        return not Loki.lt(*args)
     @staticmethod
     def mod(x, y):
         return x % y
@@ -53,6 +53,22 @@ class Loki:
     @staticmethod
     def assoc(x, i, v):
         x[i] = v
+        return x
+    @staticmethod
+    def in_(x, l):
+        return (x in l)
+    @staticmethod
+    def sc(n, x, l):
+        return n[x:l]
+    @staticmethod
+    def dc(n, x, l):
+        return n[x::l]
+    @staticmethod
+    def dcm(n, x, m, l):
+        return n[x:m:l]
+    @staticmethod
+    def not_ (x):
+        return not x
 
 #END LOKI HELPER FUNCTIONS
 class Rocket:

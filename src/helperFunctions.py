@@ -25,7 +25,7 @@ class Loki:
         return not not reduce((lambda x, y : x if x == y else False), args)
     @staticmethod
     def neq(*args):
-        return not Loki.eq(args)
+        return not Loki.eq(*args)
     @staticmethod
     def lt(*args):
         return not not reduce((lambda x, y : y if x < y else False), args)
@@ -37,7 +37,7 @@ class Loki:
         return not not reduce((lambda x, y : y if x > y else False), args)
     @staticmethod
     def gte(*args):
-        return not not reduce((lambda x, y : y if x >= y else False), args)
+        return not Loki.lt(*args)
     @staticmethod
     def mod(x, y):
         return x % y
@@ -53,6 +53,7 @@ class Loki:
     @staticmethod
     def assoc(x, i, v):
         x[i] = v
+        return x
     @staticmethod
     def in_(x, l):
         return (x in l)
@@ -62,11 +63,11 @@ class Loki:
     @staticmethod
     def dc(n, x, l):
         return n[x::l]
-	@staticmethod
-	def dubColMid(n, x, m, l):
-		return n[x:m:l]
-	@staticmethod
-	def not_ (x):
-		return not x
+    @staticmethod
+    def dcm(n, x, m, l):
+        return n[x:m:l]
+    @staticmethod
+    def not_ (x):
+        return not x
 
 #END LOKI HELPER FUNCTIONS
