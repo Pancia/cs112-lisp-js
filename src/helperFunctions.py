@@ -62,5 +62,11 @@ class Loki:
     @staticmethod
     def dc(n, x, l):
         return n[x::l]
+	@staticmethod
+	def dubColMid(n, x, m, l):
+		return n[x:m:l]
+	@staticmethod
+	def notIn(x, l):
+		return (x not in l)
 
 #END LOKI HELPER FUNCTIONS

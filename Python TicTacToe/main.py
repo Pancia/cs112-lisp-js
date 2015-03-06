@@ -25,14 +25,15 @@ class TicTacToeGrid(GridLayout):
 		player = {1: 'X', -1: 'O'}
 		colors = {1: {0,0,0,0}, -1: {0,0,0,0}}
 		
-		row, column = button.coords
+		row = button.coords[0]
+		column = button.coords[1]
 		
 		statusIndex = 3 * row + column
 		alreadyPlayed = self.status[statusIndex]
 		
 		if not alreadyPlayed:
 			self.status[statusIndex] = self.currentPlayer
-			button.text = {1: 'X', -1: 'O'}[self.currentPlayer]
+			button.text = player[self.currentPlayer]
 			button.background_color = colors[self.currentPlayer]
 			self.currentPlayer *= -1
 			
@@ -53,7 +54,7 @@ class TicTacToeGrid(GridLayout):
 				sum(status[1::3]), sum(status[2::3]), sum(status[::4]), # diagonals
 				sum(status[2:-2:2])]
 	
-		winner = None
+		winner = ""
 		if 3 in sums:
 			winner = 'Xs win!'
 		elif -3 in sums:
