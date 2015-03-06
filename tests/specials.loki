@@ -4,7 +4,7 @@
 ; METADATA
 #+js (print "js") 
 #+py (print "py")
-(print (#+js - #+py + 1 2 3))
+#+js(print (#+js - #+py + 1 2 3))
 
 ; IF STATEMENTS
 (if (< 1 2)

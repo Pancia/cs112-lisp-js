@@ -15,7 +15,7 @@ import qualified Utils as U
 
 test_pyParser :: IO ()
 test_pyParser = void $ mapM testParser ["class-object","def+fn","primitives"
-                                       ,"literals","helpers"]
+                                       ,"literals","helpers","specials"]
     where
         testParser :: String -> IO ()
         testParser testName = do
@@ -29,7 +29,7 @@ test_pyParser = void $ mapM testParser ["class-object","def+fn","primitives"
 
 test_toPY :: IO ()
 test_toPY = void $ mapM testToPY ["helpers","def+fn","class-object"
-                                 ,"primitives"]
+                                 ,"primitives","specials"]
     where
         testToPY testName = do
             lisp <- liftM (TU.readExpr "py") $ readFile inFile
@@ -44,7 +44,7 @@ test_toPY = void $ mapM testToPY ["helpers","def+fn","class-object"
 
 test_execPY :: IO ()
 test_execPY = void $ mapM testExecPY ["helpers","def+fn","class-object"
-                                     ,"literals","primitives"]
+                                     ,"literals","primitives","specials"]
     where
         testExecPY testName = do
             lisp <- liftM (TU.readExpr "py") $ readFile inFile
