@@ -55,11 +55,12 @@ specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
         if_ [cond_, then_] = if_ [cond_, then_, PyId "None"]
         if_ _ = error "wrong args to if"
         for_ :: SpecialForm
-        for_ [cond_, body_] = do
-            let cond_' = toPY 0 cond_
-                body_' = toPY 0 body_
-            printf "for %s:\n%s%s" cond_' (addSpacing 1) body_'
-        for_ _ = error "wrong args to for"
+        for_ [PyFnCall id_ [expr_], body_] = do
+            let id_' = id_
+                expr_' = toPY 0 expr_
+                body_' = toPY 1 body_
+            printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing 1) body_'
+        for_ x = error $ (show x ?> "for-x") ++ "wrong args to set"
 
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
