@@ -23,3 +23,7 @@
 (print (. f r))
 (print (. get_object r))
 (print (. get_thing r))
+
+;(for [xyz (range 4)
+;	  abc (range 7)]
+;	(print xyz))

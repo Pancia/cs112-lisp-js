@@ -70,6 +70,7 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsNewObj String [JsVal]                 -- new Foo (..)
            | JsDefClass String [String] JsVal [JsVal] [JsVal] -- function Class(..) {..}
            | JsConst [String] [(String, JsVal)]      -- Class(..) {..}
+           | JsClassSuper String [JsVal]
            | JsClassFn String [String] JsVal         -- Class.prototype.fn = function(..){..}
            | JsClassVar String JsVal                 -- Class(..) {this.var = val}
            | JsList [JsVal]                          -- [] | [x,..]
@@ -92,6 +93,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (New _ s l) -> JsNewObj s (translate <$> l)
                            (DefClass _ n s c lf lv) -> JsDefClass n s (translate c) (translate <$> lf) (translate <$> lv)
                            (Constr _ s b) -> JsConst s (translateProp <$> b)
+                           (ClassSuper _ n as) -> JsClassSuper n (translate <$> as)
                            (Classfn _ s p b) -> JsClassFn s p (translate b)
                            (Classvar _ s b) -> JsClassVar s (translate b)
                            (Dot _ fp on ps) -> JsObjCall fp (translate on) (translate <$> ps)
@@ -149,6 +151,9 @@ defclass2js (JsDefClass name superClasses (JsConst args ret) fns vars) = do
                  name params vars' ret' fns'
     where params = L.intercalate ", " args
           propVal2js :: (String, JsVal) -> Maybe String
+          propVal2js (_,JsClassSuper superClass superArgs) = do
+              superArgs' <- liftM ("," ++) . liftM (L.intercalate ",") $ (sequence $ map toJS superArgs)
+              return $ printf "%s.call(this%s)" superClass superArgs'
           propVal2js (k,v) = do v' <- toJS v
                                 return $ printf "this.%s = %s" k v'
           ret2js :: [(String, JsVal)] -> Maybe String

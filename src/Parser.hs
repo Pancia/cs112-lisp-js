@@ -98,7 +98,7 @@ parseClass = inLispExpr "defclass" $ do
     classFns <- many (try $ parseClassFn <* spaces) >?> "class-functions"
     classVars <- many (try $ parseVars <* spaces) >?> "class-vars"
     s <- getState
-    return $ DefClass (newMeta s) className (superClasses ?> ">>>>>>>supers: ") cnstr classFns classVars
+    return $ DefClass (newMeta s) className superClasses cnstr classFns classVars
 
 parseClassFn :: Parser LokiVal
 parseClassFn = inLispExpr_ $ do
@@ -123,10 +123,15 @@ parseConst = inLispExpr_ $ do
     return $ Constr (newMeta s) params body
     where
         parseProp :: Parser (String, LokiVal)
-        parseProp = inLispExpr_ $ do
-                      propName <- ident <* spaces1
-                      propVal <- parseExpr1
-                      return (propName, propVal)
+        parseProp = try (inLispExpr "super" $ do
+                        superName <- ident <* spaces1
+                        args <- many parseBasicExpr1 <* spaces
+                        s <- getState
+                        return (superName, ClassSuper (newMeta s) superName args))
+                    <|> (inLispExpr_ $ do
+                        propName <- ident <* spaces1
+                        propVal <- parseExpr1 <* spaces
+                        return (propName, propVal))
 
 -- PARSE SPECIAL FORMS
 parseQuoted :: Parser LokiVal
@@ -213,7 +218,7 @@ newMeta :: String -> Meta
 newMeta = M.singleton "fileType"
 
 -----HELPER PARSERS-----
-inLispExpr :: String -> Parser LokiVal -> Parser LokiVal
+inLispExpr :: String -> Parser a -> Parser a
 inLispExpr start = between (try (char '(' >> spaces
                                 >> string start <* spaces1)
                                 >?> start)

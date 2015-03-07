@@ -53,6 +53,15 @@ class Loki:
     @staticmethod
     def assoc(x, i, v):
         x[i] = v
+    @staticmethod
+    def in_(x, l):
+        return (x in l)
+    @staticmethod
+    def sc(n, x, l):
+        return n[x:l]
+    @staticmethod
+    def dc(n, x, l):
+        return n[x::l]
 
 #END LOKI HELPER FUNCTIONS
 class Object():
@@ -60,7 +69,7 @@ class Object():
         self.obj = 5
 
     def get_object (self): 
-        return "object" 
+        return "obj" 
 
 
 o = Object()

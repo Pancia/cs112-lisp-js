@@ -19,7 +19,8 @@ primitives :: M.Map String String
 primitives = M.fromList $ fmap addLokiPrefix $
         [("+", "plus"),("-", "minus"),("*", "mult"),("/", "div"),("=", "eq")
         ,("!=", "neq"),("<", "lt"),("<=", "lte"),(">", "gt"),(">=", "gte")
-        ,("print", "printf"),("and", "and_"),("or", "or_")]
+        ,("print", "printf"),("and", "and_"),("or", "or_"),("sc","sc")
+        ,("dc","dc"),("in", "in_"), ("dcm", "dcm"),("not","not_")]
         ++ (dupl <$> ["mod","assoc","set","range","get"])
     where
         addLokiPrefix (q,s) = (q,"Loki." ++ s)
@@ -55,7 +56,12 @@ specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
         if_ [cond_, then_] = if_ [cond_, then_, PyId "None"]
         if_ _ = error "wrong args to if"
         for_ :: SpecialForm
-        for_ _ = error "wrong args to for"
+        for_ [PyFnCall id_ [expr_], body_] = do
+            let id_' = id_
+                expr_' = toPY 0 expr_
+                body_' = toPY 1 body_
+            printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing 1) body_'
+        for_ x = error $ (show x ?> "for-x") ++ "wrong args to set"
 
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
@@ -72,15 +78,16 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyBool Bool                       -- true|false
            | PyNum Integer                     -- ..-1,0,1..
            | PyId String                       -- x, foo, ...
+           | PyList [PyVal]                    -- [...]
            | PyMap [String] [PyVal]            -- {x : y, ..}
            | PyObjCall String PyVal [PyVal]    -- x.foo.bar(...)
-           | PyFnCall String [PyVal]           -- foo(...)
-           | PyNewObj String [PyVal]                 -- new Foo(..)
-           | PyDefClass String [String] PyVal [PyVal] [PyVal] -- function Class(..) {..}
-           | PyConst [String] [(String, PyVal)]      -- Class(..) {..}
-           | PyClassFn String [String] PyVal         -- TODO ex
+           | PyFnCall String [PyVal]           -- f(...)
+           | PyNewObj String [PyVal]           -- Foo(..)
+           | PyDefClass String [String] PyVal [PyVal] [PyVal]
+           | PyConst [String] [(String, PyVal)]
+           | PyClassSuper String [PyVal]
+           | PyClassFn String [String] PyVal
            | PyClassVar String PyVal
-           | PyList [PyVal]                    -- [...]
            | PyPleaseIgnore -- ignore
            | PyThing String -- ???
            deriving (Eq, Show)
@@ -100,6 +107,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (New _ s l)              -> PyNewObj s (translate <$> l)
                       (DefClass _ n s c lf lv)   -> PyDefClass n s (translate c) (translate <$> lf) (translate <$> lv)
                       (Constr _ s b)           -> PyConst s (translateProp <$> b)
+                      (ClassSuper _ n as)      -> PyClassSuper n (translate <$> as)
                       (Classfn _ s p b)        -> PyClassFn s p (translate b)
                       (Classvar _ s b)         -> PyClassVar s (translate b)
                       l@(List{})               -> list2pyVal l
@@ -158,11 +166,16 @@ defclass2py n (PyDefClass name superClasses (PyConst args cbody) fs vars) =
                 name superClasses' (addSpacing (n + 1)) args' addCons addVars (fns2py (n + 1) fs)
             where
                 superClasses' = L.intercalate ", " superClasses
-                args' = if null args
-                            then ""
-                            else ", " ++ L.intercalate ", " args
+                args' = if null args then ""
+                                     else ", " ++ L.intercalate ", " args
+                propVal2js :: Int -> (String, PyVal) -> String
+                propVal2js n' (_,PyClassSuper superName superArgs) =
+                    let superArgs' = L.intercalate "," $ toPY 0 <$> superArgs
+                        superArgs'' = if null superArgs' then "" else "," ++ superArgs'
+                    in printf "%s%s.__init__(self%s)\n" (addSpacing n') superName superArgs''
+                propVal2js n' (p,v) = printf "%sself.%s = %s\n" (addSpacing n') p (toPY 0 v)
                 body2py :: Int -> [(String, PyVal)] -> [String]
-                body2py n' = fmap (\(p,v) -> printf (addSpacing n' ++ "self.%s = %s\n") p (toPY 0 v))
+                body2py n' = fmap (propVal2js n')
                 addCons = (++ "\n") . concat $ body2py (n + 2) cbody
                 addVars = vars2py (n + 1) vars
                 vars2py :: Int -> [PyVal] -> String

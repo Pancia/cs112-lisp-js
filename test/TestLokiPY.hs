@@ -13,23 +13,9 @@ import qualified Turtle as SH
 import qualified TestUtils as TU
 import qualified Utils as U
 
-test_pyParser :: IO ()
-test_pyParser = void $ mapM testParser ["class-object","def+fn","primitives"
-                                       ,"literals","helpers"]
-    where
-        testParser :: String -> IO ()
-        testParser testName = do
-            lisp <- liftM (TU.readExpr "py") $ readFile inFile
-            let parsed = TU.clean . U.catch $ show <$> lisp
-            expected <- liftM TU.clean $ readFile xpFile
-            TF.assertEqual_ (TF.makeLoc xpFile 0) expected parsed
-          where
-              inFile = TU.getInFile testName
-              xpFile = TU.getXpFile testName "parse" "py"
-
 test_toPY :: IO ()
-test_toPY = void $ mapM testToPY ["helpers","def+fn","class-object"
-                                 ,"primitives"]
+test_toPY = void $ mapM testToPY ["def+fn","class-object","helpers"
+                                 ,"primitives","specials"]
     where
         testToPY testName = do
             lisp <- liftM (TU.readExpr "py") $ readFile inFile
@@ -43,8 +29,8 @@ test_toPY = void $ mapM testToPY ["helpers","def+fn","class-object"
               xpFile = TU.getXpFile testName "convert" "py"
 
 test_execPY :: IO ()
-test_execPY = void $ mapM testExecPY ["helpers","def+fn","class-object"
-                                     ,"literals","primitives"]
+test_execPY = void $ mapM testExecPY ["def+fn","class-object","helpers"
+                                     ,"literals","primitives","specials"]
     where
         testExecPY testName = do
             lisp <- liftM (TU.readExpr "py") $ readFile inFile

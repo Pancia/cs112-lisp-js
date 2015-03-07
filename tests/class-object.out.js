@@ -77,20 +77,45 @@ var loki = (function (){
     //Logic
     loki.and = curry(function(x, y) {return x && y});
     loki.or  = curry(function(x, y) {return x || y});
-    loki.eq  = curry(function(x, y) {return x === y});
-    loki.neq = curry(function(x, y) {return x !== y});
-    loki.lt  = curry(function(x, y) {return x < y});
-    loki.lte = curry(function(x, y) {return x <= y});
-    loki.gt  = curry(function(x, y) {return x > y});
-    loki.gte = curry(function(x, y) {return x >= y});
+    var eq = curry(function(x, y) {return (x === y ? x : false)});
+    loki.eq  = function(x,y) {return !!eq(x,y);}
+    loki.neq  = function(x,y) {return !eq(x,y);}
+    var lt = curry(function(x, y) {return (x < y ? y : false)});
+    loki.lt  = function(x,y) {return !!lt(x,y);}
+    var lte = curry(function(x, y) {return (x <= y ? y : false)});
+    loki.lte  = function(x,y) {return !!lte(x,y);}
+    var gt = curry(function(x, y) {return (x > y ? y : false)});
+    loki.gt  = function(x,y) {return !!gt(x,y);}
+    var gte = curry(function(x, y) {return (x >= y ? y : false)});
+    loki.gte  = function(x,y) {return !!gte(x,y);}
 
     return loki;
 })();
 //END LOKI HELPER FUNCTIONS
+MyObject.prototype.constructor = MyObject;
+function MyObject(x) {
+;
+this.obj = x
+};
+MyObject.prototype.get_obj = function() {
+ return (typeof this.obj === "function" ? this.obj() : this.obj)
+};;
+MyThing.prototype.constructor = MyThing;
+function MyThing(x) {
+;
+this.thing = x
+};
+MyThing.prototype.get_thing = function() {
+ return (typeof this.thing === "function" ? this.thing() : this.thing)
+};;
+loki.extend(Rocket.prototype, MyObject.prototype);
+loki.extend(Rocket.prototype, MyThing.prototype);
 Rocket.prototype.constructor = Rocket;
 function Rocket(x) {
 this.color = "red";
 this.fuel = 7;
+MyObject.call(this,"obj");
+MyThing.call(this,"thing");
 this.speed = x
 };
 Rocket.prototype.lift_off = function() {
@@ -105,3 +130,5 @@ loki.print((typeof r.speed === "function" ? r.speed() : r.speed));
 loki.print((typeof r.toString === "function" ? r.toString() : r.toString));
 loki.print((typeof r.fuel === "function" ? r.fuel() : r.fuel));
 (typeof r.lift_off === "function" ? r.lift_off() : r.lift_off);
+loki.print((typeof r.get_obj === "function" ? r.get_obj() : r.get_obj));
+loki.print((typeof r.thing === "function" ? r.thing() : r.thing));

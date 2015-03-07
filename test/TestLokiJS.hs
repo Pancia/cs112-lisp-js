@@ -14,22 +14,8 @@ import qualified Turtle as SH
 import qualified TestUtils as TU
 import qualified Utils as U
 
-test_jsParser :: IO ()
-test_jsParser = void $ mapM testParser ["class-object","specials","def+fn"
-                                       ,"primitives","literals","helpers"]
-    where
-        testParser :: String -> IO ()
-        testParser testName = do
-            lisp <- liftM (TU.readExpr "js") $ readFile inFile
-            let parsed = TU.clean . U.catch $ show <$> lisp
-            expected <- liftM TU.clean $ readFile xpFile
-            TF.assertEqual_ (TF.makeLoc xpFile 0) expected parsed
-          where
-              inFile = TU.getInFile testName
-              xpFile = TU.getXpFile testName "parse" "js"
-
 test_toJS :: IO ()
-test_toJS = void $ mapM testToJS ["class-object","helpers","specials"
+test_toJS = void $ mapM testToJS ["class-object","specials","helpers"
                                  ,"def+fn","literals","primitives"]
     where
         testToJS testName = do
@@ -44,7 +30,7 @@ test_toJS = void $ mapM testToJS ["class-object","helpers","specials"
               xpFile = TU.getXpFile testName "convert" "js"
 
 test_execJS :: IO ()
-test_execJS = void $ mapM testExecJS ["class-object","helpers","def+fn"
+test_execJS = void $ mapM testExecJS ["class-object","def+fn","helpers"
                                      ,"specials","primitives","literals"]
     where
         testExecJS testName = do

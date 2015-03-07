@@ -77,12 +77,17 @@ var loki = (function (){
     //Logic
     loki.and = curry(function(x, y) {return x && y});
     loki.or  = curry(function(x, y) {return x || y});
-    loki.eq  = curry(function(x, y) {return x === y});
-    loki.neq = curry(function(x, y) {return x !== y});
-    loki.lt  = curry(function(x, y) {return x < y});
-    loki.lte = curry(function(x, y) {return x <= y});
-    loki.gt  = curry(function(x, y) {return x > y});
-    loki.gte = curry(function(x, y) {return x >= y});
+    var eq = curry(function(x, y) {return (x === y ? x : false)});
+    loki.eq  = function(x,y) {return !!eq(x,y);}
+    loki.neq  = function(x,y) {return !eq(x,y);}
+    var lt = curry(function(x, y) {return (x < y ? y : false)});
+    loki.lt  = function(x,y) {return !!lt(x,y);}
+    var lte = curry(function(x, y) {return (x <= y ? y : false)});
+    loki.lte  = function(x,y) {return !!lte(x,y);}
+    var gt = curry(function(x, y) {return (x > y ? y : false)});
+    loki.gt  = function(x,y) {return !!gt(x,y);}
+    var gte = curry(function(x, y) {return (x >= y ? y : false)});
+    loki.gte  = function(x,y) {return !!gte(x,y);}
 
     return loki;
 })();
@@ -90,3 +95,25 @@ var loki = (function (){
 loki.print("TODO QUOTED");
 loki.print("js");
 loki.print(loki.minus(1, 2, 3));
+(loki.lt(1, 2)?loki.print("print this!"):loki.print("do not print this!"));
+var x = 5;
+(loki.gt(x, 10)?loki.print("this is wrong"):loki.print("this is right"));
+loki.print(x);
+x = 7;
+loki.print(x);
+Rocket.prototype.constructor = Rocket;
+function Rocket(x) {
+this.color = "red";
+this.fuel = 7;
+this.speed = x
+};
+Rocket.prototype.lift_off = function() {
+ return loki.print(loki.plus("I'm flying @ ", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))
+};
+Rocket.prototype.toString = function() {
+ return loki.plus("I'm a ", (typeof this.color === "function" ? this.color() : this.color), " rocket")
+};;
+var r = new Rocket(7);
+loki.print((typeof r.speed === "function" ? r.speed() : r.speed));
+r.speed = 10;
+loki.print((typeof r.speed === "function" ? r.speed() : r.speed));
