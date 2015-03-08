@@ -8,17 +8,18 @@ from kivy.uix.modalview import ModalView
 
 class GridEntry(Button):
 	coords = ListProperty([0,0])
-
+	
 class TicTacToeGrid(GridLayout):
 	status = ListProperty([0, 0, 0, 0, 0, 0, 0, 0, 0])
 	currentPlayer = NumericProperty(1)
 
 	def __init__(self, *args, **kwargs):
 		super(TicTacToeGrid, self).__init__(*args, **kwargs)
+		self.cols = 3 #
 		for row in range(3):
 			for column in range(3):
-				gridEntry = GridEntry(coords = (row, column))
-				gridEntry.bind(on_release = self.buttonPressed)
+				gridEntry = GridEntry(**{'coords': [row, column]}) #
+				gridEntry.bind(**{'on_release': self.buttonPressed}) #
 				self.add_widget(gridEntry)
 				
 	def buttonPressed(self, button):
@@ -38,11 +39,10 @@ class TicTacToeGrid(GridLayout):
 			self.currentPlayer *= -1
 			
 	def reset(self, *args):
-		self.status = [0 for _ in range(9)]
+		self.status = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 		
 		for child in self.children:
-			child.text = ''
-			child.background_color = (1,1,1,1)
+			child.text = '' #
 			
 		self.currentPlayer = 1
 			
@@ -63,10 +63,10 @@ class TicTacToeGrid(GridLayout):
 			winner = 'Draw!'
 		
 		if winner:
-			popup = ModalView(size_hint = (.75, .5))
-			victoryLabel = Label(text = winner, font_size = 50)
+			popup = ModalView(**{'size_hint': [.75, .5]}) #
+			victoryLabel = Label(**{'text': winner, 'font_size': 50}) #
 			popup.add_widget(victoryLabel)
-			popup.bind(on_dismiss = self.reset)
+			popup.bind(**{'on_dismiss': self.reset}) #
 			popup.open()
 
 class TicTacToeApp(App):
