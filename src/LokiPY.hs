@@ -103,9 +103,9 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (Bool _ b)               -> PyBool b
                       (Def _ n (LkiNothing{})) -> PyVar n (PyId "None")
                       (Def _ n b)              -> PyVar n (translate b)
-                      (Fn _ xs b)              -> PyFn xs (translate <$> b)
+                      (Fn _ xs b _)            -> PyFn xs (translate <$> b)
                       (New _ s l)              -> PyNewObj s (translate <$> l)
-                      (DefClass _ n s c lf lv)   -> PyDefClass n s (translate c) (translate <$> lf) (translate <$> lv)
+                      (DefClass _ n s c lf lv) -> PyDefClass n s (translate c) (translate <$> lf) (translate <$> lv)
                       (Constr _ s b)           -> PyConst s (translateProp <$> b)
                       (ClassSuper _ n as)      -> PyClassSuper n (translate <$> as)
                       (Classfn _ s p b)        -> PyClassFn s p (translate b)
@@ -122,7 +122,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                              (List _ (Atom _ a:args)) -> PyFnCall a $ translate <$> args
                              (List _ (f@(Fn{}):args)) -> PyFnCall (toPY 0 (translate f)) $ translate <$> args
                              (List _ xs) -> PyList $ translate <$> xs
-                             x -> catch . throwError . TypeMismatch "List" $ show x
+                             x -> extractValue . throwError . TypeMismatch "List" $ show x
 
 toPY :: Int -> PyVal -> String
 toPY n pv = case pv of
@@ -148,17 +148,17 @@ fnCall2py n (PyFnCall fn args)
           | otherwise       = printf "%s(%s)" (lookupFn fn) args'
     where args' = L.intercalate ", " . filter (/= "") $ toPY n <$> args
           specForm = lookupSpecForm fn
-fnCall2py _ x = catch . throwError . TypeMismatch "PyFnCall" $ show x
+fnCall2py _ x = extractValue . throwError . TypeMismatch "PyFnCall" $ show x
 
 map2py :: Int -> PyVal -> String
 map2py n (PyMap ks vs) = printf "{%s}" kvs
     where kvs = L.intercalate ", " $ zipWith (\k v -> k ++ " : " ++ toPY n v) ks vs
-map2py _ x = catch . throwError . TypeMismatch "PyMap" $ show x
+map2py _ x = extractValue . throwError . TypeMismatch "PyMap" $ show x
 
 new2py :: Int -> PyVal -> String
 new2py n (PyNewObj className args) = printf "%s(%s)" className args'
   where args' = L.intercalate ", " $ toPY n <$> args
-new2py _ x = catch . throwError . TypeMismatch "PyNewObj" $ show x
+new2py _ x = extractValue . throwError . TypeMismatch "PyNewObj" $ show x
 
 defclass2py :: Int -> PyVal -> String
 defclass2py n (PyDefClass name superClasses (PyConst args cbody) fs vars) =
@@ -185,21 +185,21 @@ defclass2py n (PyDefClass name superClasses (PyConst args cbody) fs vars) =
                 fn2py_ n' (PyClassFn fn pms body) =
                     printf "%sdef %s (%s): \n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++
                     printf "%sreturn %s \n" (addSpacing (n'+ 1)) (toPY n' body)
-                fn2py_ _ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
+                fn2py_ _ x = extractValue . throwError . TypeMismatch "PyClassFn" $ show x
                 fns2py :: Int -> [PyVal] -> String
                 fns2py _ [] = []
                 fns2py n' l = (++ "\n") . L.intercalate "\n" $ map (fn2py_ n') l
-defclass2py _ x = catch . throwError . TypeMismatch "PyDefClass" $ show x
+defclass2py _ x = extractValue . throwError . TypeMismatch "PyDefClass" $ show x
 
 list2py :: Int -> PyVal -> String
 list2py n l = case l of
               (PyList [PyId "quote", ql]) -> toPY n ql
               (PyList xs) -> printf "[%s]" (L.intercalate ", " (fmap (toPY n) xs))
-              x -> catch . throwError . TypeMismatch "PyList" $ show x
+              x -> extractValue . throwError . TypeMismatch "PyList" $ show x
 
 id2py :: Int -> PyVal -> String
 id2py _ (PyId pv) = lookupKeyword pv
-id2py _ x = catch . throwError . TypeMismatch "PyId" $ show x
+id2py _ x = extractValue . throwError . TypeMismatch "PyId" $ show x
 
 fn2py :: Int -> String -> PyVal -> String
 fn2py n n1 (PyFn params body) = printf "def %s (%s):\n%s" n1 params' body'
@@ -211,21 +211,21 @@ fn2py n n1 (PyFn params body) = printf "def %s (%s):\n%s" n1 params' body'
                                 b'' = showBody (q:bs)
                             in b' ++ "\n" ++ addSpacing (n + 1) ++ b''
         showBody [b] = "return " ++ toPY n b
-fn2py _ _ x = catch . throwError . TypeMismatch "PyFn" $ show x
+fn2py _ _ x = extractValue . throwError . TypeMismatch "PyFn" $ show x
 
 lfn2py :: Int -> PyVal -> String
 lfn2py _ (PyFn params body) = printf "(lambda %s : [%s])" params' body'
       where
         params' = L.intercalate ", " params
         body' = L.intercalate ", " $ toPY 0 <$> body
-lfn2py _ x = catch .throwError . TypeMismatch "PyFn" $ show x
+lfn2py _ x = extractValue .throwError . TypeMismatch "PyFn" $ show x
 
 dot2py :: Int -> PyVal -> String
 dot2py n (PyObjCall fp on ps) = printf "%s.%s(%s) if callable(%s.%s) else %s.%s"
                                       (toPY n on) fp params' (toPY n on) fp (toPY n on) fp
       where
         params' = L.intercalate ", " $ toPY n <$> ps
-dot2py _ x = catch . throwError . TypeMismatch "PyObjCall" $ show x
+dot2py _ x = extractValue . throwError . TypeMismatch "PyObjCall" $ show x
 
 --Use for: if, for, while, class creation, anything else. Make sure to pass
 --around a weight and increment and decrement accordingly

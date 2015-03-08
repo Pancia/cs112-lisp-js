@@ -86,7 +86,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (Keyword _ k) -> JsStr k
                            (Bool _ b) -> JsBool b
                            (Def _ n b) -> JsVar n (translate b)
-                           (Fn _ xs b) -> JsFn xs (translate <$> b)
+                           (Fn _ xs b _) -> JsFn xs (translate <$> b)
                            l@(List{}) -> list2jsVal l
                            (Number _ n) -> JsNum n
                            (String _ s) -> JsStr s
@@ -108,7 +108,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                         (List _ (Atom _ a:(arg:args))) -> JsFnCall a $ translate <$> (arg:args)
                         (List _ (f@(Fn{}):args)) -> JsFnCall (fromJust . toJS $ translate f) $ translate <$> args
                         (List _ xs) -> JsList $ translate <$> xs
-                        x -> catch . throwError . TypeMismatch "List" $ show x
+                        x -> extractValue . throwError . TypeMismatch "List" $ show x
 
 toJS :: JsVal -> Maybe String
 toJS jv = case jv of
@@ -130,7 +130,7 @@ toJS jv = case jv of
 new2js :: JsVal -> Maybe String
 new2js (JsNewObj name args) = return $ printf "new %s(%s)" name args'
     where args' = L.intercalate ", " . catMaybes $ toJS <$> args
-new2js x = catch . throwError . TypeMismatch "JsNewObj" $ show x
+new2js x = extractValue . throwError . TypeMismatch "JsNewObj" $ show x
 
 map2js :: JsVal -> Maybe String
 map2js (JsMap ks vs) = do let kvs = zipWith (\k v -> liftM (printf "%s:%s" k)
@@ -138,7 +138,7 @@ map2js (JsMap ks vs) = do let kvs = zipWith (\k v -> liftM (printf "%s:%s" k)
                                             ks vs
                               kvs' = L.intercalate "," . catMaybes $ kvs
                           return $ printf "{%s}" kvs'
-map2js x = catch . throwError . TypeMismatch "JsMap" $ show x
+map2js x = extractValue . throwError . TypeMismatch "JsMap" $ show x
 
 defclass2js :: JsVal -> Maybe String
 defclass2js (JsDefClass name superClasses (JsConst args ret) fns vars) = do
@@ -163,7 +163,7 @@ defclass2js (JsDefClass name superClasses (JsConst args ret) fns vars) = do
           classVar2js :: JsVal -> Maybe String
           classVar2js (JsClassVar s b) = do b' <- toJS b
                                             return $ printf "this.%s = %s" s b'
-          classVar2js x = catch . throwError . TypeMismatch "" $ show x
+          classVar2js x = extractValue . throwError . TypeMismatch "" $ show x
           classVars2js :: [JsVal] -> Maybe String
           classVars2js vs = do let vs' = mapMaybe classVar2js vs
                                return $ L.intercalate ";\n" vs'
@@ -172,11 +172,11 @@ defclass2js (JsDefClass name superClasses (JsConst args ret) fns vars) = do
               ob' <- toJS ob
               return $ printf "%s.prototype.%s = function(%s) {\n return %s"
                 name fn (L.intercalate ", " pms) ob'
-          fn2js_ x = catch . throwError . TypeMismatch "JsClassFn" $ show x
+          fn2js_ x = extractValue . throwError . TypeMismatch "JsClassFn" $ show x
           fns2js :: [JsVal] -> Maybe String
           fns2js [] = Nothing
           fns2js l = Just $ (++ "\n};") . L.intercalate "\n};\n" . catMaybes $ map fn2js_ l
-defclass2js x = catch . throwError . TypeMismatch "JsDefClass" $ show x
+defclass2js x = extractValue . throwError . TypeMismatch "JsDefClass" $ show x
 
 fnCall2js :: JsVal -> Maybe String
 fnCall2js (JsFnCall fn args)
@@ -184,7 +184,7 @@ fnCall2js (JsFnCall fn args)
         | otherwise = return $ printf "%s(%s)" (lookupFn fn) args'
     where args' = L.intercalate ", " . catMaybes $ toJS <$> args
           specForm = lookupSpecForm fn
-fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
+fnCall2js x = extractValue . throwError . TypeMismatch "JsFnCall" $ show x
 
 dot2js :: JsVal -> Maybe String
 dot2js (JsObjCall fp on args) = do
@@ -192,11 +192,11 @@ dot2js (JsObjCall fp on args) = do
         return $ printf "(typeof %s.%s === \"function\" ? %s.%s(%s) : %s.%s)"
                  on' fp on' fp args' on' fp
      where args' = L.intercalate ", " . catMaybes $ toJS <$> args
-dot2js x = catch . throwError . TypeMismatch "JsDotThing" $ show x
+dot2js x = extractValue . throwError . TypeMismatch "JsDotThing" $ show x
 
 id2js :: JsVal -> Maybe String
 id2js (JsId a) = Just a
-id2js x = catch . throwError . TypeMismatch "JsId" $ show x
+id2js x = extractValue . throwError . TypeMismatch "JsId" $ show x
 
 fn2js :: JsVal -> Maybe String
 fn2js (JsFn params body) = do body' <- showBody body
@@ -208,16 +208,16 @@ fn2js (JsFn params body) = do body' <- showBody body
                                  b'' <- showBody (q:bs)
                                  return $ b' ++ ";\n" ++ b''
           showBody [b] = liftM ("return " ++) $ toJS b
-fn2js x = catch . throwError . TypeMismatch "JsFn" $ show x
+fn2js x = extractValue . throwError . TypeMismatch "JsFn" $ show x
 
 var2js :: JsVal -> Maybe String
 var2js (JsVar name JsNothing) = return $ printf "var %s" name
 var2js (JsVar name body) = do body' <- toJS body
                               return $ printf "var %s = %s" name body'
-var2js x = catch . throwError . TypeMismatch "JsVar" $ show x
+var2js x = extractValue . throwError . TypeMismatch "JsVar" $ show x
 
 list2js :: JsVal -> Maybe String
 list2js l = case l of
                (JsList [JsId "quote", ql]) -> toJS ql
                (JsList xs) -> Just $ printf "[%s]" $ L.intercalate ", " (catMaybes $ toJS <$> xs)
-               x -> catch . throwError . TypeMismatch "JsList" $ show x
+               x -> extractValue . throwError . TypeMismatch "JsList" $ show x

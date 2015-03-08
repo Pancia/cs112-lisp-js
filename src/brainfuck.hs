@@ -9,10 +9,6 @@ import Text.Parsec
 import Data.Functor.Identity (Identity)
 import Control.Applicative hiding ((<|>), many)
 
---TODO: 5+^> => put 5 in c[0], get its value and moveRight that many times
---      arg syntax, eg: "#(do:[>&1<-]) 3+(do!nl)",
---          will execute &1 (1st arg) c[p] (eg: 3) times
---      stdlib?
 data BFCmd = GoRight Int           -- >
            | GoLeft Int            -- <
            | Inc Int               -- +

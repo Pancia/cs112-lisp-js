@@ -1,5 +1,7 @@
 module Parser where
 
+import System.IO.Unsafe
+
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Control.Applicative hiding ((<|>), many, Const)
@@ -77,7 +79,7 @@ parseFn = inLispExpr "fn" $ do
     params <- parseArgs <* spaces >?> "param-list"
     body <- many (parseBasicExpr1 <* spaces) >?> "fn-body"
     s <- getState
-    return $ Fn (newMeta s) params body
+    return $ Fn (newMeta s) params body (unsafePerformIO nullEnv)
 
 parseDef :: Parser LokiVal
 parseDef = inLispExpr "def" $ do

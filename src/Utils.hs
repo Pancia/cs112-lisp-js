@@ -1,20 +1,31 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Utils where
 
-import Text.Parsec
-import Control.Monad.Except
 import Control.Applicative
-
-import System.Info (os)
-import Data.Map as M
+import Control.Monad.Except
 import Data.Char (toLower)
-
+import Data.IORef
+import Data.Map as M
 import Debug.Trace
+import System.Info (os)
+import System.IO.Unsafe
+import Text.Parsec
 
 (?>) :: (Show a) => a -> String -> a
-(?>) a s = trace (s ++ show a) a
+(?>) a s = trace (s ++ ": " ++ show a ++ "\n") a
+
+type Env = IORef [(String, IORef LokiVal)]
+
+nullEnv :: IO Env
+nullEnv = newIORef []
+
+instance (Show a) => Show (IORef a) where
+        show x = show (unsafePerformIO (readIORef x))
 
 type Meta = M.Map String String
-data LokiVal = Atom    { getMeta :: Meta, getAtom :: String }
+--TODO: Array [...] vs List (...)
+data LokiVal = Atom    { getMeta :: Meta
+                       , getAtom :: String }
              | List    { getMeta :: Meta
                        , getList :: [LokiVal] }
              | Number  { getMeta :: Meta
@@ -30,7 +41,8 @@ data LokiVal = Atom    { getMeta :: Meta, getAtom :: String }
                        , getDefBody :: LokiVal }
              | Fn      { getMeta :: Meta
                        , getFnArgs :: [String]
-                       , getFnBody :: [LokiVal] }
+                       , getFnBody :: [LokiVal]
+                       , getClosure :: Env }
              | Map     { getMeta :: Meta
                        , getMapKeys :: [String]
                        , getMapVals :: [LokiVal] }
@@ -78,7 +90,9 @@ instance Read OutputType where
                             "html" -> [(HTML,"")]
                             _ -> []
 
-data CompilerError = NumArgs        Integer [String]
+type ThrowsError = Either CompilerError
+
+data CompilerError = NumArgs        Int [String]
                    | TypeMismatch   String String
                    | ParserErr      ParseError
                    | BadSpecialForm String String
@@ -102,11 +116,11 @@ showError (TypeMismatch expctd fnd) =
 showError (ParserErr parseErr) = "ParseErr at " ++ show parseErr
 showError (Default err) = err
 
-hError :: Either CompilerError String -> Either CompilerError String
-hError = flip catchError (return . show)
+trapError :: ThrowsError String -> ThrowsError String
+trapError = flip catchError (return . show)
 
-catch :: Either CompilerError a -> a
-catch = either (error . show) id
+extractValue :: ThrowsError a -> a
+extractValue = either (error . show) id
 
 caseOS :: a -> a -> a
 caseOS windows other = if os == "mingw32" then windows else other

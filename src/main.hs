@@ -5,7 +5,7 @@ import Control.Monad
 import Data.List (isSuffixOf)
 import System.Environment
 import System.IO
-import System.Process
+import System.Process hiding (env)
 import System.Exit
 import System.Console.GetOpt
 
@@ -14,6 +14,7 @@ import Control.Monad.Except (throwError)
 
 import qualified LokiJS as JS
 import qualified LokiPY as PY
+import Eval
 import Utils (OutputType(JS,PY,HTML))
 import qualified Utils as U
 import qualified Parser as P
@@ -24,6 +25,7 @@ data Options = Options {
     optLisp :: String,
     optType :: OutputType,
     optRun :: Bool,
+    optEval :: Bool,
     optHelp :: Bool
     } deriving (Show)
 
@@ -35,8 +37,8 @@ defaultOptions = Options {
     optLisp = "",
     optType = JS,
     optRun = True,
-    optHelp = False
-    }
+    optEval = False,
+    optHelp = False}
 
 options :: [OptDescr (Options -> Options)]
 options = [Option "i" ["input-file"]  (ReqArg readInput "FILE")      "input file"
@@ -44,6 +46,7 @@ options = [Option "i" ["input-file"]  (ReqArg readInput "FILE")      "input file
           ,Option "l" ["lisp-expr"]   (ReqArg readLispExpr "stdin")  "input lisp s-exprs"
           ,Option "t" ["type"]        (ReqArg readOutputType "type") "output file type"
           ,Option "c" ["compile"]     (NoArg readCompile)            "should just compile"
+          ,Option "e" ["eval"]        (NoArg readEval)               "should just eval"
           ,Option "h" ["help"]        (NoArg readHelp)               "help with prg usage"]
     where
         readOutputType arg opts = opts {optType = read arg}
@@ -51,6 +54,7 @@ options = [Option "i" ["input-file"]  (ReqArg readInput "FILE")      "input file
         readInput arg opts = opts {optInput = arg}
         readOutput arg opts = opts {optOutput = arg}
         readCompile opts = opts {optRun = False}
+        readEval opts = opts {optEval = True}
         readHelp opts = opts {optHelp = True}
 
 main :: IO ()
@@ -60,6 +64,7 @@ main = do args <- getArgs
               outHelp = optHelp opts
               outType = optType opts
               outRun = optRun opts
+              outEval = optEval opts
               outFile = if (".loki." ++ show outType) `isSuffixOf` optOutput opts
                             then optOutput opts
                             else optOutput opts ++ ".loki." ++ (show outType)
@@ -74,20 +79,27 @@ main = do args <- getArgs
           --If outType is HTML we should parse the input as JS
           let outType' = if outType == HTML then JS else outType
           --If optLisp parse only the passed expression, else use the file
-          lispVals <- if null $ optLisp opts
-                          then liftM (readExpr outType') . readFile $ optInput opts
-                          else return . readExpr outType' $ optLisp opts
+          lispVals' <- if null $ optLisp opts
+                           then liftM U.extractValue . liftM (readExpr outType') . readFile $ optInput opts
+                           else return . U.extractValue . readExpr outType' $ optLisp opts
+--eval :: Env -> LokiVal -> IOThrowsError LokiVal
+--runIOThrows :: IOThrowsError String -> IO String
+          lispVals <- if outEval
+                          then do env <- U.nullEnv
+                                  runIOThrows . sequence $ map (eval env) lispVals'
+                          else return $ lispVals'
+          when outEval $ (putStrLn . ("EVAL: " ++) . show $ lispVals) >> exitSuccess
           --Show lokiVal
-          putStrLn . ((prefix ++ "lispVals:\n") ++) . U.catch . liftM show $ lispVals
+          putStrLn . ((prefix ++ "lispVals:\n") ++) . show $ lispVals
           printDivider
           --Convert to outType
           src <- case outType of
-                     PY -> do let pyVals = U.catch . liftM (PY.translate <$>) $ lispVals
+                     PY -> do let pyVals = PY.translate <$> lispVals
                               putStrLn $ prefix ++ "pyVals:\n" ++ show pyVals
                               printDivider
                               PY.formatPy $ PY.toPY 0 <$> pyVals
                      -- if out is JS or HTML, translate as JS
-                     _ -> do let jsVals = U.catch . liftM (JS.translate <$>) $ lispVals
+                     _ -> do let jsVals = JS.translate <$> lispVals
                              putStrLn $ prefix ++ "jsVals:\n" ++ show jsVals
                              printDivider
                              JS.formatJs $ JS.toJS <$> jsVals
