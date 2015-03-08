@@ -8,68 +8,68 @@
 
 (defclass GridEntry
      ([Button] (set coords (ListProperty [[0,0]]))))
-	 
+     
 (defclass TicTacToeGrid
      ([self *args **kwargs]
-	        (set status (new ListProperty [[0, 0, 0, 0, 0, 0, 0, 0, 0]]))
-		    (set currentPlayer (new NumericProperty 1))
-		    (. __init__ (super TicTacToeGrid self) *args **kwargs)
-			(set (. cols self) 3)
-			(for [row (range 3)
-				  col (range 3)]
-				 (set gridEntry (new GridEntry **{"coords": [row,column]}))
-				 (. bind gridEntry **{"on_release": (. buttonPressed self)})
-				 (. add_widget self gridEntry)))
-				
+            (set status (new ListProperty [[0, 0, 0, 0, 0, 0, 0, 0, 0]]))
+            (set currentPlayer (new NumericProperty 1))
+            (. __init__ (super TicTacToeGrid self) *args **kwargs)
+            (set (. cols self) 3)
+            (for [row (range 3)
+                  col (range 3)]
+                 (set gridEntry (new GridEntry **{"coords": [row,column]}))
+                 (. bind gridEntry **{"on_release": (. buttonPressed self)})
+                 (. add_widget self gridEntry)))
+                
      (def buttonPressed
-	      (fn [self button]
-		       (set player {1: "X" -1: "0"})
-			   (set colors {1: {0 0 0 0} -1: {0 0 0 0}})
-			   (set row (. (get coords 0) button))
-			   (set column (. (get coords 1) button))
-			   (set statusIndex (+(* (3 row)) column))
-			   (set alreadyPlayed (. (get status statusIndex) self))
-			   
-			   (if (!= alreadyPlayed)
-			        (set (. (get status statusIndex) set) (. currentPlayer self))
-					(set (. text button) (get player (. currentPlayer self)))
-					(set (. background_color button) (get colors (. currentPlayer self)))
-					(set (. currentPlayer self) (* (. currentPlayer self) -1)))))
+          (fn [self button]
+               (set player {1: "X" -1: "0"})
+               (set colors {1: {0 0 0 0} -1: {0 0 0 0}})
+               (set row (. (get coords 0) button))
+               (set column (. (get coords 1) button))
+               (set statusIndex (+(* (3 row)) column))
+               (set alreadyPlayed (. (get status statusIndex) self))
+               
+               (if (!= alreadyPlayed)
+                    (set (. (get status statusIndex) set) (. currentPlayer self))
+                    (set (. text button) (get player (. currentPlayer self)))
+                    (set (. background_color button) (get colors (. currentPlayer self)))
+                    (set (. currentPlayer self) (* (. currentPlayer self) -1)))))
 
      (def reset
-	      (fn [self *args]
-		       (set (. status self) [0, 0, 0, 0, 0, 0, 0, 0, 0])
-			   (for [child (. children self)]
-			        (set (. text child) "")
-					)
-			   (set (. currentPlayer self) 1)))
-			
-	 (def on_status
+          (fn [self *args]
+               (set (. status self) [0, 0, 0, 0, 0, 0, 0, 0, 0])
+               (for [child (. children self)]
+                    (set (. text child) "")
+                    )
+               (set (. currentPlayer self) 1)))
+            
+     (def on_status
           (fn [self instance newVal]
-		       (set status newVal)
-			   (set sums [(+ (sc 0 3)) 
-			              (+ (sc 3 6)) (+ (sc 6 9)) (+ (dc 0 3))
-						  (+ (dc 1 4)) (+ (dc 2 3)) (+ (dc 0 4))
-						  (+ (dcm 2 -2 2))])
-			   (set winner "")
-			   (if (in 3 sums)
-			       (set winner "Xs win!"))
-			   (if (in -3 sums)
-			       (set winner "Os win!"))
-			   (if (!in 0 (.status self))
-			       (set winner "Draw!"))
-			   (if (!= winner "")
-			       (set popup (new ModalView **{"size_hunt": [.75, .5]}))
-				   (set victoryLabel (new Label **{"text": winner, "font_size": 50}))
-				   (. add_widget popup victoryLabel)
-				   (. bind popup **{"on_dismiss": (. reset self)})
-				   (. open popup))))
-			   
+               (set status newVal)
+               (set sums [(+ (sc 0 3)) 
+                          (+ (sc 3 6)) (+ (sc 6 9)) (+ (dc 0 3))
+                          (+ (dc 1 4)) (+ (dc 2 3)) (+ (dc 0 4))
+                          (+ (dcm 2 -2 2))])
+               (set winner "")
+               (if (in 3 sums)
+                   (set winner "Xs win!"))
+               (if (in -3 sums)
+                   (set winner "Os win!"))
+               (if (!in 0 (.status self))
+                   (set winner "Draw!"))
+               (if (!= winner "")
+                   (set popup (new ModalView **{"size_hunt": [.75, .5]}))
+                   (set victoryLabel (new Label **{"text": winner, "font_size": 50}))
+                   (. add_widget popup victoryLabel)
+                   (. bind popup **{"on_dismiss": (. reset self)})
+                   (. open popup))))
+               
 (defclass TicTacToeApp 
      ([app])
-	 (def build 
-	      (fn [self]
-		       (return TicTacToeGrid))))
-			   
+     (def build 
+          (fn [self]
+               (return TicTacToeGrid))))
+               
 (if (= (__name__ "__main__")) 
      (. run (TicTacToeApp)))
