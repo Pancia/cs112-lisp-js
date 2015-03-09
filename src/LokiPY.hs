@@ -30,9 +30,9 @@ keywords :: M.Map String String
 keywords = M.fromList [("this", "self")]
 
 type SpecialForm = [PyVal] -> String
-specialForms :: M.Map String SpecialForm
-specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
-                          ,("for", for_),("import", import_)]
+specialForms :: Int -> M.Map String SpecialForm
+specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
+                          ,("for", for_ n),("import", import_)]
     where
         import_ :: SpecialForm
         import_ [PyStr importMe] = printf "import %s" importMe
@@ -55,14 +55,13 @@ specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
             printf "%s if %s else %s" then_' cond_' else_'
         if_ [cond_, then_] = if_ [cond_, then_, PyId "None"]
         if_ _ = error "wrong args to if"
-        for_ :: SpecialForm
-        --[PyList [PyId \"x\",PyFnCall \"range\" [PyNum 3]],PyFnCall \"print\" [PyId \"x\"]]
-        for_ [PyList [id_, expr_], body_] = do
+        for_ :: Int -> SpecialForm
+        for_ n [PyList [id_, expr_], body_] = do
             let id_'   = toPY 0 id_
                 expr_' = toPY 0 expr_
-                body_' = toPY 1 body_
-            printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing 1) body_'
-        for_ x = error $ (show x ?> "for-x") ++ "wrong args to for"
+                body_' = toPY (n + 1) body_ --need to convert from 1 to n' and take in int
+            printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing (n + 1)) body_'
+        for_ _ x = error $ (show x ?> "for-x") ++ "wrong args to for"
 
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
@@ -70,8 +69,8 @@ lookupFn f = fromMaybe f $ M.lookup f primitives
 lookupKeyword :: String -> String
 lookupKeyword k = fromMaybe k $ M.lookup k keywords
 
-lookupSpecForm :: String -> Maybe SpecialForm
-lookupSpecForm s = M.lookup s specialForms
+lookupSpecForm :: Int -> String -> Maybe SpecialForm
+lookupSpecForm n s = M.lookup s (specialForms n)
 
 data PyVal = PyVar String PyVal                -- x = ...
            | PyFn [String] [PyVal]             -- function(...){...}
@@ -149,7 +148,7 @@ fnCall2py n (PyFnCall fn args)
           | isJust specForm = fromJust $ specForm <*> Just args
           | otherwise       = printf "%s(%s)" (lookupFn fn) args'
     where args' = L.intercalate ", " . filter (/= "") $ toPY n <$> args
-          specForm = lookupSpecForm fn
+          specForm = lookupSpecForm n fn
 fnCall2py _ x = catch . throwError . TypeMismatch "PyFnCall" $ show x
 
 --(for [row (range 3)

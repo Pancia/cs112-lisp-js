@@ -24,6 +24,8 @@
 (print (. get_object r))
 (print (. get_thing r))
 
-;(for [xyz (range 4)
-;	  abc (range 7)]
-;	(print xyz))
+(for [lskdfjk (range 2)]
+(for [xyz (range 4)]
+  (for [abc (range 7)]
+    (for [lskdfjl (range 2)]
+	   (print xyz)))))

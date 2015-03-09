@@ -20,6 +20,10 @@
 (for [x (range 3)]
   (print x))
 
+(for [xyz (range 4)]
+  (for [lsd (range 3)]
+    (print (+ lsd " " xyz))))
+
 ; SET
 (print x)
 (set x 7)
