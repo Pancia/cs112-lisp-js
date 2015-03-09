@@ -17,6 +17,8 @@ type Meta = M.Map String String
 data LokiVal = Atom    { getMeta :: Meta, getAtom :: String }
              | List    { getMeta :: Meta
                        , getList :: [LokiVal] }
+             | Array   { getMeta :: Meta
+                       , getArray :: [LokiVal]}
              | Number  { getMeta :: Meta
                        , getNumber :: Integer }
              | String  { getMeta :: Meta

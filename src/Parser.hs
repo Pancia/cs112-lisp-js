@@ -185,7 +185,7 @@ parseList = do s <- getState
 
 parseArray :: Parser LokiVal
 parseArray = do s <- getState
-                List (newMeta s)
+                Array (newMeta s)
                     <$> between (char '[' >> spacesInLiteral)
                                 (char ']')
                                 (manyTill (parseExpr1 <* spacesInLiteral)

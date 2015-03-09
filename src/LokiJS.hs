@@ -23,7 +23,7 @@ primitives = M.fromList $ fmap addLokiPrefix $
 type SpecialForm = [JsVal] -> String
 specialForms :: M.Map String SpecialForm
 specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
-                          ,("import", import_)]
+                          ,("import", import_),("for", for_)]
     where
         import_ :: SpecialForm
         import_ [JsStr importMe] = printf "import %s" importMe
@@ -46,6 +46,14 @@ specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
             printf "(%s?%s:%s)" cond_' then_' else_'
         if_ [cond_, then_] = if_ [cond_, then_, JsId "null"]
         if_ _ = error "wrong args to if"
+        for_ :: SpecialForm
+        for_ [JsList [id_, expr_], body_] = do
+            let id_'   = fromJust $ toJS id_
+                expr_' = fromJust $ toJS expr_
+                body_' = fromJust $ toJS body_
+            printf "for (%s in %s){\n%s\n}" id_' expr_' body_'
+        for_ x = error $ (show x ?> "for-x") ++ "wrong args to for"
+        --for format wrong for JS
 
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
@@ -86,6 +94,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (Bool _ b) -> JsBool b
                            (Def _ n b) -> JsVar n (translate b)
                            (Fn _ xs b) -> JsFn xs (translate <$> b)
+                           (Array {getArray=a}) -> JsList (translate <$> a)
                            l@(List{}) -> list2jsVal l
                            (Number _ n) -> JsNum n
                            (String _ s) -> JsStr s

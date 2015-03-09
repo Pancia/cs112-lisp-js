@@ -8,6 +8,10 @@ loki.print(loki.minus(1, 2, 3))
 var x = 5
 (loki.gt(x, 10)?loki.print("this is wrong"):loki.print("this is right"))
 
+for (x in loki.range(3)){
+loki.print(x)
+}
+
 loki.print(x)
 x = 7
 loki.print(x)
@@ -20,3 +24,4 @@ var r = new Rocket(7)
 loki.print((typeof r.speed === "function" ? r.speed() : r.speed))
 r.speed = 10
 loki.print((typeof r.speed === "function" ? r.speed() : r.speed))
+

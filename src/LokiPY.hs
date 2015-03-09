@@ -56,12 +56,13 @@ specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
         if_ [cond_, then_] = if_ [cond_, then_, PyId "None"]
         if_ _ = error "wrong args to if"
         for_ :: SpecialForm
-        for_ [PyFnCall id_ [expr_], body_] = do
-            let id_' = id_
+        --[PyList [PyId \"x\",PyFnCall \"range\" [PyNum 3]],PyFnCall \"print\" [PyId \"x\"]]
+        for_ [PyList [id_, expr_], body_] = do
+            let id_'   = toPY 0 id_
                 expr_' = toPY 0 expr_
                 body_' = toPY 1 body_
             printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing 1) body_'
-        for_ x = error $ (show x ?> "for-x") ++ "wrong args to set"
+        for_ x = error $ (show x ?> "for-x") ++ "wrong args to for"
 
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
@@ -109,6 +110,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (Classfn _ s p b)        -> PyClassFn s p (translate b)
                       (Classvar _ s b)         -> PyClassVar s (translate b)
                       l@(List{})               -> list2pyVal l
+                      (Array {getArray=a})     -> PyList (translate <$> a)
                       (Dot _ fp on ps)         -> PyObjCall fp (translate on) (translate <$> ps)
                       (Map _ ks vs)            -> PyMap ks (translate <$> vs)
                       (LkiNothing _)           -> PyThing ""
@@ -119,7 +121,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
           list2pyVal l = case l of
                              (List _ (Atom _ a:args)) -> PyFnCall a $ translate <$> args
                              (List _ (f@(Fn{}):args)) -> PyFnCall (toPY 0 (translate f)) $ translate <$> args
-                             (List _ xs) -> PyList $ translate <$> xs
+                             (List _ xs) -> PyList (translate <$> xs)
                              x -> catch . throwError . TypeMismatch "List" $ show x
 
 toPY :: Int -> PyVal -> String
@@ -147,6 +149,10 @@ fnCall2py n (PyFnCall fn args)
     where args' = L.intercalate ", " . filter (/= "") $ toPY n <$> args
           specForm = lookupSpecForm fn
 fnCall2py _ x = catch . throwError . TypeMismatch "PyFnCall" $ show x
+
+--(for [row (range 3)
+--          col (range 3)]
+--        (set gridEntry (new GridEntry (set coords row col)))))
 
 map2py :: Int -> PyVal -> String
 map2py n (PyMap ks vs) = printf "{%s}" kvs

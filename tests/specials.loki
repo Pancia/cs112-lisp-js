@@ -16,6 +16,10 @@
 	(print "this is wrong")
 	(print "this is right"))
 
+; FOR LOOP
+(for [x (range 3)]
+  (print x))
+
 ; SET
 (print x)
 (set x 7)
