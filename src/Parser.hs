@@ -92,11 +92,13 @@ parseDef = inLispExpr "def" $ do
 parseClass :: Parser LokiVal
 parseClass = inLispExpr "defclass" $ do
     className <- ident <* spaces1 >?> "class-name"
+    superClasses <- liftM (fromMaybe []) . optionMaybe
+                    $ (inLitExpr "[]" . many $ ident <* spaces) <* spaces
     cnstr <- parseConst <* spaces >?> "class-constructor"
     classFns <- many (try $ parseClassFn <* spaces) >?> "class-functions"
     classVars <- many (try $ parseVars <* spaces) >?> "class-vars"
     s <- getState
-    return $ DefClass (newMeta s) className cnstr classFns classVars
+    return $ DefClass (newMeta s) className superClasses cnstr classFns classVars
 
 parseClassFn :: Parser LokiVal
 parseClassFn = inLispExpr_ $ do
@@ -121,10 +123,15 @@ parseConst = inLispExpr_ $ do
     return $ Constr (newMeta s) params body
     where
         parseProp :: Parser (String, LokiVal)
-        parseProp = inLispExpr_ $ do
-                      propName <- ident <* spaces1
-                      propVal <- parseExpr1
-                      return (propName, propVal)
+        parseProp = try (inLispExpr "super" $ do
+                        superName <- ident <* spaces1
+                        args <- many parseBasicExpr1 <* spaces
+                        s <- getState
+                        return (superName, ClassSuper (newMeta s) superName args))
+                    <|> (inLispExpr_ $ do
+                        propName <- ident <* spaces1
+                        propVal <- parseExpr1 <* spaces
+                        return (propName, propVal))
 
 -- PARSE SPECIAL FORMS
 parseQuoted :: Parser LokiVal
@@ -211,7 +218,7 @@ newMeta :: String -> Meta
 newMeta = M.singleton "fileType"
 
 -----HELPER PARSERS-----
-inLispExpr :: String -> Parser LokiVal -> Parser LokiVal
+inLispExpr :: String -> Parser a -> Parser a
 inLispExpr start = between (try (char '(' >> spaces
                                 >> string start <* spaces1)
                                 >?> start)
@@ -219,6 +226,10 @@ inLispExpr start = between (try (char '(' >> spaces
 
 inLispExpr_ :: Parser a -> Parser a
 inLispExpr_ = between (char '(') (char ')')
+
+inLitExpr :: String -> Parser a -> Parser a
+inLitExpr [x,y] = between (char x) (char y)
+inLitExpr x = error $ "expected string of length 2, got \"" ++ x ++ "\" instead"
 
 parseArgs :: Parser [String]
 parseArgs = between (char '[') (char ']')

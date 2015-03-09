@@ -79,15 +79,16 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyBool Bool                       -- true|false
            | PyNum Integer                     -- ..-1,0,1..
            | PyId String                       -- x, foo, ...
+           | PyList [PyVal]                    -- [...]
            | PyMap [String] [PyVal]            -- {x : y, ..}
            | PyObjCall String PyVal [PyVal]    -- x.foo.bar(...)
-           | PyFnCall String [PyVal]           -- foo(...)
-           | PyNewObj String [PyVal]                 -- new Foo(..)
-           | PyDefClass String PyVal [PyVal] [PyVal] -- function Class(..) {..}
-           | PyConst [String] [(String, PyVal)]      -- Class(..) {..}
-           | PyClassFn String [String] PyVal         -- TODO ex
+           | PyFnCall String [PyVal]           -- f(...)
+           | PyNewObj String [PyVal]           -- Foo(..)
+           | PyDefClass String [String] PyVal [PyVal] [PyVal]
+           | PyConst [String] [(String, PyVal)]
+           | PyClassSuper String [PyVal]
+           | PyClassFn String [String] PyVal
            | PyClassVar String PyVal
-           | PyList [PyVal]                    -- [...]
            | PyPleaseIgnore -- ignore
            | PyThing String -- ???
            deriving (Eq, Show)
@@ -105,8 +106,9 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (Def _ n b)              -> PyVar n (translate b)
                       (Fn _ xs b)              -> PyFn xs (translate <$> b)
                       (New _ s l)              -> PyNewObj s (translate <$> l)
-                      (DefClass _ n c lf lv)   -> PyDefClass n (translate c) (translate <$> lf) (translate <$> lv)
+                      (DefClass _ n s c lf lv)   -> PyDefClass n s (translate c) (translate <$> lf) (translate <$> lv)
                       (Constr _ s b)           -> PyConst s (translateProp <$> b)
+                      (ClassSuper _ n as)      -> PyClassSuper n (translate <$> as)
                       (Classfn _ s p b)        -> PyClassFn s p (translate b)
                       (Classvar _ s b)         -> PyClassVar s (translate b)
                       l@(List{})               -> list2pyVal l
@@ -165,28 +167,34 @@ new2py n (PyNewObj className args) = printf "%s(%s)" className args'
 new2py _ x = catch . throwError . TypeMismatch "PyNewObj" $ show x
 
 defclass2py :: Int -> PyVal -> String
-defclass2py n (PyDefClass name (PyConst args cbody) fs vars) =
-                printf "class %s:\n%sdef __init__(self%s):\n%s%s%s"
-                name (addSpacing (n + 1)) args' addCons addVars (fns2py (n + 1) fs)
+defclass2py n (PyDefClass name superClasses (PyConst args cbody) fs vars) =
+                printf "class %s(%s):\n%sdef __init__(self%s):\n%s%s%s"
+                name superClasses' (addSpacing (n + 1)) args' addCons addVars (fns2py (n + 1) fs)
             where
-              args' = if null args
-                        then ""
-                        else ", " ++ L.intercalate ", " args
-              body2py :: Int -> [(String, PyVal)] -> [String]
-              body2py n' = fmap (\(p,v) -> printf (addSpacing n' ++ "self.%s = %s\n") p (toPY 0 v))
-              addCons = (++ "\n") . concat $ body2py (n + 2) cbody
-              addVars = vars2py (n + 1) vars
-              vars2py :: Int -> [PyVal] -> String
-              vars2py n' = concat . fmap (\(PyClassVar varName x) ->
-                printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
-              fn2py_ :: Int -> PyVal -> String
-              fn2py_ n' (PyClassFn fn pms body) =
-                  printf "%sdef %s (%s): \n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++
-                  printf "%sreturn %s \n" (addSpacing (n'+ 1)) (toPY n' body)
-              fn2py_ _ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
-              fns2py :: Int -> [PyVal] -> String
-              fns2py _ [] = []
-              fns2py n' l = (++ "\n") . L.intercalate "\n" $ map (fn2py_ n') l
+                superClasses' = L.intercalate ", " superClasses
+                args' = if null args then ""
+                                     else ", " ++ L.intercalate ", " args
+                propVal2js :: Int -> (String, PyVal) -> String
+                propVal2js n' (_,PyClassSuper superName superArgs) =
+                    let superArgs' = L.intercalate "," $ toPY 0 <$> superArgs
+                        superArgs'' = if null superArgs' then "" else "," ++ superArgs'
+                    in printf "%s%s.__init__(self%s)\n" (addSpacing n') superName superArgs''
+                propVal2js n' (p,v) = printf "%sself.%s = %s\n" (addSpacing n') p (toPY 0 v)
+                body2py :: Int -> [(String, PyVal)] -> [String]
+                body2py n' = fmap (propVal2js n')
+                addCons = (++ "\n") . concat $ body2py (n + 2) cbody
+                addVars = vars2py (n + 1) vars
+                vars2py :: Int -> [PyVal] -> String
+                vars2py n' = concat . fmap (\(PyClassVar varName x) ->
+                    printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
+                fn2py_ :: Int -> PyVal -> String
+                fn2py_ n' (PyClassFn fn pms body) =
+                    printf "%sdef %s (%s): \n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++
+                    printf "%sreturn %s \n" (addSpacing (n'+ 1)) (toPY n' body)
+                fn2py_ _ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
+                fns2py :: Int -> [PyVal] -> String
+                fns2py _ [] = []
+                fns2py n' l = (++ "\n") . L.intercalate "\n" $ map (fn2py_ n') l
 defclass2py _ x = catch . throwError . TypeMismatch "PyDefClass" $ show x
 
 list2py :: Int -> PyVal -> String

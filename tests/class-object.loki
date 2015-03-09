@@ -1,12 +1,25 @@
+(defclass MyObject
+  ([x] (obj x))
+  (get_obj []
+    (. obj this)))
+
+(defclass MyThing
+  ([x] (thing x))
+  (get_thing []
+    (. thing this)))
+
 (defclass Rocket
-  ([x] (speed x))
+  [MyObject MyThing]
+  ([x] (super MyObject "obj")
+       (super MyThing "thing")
+       (speed x))
   (lift_off []
     (print (+ "I'm flying @ "
               (. speed this)
               " speed")))
   (toString []
-  	(+ "I'm a " 
-  	    (. color this) 
+  	(+ "I'm a "
+  	    (. color this)
   	    " rocket"))
   (color "red")
   (fuel 7))
@@ -17,3 +30,5 @@
 (print (. toString r))
 (print (. fuel r))
 (. lift_off r)
+(print (. get_obj r))
+(print (. thing r))

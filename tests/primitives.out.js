@@ -44,6 +44,15 @@ var loki = (function (){
         return acc;
     });
 
+    loki.extend = function (destination, source) {
+        for (var k in source) {
+            if (source.hasOwnProperty(k)) {
+                destination[k] = source[k];
+            }
+        }
+        return destination;
+    }
+
     loki.print = function() {
         var _log = function(x) {
             if (typeof console === "object") {console.log(x);}
@@ -68,12 +77,17 @@ var loki = (function (){
     //Logic
     loki.and = curry(function(x, y) {return x && y});
     loki.or  = curry(function(x, y) {return x || y});
-    loki.eq  = curry(function(x, y) {return x === y});
-    loki.neq = curry(function(x, y) {return x !== y});
-    loki.lt  = curry(function(x, y) {return x < y});
-    loki.lte = curry(function(x, y) {return x <= y});
-    loki.gt  = curry(function(x, y) {return x > y});
-    loki.gte = curry(function(x, y) {return x >= y});
+    var eq = curry(function(x, y) {return (x === y ? x : false)});
+    loki.eq  = function(x,y) {return !!eq(x,y);}
+    loki.neq  = function(x,y) {return !eq(x,y);}
+    var lt = curry(function(x, y) {return (x < y ? y : false)});
+    loki.lt  = function(x,y) {return !!lt(x,y);}
+    var lte = curry(function(x, y) {return (x <= y ? y : false)});
+    loki.lte  = function(x,y) {return !!lte(x,y);}
+    var gt = curry(function(x, y) {return (x > y ? y : false)});
+    loki.gt  = function(x,y) {return !!gt(x,y);}
+    var gte = curry(function(x, y) {return (x >= y ? y : false)});
+    loki.gte  = function(x,y) {return !!gte(x,y);}
 
     return loki;
 })();

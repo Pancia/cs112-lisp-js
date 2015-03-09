@@ -78,10 +78,12 @@ Loki.printf("py")
 Loki.printf("print this!") if Loki.lt(1, 2) else Loki.printf("do not print this!")
 x = 5
 Loki.printf("this is wrong") if Loki.gt(x, 10) else Loki.printf("this is right")
+for x in Loki.range(3):
+    Loki.printf(x)
 Loki.printf(x)
 x = 7
 Loki.printf(x)
-class Rocket:
+class Rocket():
     def __init__(self, x):
         self.speed = x
 

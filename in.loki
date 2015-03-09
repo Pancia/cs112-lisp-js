@@ -1,3 +1,29 @@
-(for [xyz (range 4)
-	  abc (range 7)]
-	(print xyz))
+(defclass MyObject
+  ([] (obj 5))
+  (get_object
+    [] "object"))
+(def o (new MyObject ))
+(print (. get_object o))
+
+(defclass Thing
+  ([] (thing 5))
+  (get_thing
+    [] "thing"))
+(def t (new Thing ))
+(print (. get_thing t))
+
+(defclass Rocket
+  [MyObject Thing]
+  ([x] (p x)
+   (f 0))
+  (fe [] (print "ehhhh"))
+  (funct [x y] (print (+ x y)))
+  (speed 5))
+(def r (new Rocket 5))
+(print (. f r))
+(print (. get_object r))
+(print (. get_thing r))
+
+;(for [xyz (range 4)
+;	  abc (range 7)]
+;	(print xyz))
