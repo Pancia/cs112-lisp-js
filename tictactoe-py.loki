@@ -5,15 +5,14 @@
 ;from kivy.uix.button import Button
 ;from kivy.properties import (ListProperty, NumericProperty)
 ;from kivy.uix.modalview import ModalView
-
-(defclass GridEntry
-     ([Button] (set coords (ListProperty [[0,0]]))))
+(defclass GridEntry [Button]
+     ([] (coords (new ListProperty [[0,0]]))))
      
-(defclass TicTacToeGrid
-     ([self *args **kwargs]
-            (set status (new ListProperty [[0, 0, 0, 0, 0, 0, 0, 0, 0]]))
-            (set currentPlayer (new NumericProperty 1))
-            (. __init__ (super TicTacToeGrid self) *args **kwargs)
+(defclass TicTacToeGrid [GridLayout]
+     ([*args **kwargs]
+            (status (new ListProperty [[0, 0, 0, 0, 0, 0, 0, 0, 0]]))
+            (currentPlayer (new NumericProperty 1))
+            (super TicTacToeGrid *args **kwargs)
             (set (. cols self) 3)
             (for [row (range 3)
                   col (range 3)]
