@@ -5,14 +5,14 @@ import Control.Applicative
 import Control.Monad.Except
 import Data.Char (toLower)
 import Data.IORef
-import Data.Map as M
+import Data.Map as M hiding (map)
 import Debug.Trace
 import System.Info (os)
 import System.IO.Unsafe
 import Text.Parsec
 
 (?>) :: (Show a) => a -> String -> a
-(?>) a s = trace (s ++ ": " ++ show a ++ "\n") a
+(?>) a s = trace (s ++ ": " ++ show a) a
 
 type Env = IORef [(String, IORef LokiVal)]
 
@@ -20,7 +20,7 @@ nullEnv :: IO Env
 nullEnv = newIORef []
 
 instance (Show a) => Show (IORef a) where
-        show x = show (unsafePerformIO (readIORef x))
+        show _ = "<env>"--show (unsafePerformIO (readIORef x))
 
 type Meta = M.Map String String
 --TODO: Array [...] vs List (...)
@@ -43,6 +43,7 @@ data LokiVal = Atom    { getMeta :: Meta
                        , getFnArgs :: [String]
                        , getFnBody :: [LokiVal]
                        , getClosure :: Env }
+             | PrimFn  ([LokiVal] -> ThrowsError LokiVal)
              | Map     { getMeta :: Meta
                        , getMapKeys :: [String]
                        , getMapVals :: [LokiVal] }
@@ -74,7 +75,27 @@ data LokiVal = Atom    { getMeta :: Meta
                         , getClassVarName :: String
                         , getClassVarBody :: LokiVal }
              | LkiNothing { getMeta :: Meta }
-             deriving (Eq, Show)
+
+show_env :: Env -> String -> Env
+show_env env s = flip trace env . ((s ++ ": ") ++) . show
+                   . (\l -> map (\(_s, io_lkv) -> (_s, unsafePerformIO . readIORef $ io_lkv)) l) . unsafePerformIO . readIORef $ env
+
+instance Show LokiVal where
+        show x = case x of
+                     List {getList=list} -> show list
+                     Atom {getAtom=atom} -> atom
+                     Number {getNumber=num} -> show num
+                     String {getString=str} -> str
+                     Bool {getBool=b} -> show b
+                     Def {getDefName=name
+                         ,getDefBody=body} -> "(def "++name++show body++")"
+                     Fn {getFnArgs=params
+                        ,getFnBody=body} -> "(fn "++show params++show body++")"
+                     Map{} -> "map"
+                     Keyword{} -> "keyword"
+                     New{} -> "new"
+                     Dot{} -> "dot"
+                     _ -> "<LokiVal>"
 
 data OutputType = JS | PY | HTML
                 deriving (Eq)

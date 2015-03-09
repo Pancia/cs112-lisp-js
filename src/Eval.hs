@@ -62,6 +62,7 @@ eval _ val@(String{}) = return val
 eval _ val@(Number{}) = return val
 eval _ val@(Bool{}) = return val
 eval _ val@(Keyword{}) = return val
+eval _ f@(Fn{}) = return f
 
 eval _ (List _ [Atom _ "quote", val]) = return val
 eval env (List _ [Atom _ "if", pred_, then_, else_]) = do
@@ -72,20 +73,21 @@ eval env (List _ [Atom _ "if", pred_, then_, else_]) = do
 eval env (List _ [Atom _ "set", Atom _ var, form]) =
      eval env form >>= setVar env var
 eval env (List _ (Atom _ f : args))
-    | isJust (lookup (f ?> "f") primitives) = mapM (eval env) args >>= liftThrows . apply f
-    | otherwise = do fn <- getVar (env ?> "env") f
+    | isJust (lookup f primitives) = mapM (eval env) args >>= liftThrows . apply f
+    | otherwise = do fn <- getVar env f
                      let params = getFnArgs fn
                          body = getFnBody fn
                          closure = getClosure fn
                          evalBody e = liftM last $ mapM (eval e) body
+                     args' <- mapM (eval env) args
                      if length params /= length args
                          then throwError . NumArgs (length params) $ show <$> args
-                         else (liftIO $ bindVars closure $ zip params args) >>= evalBody
+                         else (liftIO $ bindVars closure $ zip params args') >>= evalBody
 eval _ list@(List{}) = return list
 
 eval env (Atom{getAtom=name}) = getVar env name
 eval env (Def {getDefName=name
-              ,getDefBody=fn@(Fn{})}) = defVar env name fn
+              ,getDefBody=f@(Fn{})}) = defVar env name f >> updVar env name (\fn@(Fn{}) -> fn {getClosure=env})
 eval env (Def {getDefName=name
               ,getDefBody=body}) = eval env body >>= defVar env name
 
@@ -98,21 +100,37 @@ apply f args = maybe (throwError $ NotFunction "unrecognized primitive function"
 
 --TODO: Change from binop to numOp, boolOp, using sum/product...?
 primitives :: [(String, [LokiVal] -> ThrowsError LokiVal)]
-primitives = [("+", numBinop (+))
-             ,("-", numBinop (-))
-             ,("*", numBinop (*))
-             ,("/", numBinop div)
-             ,("=", numBoolBinop (==))
-             ,("==", strBoolBinop (==))
+primitives = [("+", listOp unpackNum Number (+))
+             ,("-", listOp unpackNum Number (-))
+             ,("*", listOp unpackNum Number (*))
+             ,("/", listOp unpackNum Number div)
+             ,("=", numBoolBinop (\a b -> if a == b then Just b else Nothing))
+             ,("<", numBoolBinop (\a b -> if a < b then Just b else Nothing))
+             ,(">", numBoolBinop (\a b -> if a > b then Just b else Nothing))
+             --TODO: impl "<=" ">="
+             ,("==", strBoolBinop (\a b -> if a == b then Just b else Nothing))
              ,("++", listOp unpackStr String (++))
-             ,("and", boolBoolBinop (&&))
-             ,("or", boolBoolBinop (||))
+             ,("and", listOp unpackBool Bool (&&))
+             ,("or", listOp unpackBool Bool (||))
              ,("first", first),("rest", rest)
-             ,("cons", cons)]
+             ,("cons", cons),("not",not_)]
     where
-        numBoolBinop  = boolBinop unpackNum
-        strBoolBinop  = boolBinop unpackStr
-        boolBoolBinop = boolBinop unpackBool
+        numBoolBinop  = boolOp unpackNum
+        strBoolBinop  = boolOp unpackStr
+
+not_ :: [LokiVal] -> ThrowsError LokiVal
+not_ [b@(Bool{getBool=bool})] = return b {getBool=not bool}
+not_ x = throwError . NumArgs 1 $ fmap show x
+
+boolOp :: (Eq a) => (LokiVal -> ThrowsError a) -> (a -> a -> Maybe a) -> [LokiVal] -> ThrowsError LokiVal
+boolOp _ _ [] = throwError $ NumArgs 2 []
+boolOp _ _ [x] = throwError . NumArgs 2 $ show <$> [x]
+boolOp unpacker op args@(a1:as) = do let m = getMeta a1
+                                         r = foldl (\acc x -> do a <- acc
+                                                                 b <- (Just . extractValue $ unpacker x)
+                                                                 op a b)
+                                                   (Just . extractValue $ unpacker a1) as
+                                     return . Bool m $ maybe False (`elem` (map (extractValue . unpacker) args)) r
 
 listOp :: (LokiVal -> ThrowsError a) -> (Meta -> a -> LokiVal) -> (a -> a -> a) -> [LokiVal] -> ThrowsError LokiVal
 listOp _ _ _ [] = throwError $ Default "listOp expected non empty args"
@@ -135,23 +153,9 @@ cons [x1, List m []] = return $ List m [x1]
 cons [x, List m xs] = return . List m $ x : xs
 cons badArgList = throwError . NumArgs 2 $ show <$> badArgList
 
-numBinop :: (Integer -> Integer -> Integer) -> [LokiVal] -> ThrowsError LokiVal
-numBinop _op           []  = throwError $ NumArgs 2 []
-numBinop _op singleVal@[_] = throwError . NumArgs 2 $ show <$> singleVal
-numBinop op params@(x:_)   = let m = getMeta x
-                             in mapM unpackNum params >>= return . Number m . foldl1 op
-
-boolBinop :: (LokiVal -> ThrowsError a) -> (a -> a -> Bool) -> [LokiVal] -> ThrowsError LokiVal
-boolBinop unpacker op args = if length args /= 2
-                             then throwError . NumArgs 2 $ show <$> args
-                             else do left <- unpacker $ args !! 0
-                                     right <- unpacker $ args !! 1
-                                     let m = getMeta $ args !! 0
-                                     return . Bool m $ left `op` right
-
 unpackNum :: LokiVal -> ThrowsError Integer
 unpackNum (Number _ n) = return n
-unpackNum notNum       = throwError . TypeMismatch "Number" $ show notNum
+unpackNum notNum = throwError . TypeMismatch "Number" $ show notNum
 
 unpackStr :: LokiVal -> ThrowsError String
 unpackStr (String _ s) = return s
