@@ -127,18 +127,18 @@ parseConst = inLispExpr_ $ do
     where
         parseEval :: Parser (String, LokiVal)
         parseEval = try (inLitExpr "&(" ")" $ do
-                        expr <- many $ parseBasicExpr1 <* spaces
+                        expr <- many (parseBasicExpr1 <* spaces) >?> "eval-expr"
                         s <- getState
                         return ("eval", List (newMeta s) expr))
         parseProp :: Parser (String, LokiVal)
         parseProp = try (inLispExpr "super" $ do
-                        superName <- ident <* spaces1
-                        args <- many parseBasicExpr1 <* spaces
+                        superName <- ident <* spaces1 >?> "super-name"
+                        args <- many (parseBasicExpr1 <* spaces) >?> "super-args"
                         s <- getState
                         return (superName, ClassSuper (newMeta s) superName args))
                     <|> (inLispExpr_ $ do
-                        propName <- ident <* spaces1
-                        propVal <- parseExpr1 <* spaces
+                        propName <- ident <* spaces1 >?> "prop-name"
+                        propVal <- parseExpr1 <* spaces >?> "prop-val"
                         return (propName, propVal))
 
 -- PARSE SPECIAL FORMS

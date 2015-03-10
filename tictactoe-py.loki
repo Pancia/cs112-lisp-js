@@ -22,7 +22,7 @@
 
 (defclass TicTacToeGrid [GridLayout]
   ([*args **kwargs]
-   ;(super TicTacToeGrid *args **kwargs)
+   (super TicTacToeGrid *args **kwargs)
    (status (new ListProperty [0, 0, 0, 0, 0, 0, 0, 0, 0]))
    (currentPlayer (new NumericProperty 1))
    (cols 3)

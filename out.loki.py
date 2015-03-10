@@ -84,6 +84,7 @@ def t1 (self):
     return False
 class TicTacToeGrid(GridLayout):
     def __init__(self, *args, **kwargs):
+        TicTacToeGrid.__init__(self,*args,**kwargs)
         self.status = ListProperty([0, 0, 0, 0, 0, 0, 0, 0, 0])
         self.currentPlayer = NumericProperty(1)
         self.cols = 3
