@@ -219,8 +219,9 @@ parseMap = between (char '{' >> spacesInLiteral) (char '}') $ do
     return $ Map (newMeta s) keys vals
 
 parseKeyVal :: Parser (String, LokiVal)
-parseKeyVal = liftM2 (,) (choice [try ident,
-                                 return . pad "\"" . getString =<< parseString]
+parseKeyVal = liftM2 (,) (choice [try ident
+                                 ,return . show . getNumber =<< parseNumber
+                                 ,return . pad "\"" . getString =<< parseString]
                                  <* spaces1InLiteral >?> "key")
                          (parseBasicExpr1 <* spacesInLiteral)
     where pad x = (x ++) . (++ x)

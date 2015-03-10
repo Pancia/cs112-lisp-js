@@ -71,12 +71,4 @@ class Loki:
         return not x
 
 #END LOKI HELPER FUNCTIONS
-class MyObject():
-    def __init__(self):
-        self.obj = 5
-
-    def get_object (self): 
-        return "object" 
-
-
-o = My
+{"5" : 3, 5 : 2}
