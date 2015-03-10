@@ -36,7 +36,7 @@
          (. add_widget self gridEntry)))))
 
   (buttonPressed
-    [self button]
+    [button]
     (do
       (set player {1 "X" -1 "0"})
       (set colors {1 ^{0 0 0 0} -1 ^{0 0 0 0}})
@@ -48,7 +48,7 @@
         (t1 self))))
 
   (reset
-    [self *args]
+    [*args]
     ((fn []
        (setp self status [0, 0, 0, 0, 0, 0, 0, 0, 0])
        (for [child (. children self)]
@@ -56,7 +56,7 @@
        (setp self currentPlayer 1))))
 
   (on_status
-    [self instance newVal]
+    [instance newVal]
     (do (set status newVal)
         (set sums [(+ (sc 0 3))
                    (+ (sc 3 6)) (+ (sc 6 9)) (+ (dc 0 3))
