@@ -5,22 +5,9 @@ py
 print this!
 this is right
 
-0
-1
-2
+012
 
-0
-0
-0
-1
-1
-1
-2
-2
-2
-3
-3
-3
+x0y0y1y2x1y0y1y2x2y0y1y2
 
 2
 7

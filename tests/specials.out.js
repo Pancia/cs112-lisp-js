@@ -101,9 +101,12 @@ var x = 5;
 for (x in loki.range(3)){
 loki.print(x)
 };
-for (xyz in loki.range(4)){
-for (lsd in loki.range(3)){
-loki.print(xyz)
+for (x in loki.range(3)){
+loki.print("x");
+loki.print(x);
+for (y in loki.range(3)){
+loki.print("y");
+loki.print(y)
 }
 };
 loki.print(x);

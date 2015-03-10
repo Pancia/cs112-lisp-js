@@ -19,8 +19,8 @@ this.fuel = 7;
 MyObject.call(this,"obj");
 MyThing.call(this,"thing");
 this.speed = x;
-loki.print("eval-in-constr")
-this.foo = "foo"
+loki.print("eval-in-constr");
+this.foo = "foo";
 for (x in loki.range(10)){
 loki.print(x)
 }

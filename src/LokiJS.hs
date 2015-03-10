@@ -47,10 +47,10 @@ specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
         if_ [cond_, then_] = if_ [cond_, then_, JsId "null"]
         if_ _ = error "wrong args to if"
         for_ :: SpecialForm
-        for_ [JsList [id_, expr_], body_] = do
+        for_ (JsList [id_, expr_] : body_) = do
             let id_'   = fromJust $ toJS id_
                 expr_' = fromJust $ toJS expr_
-                body_' = fromJust $ toJS body_
+                body_' = fromJust . liftM (L.intercalate ";\n") . sequence $ toJS <$> body_
             printf "for (%s in %s){\n%s\n}" id_' expr_' body_'
         for_ x = error $ (show x ?> "for-x") ++ "wrong args to for"
         --for format wrong for JS
@@ -161,7 +161,7 @@ defclass2js (JsDefClass name superClasses (JsConst args ret) fns vars) = do
     where params = L.intercalate ", " args
           propVal2js :: (String, JsVal) -> Maybe String
           propVal2js ("eval", JsList evalMe) = do
-              liftM (L.intercalate "\n") . sequence $ map toJS evalMe
+              liftM (L.intercalate ";\n") . sequence $ map toJS evalMe
           propVal2js (_,JsClassSuper superClass superArgs) = do
               superArgs' <- liftM ("," ++) . liftM (L.intercalate ",") $ (sequence $ map toJS superArgs)
               return $ printf "%s.call(this%s)" superClass superArgs'
@@ -174,7 +174,7 @@ defclass2js (JsDefClass name superClasses (JsConst args ret) fns vars) = do
           classVar2js :: JsVal -> Maybe String
           classVar2js (JsClassVar s b) = do b' <- toJS b
                                             return $ printf "this.%s = %s" s b'
-          classVar2js x = catch . throwError . TypeMismatch "" $ show x
+          classVar2js x = catch . throwError . TypeMismatch "JsClassVar" $ show x
           classVars2js :: [JsVal] -> Maybe String
           classVars2js vs = do let vs' = mapMaybe classVar2js vs
                                return $ L.intercalate ";\n" vs'

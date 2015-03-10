@@ -57,10 +57,10 @@ specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
         if_ [cond_, then_] = if_ [cond_, then_, PyId "None"]
         if_ _ = error "wrong args to if"
         for_ :: Int -> SpecialForm
-        for_ n' [PyList [id_, expr_], body_] = do
+        for_ n' (PyList [id_, expr_] : body_) = do
             let id_'   = toPY 0 id_
                 expr_' = toPY 0 expr_
-                body_' = toPY (n' + 1) body_
+                body_' = L.intercalate ("\n" ++ addSpacing (n' + 1)) $ toPY (n' + 1) <$> body_
             printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing (n' + 1)) body_'
         for_ _ x = error $ (show x ?> "for-x") ++ "wrong args to for"
 

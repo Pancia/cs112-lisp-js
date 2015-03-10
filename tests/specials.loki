@@ -2,7 +2,7 @@
 (print "TODO QUOTED")
 
 ; METADATA
-#+js (print "js") 
+#+js (print "js")
 #+py (print "py")
 #+js(print (#+js - #+py + 1 2 3))
 
@@ -20,9 +20,12 @@
 (for [x (range 3)]
   (print x))
 
-(for [xyz (range 4)]
-  (for [lsd (range 3)]
-    (print xyz)))
+(for [x (range 3)]
+  (print "x")
+  (print x)
+  (for [y (range 3)]
+    (print "y")
+    (print y)))
 
 ; SET
 (print x)
@@ -37,9 +40,9 @@
               (. speed this)
               " speed")))
   (toString []
-  	(+ "I'm a " 
-  	    (. color this) 
-  	    " rocket"))
+  	(+ "I'm a "
+       (. color this)
+       " rocket"))
   (color "red")
   (fuel 7))
 
