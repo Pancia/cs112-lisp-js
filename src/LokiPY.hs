@@ -59,7 +59,7 @@ specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
         for_ n [PyList [id_, expr_], body_] = do
             let id_'   = toPY 0 id_
                 expr_' = toPY 0 expr_
-                body_' = toPY (n + 1) body_ --need to convert from 1 to n' and take in int
+                body_' = toPY (n + 1) body_
             printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing (n + 1)) body_'
         for_ _ x = error $ (show x ?> "for-x") ++ "wrong args to for"
 
@@ -105,7 +105,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (Def _ n b)              -> PyVar n (translate b)
                       (Fn _ xs b)              -> PyFn xs (translate <$> b)
                       (New _ s l)              -> PyNewObj s (translate <$> l)
-                      (DefClass _ n s c lf lv)   -> PyDefClass n s (translate c) (translate <$> lf) (translate <$> lv)
+                      (DefClass _ n s c lf lv) -> PyDefClass n s (translate c) (translate <$> lf) (translate <$> lv)
                       (Constr _ s b)           -> PyConst s (translateProp <$> b)
                       (ClassSuper _ n as)      -> PyClassSuper n (translate <$> as)
                       (Classfn _ s p b)        -> PyClassFn s p (translate b)

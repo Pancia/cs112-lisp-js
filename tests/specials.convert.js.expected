@@ -4,13 +4,12 @@ loki.print("js")
 loki.print(loki.minus(1, 2, 3))
 
 (loki.lt(1, 2)?loki.print("print this!"):loki.print("do not print this!"))
+var x = 5(loki.gt(x, 10)?loki.print("this is wrong"):loki.print("this is right"))
 
-var x = 5
-(loki.gt(x, 10)?loki.print("this is wrong"):loki.print("this is right"))
-
-for (x in loki.range(3)){
-loki.print(x)
-}
+for (x in loki.range(3)){loki.print(x)}
+for (xyz in loki.range(4)){
+for (lsd in loki.range(3)){
+loki.print(xyz)}}
 
 loki.print(x)
 x = 7

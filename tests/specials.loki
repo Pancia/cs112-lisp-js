@@ -22,7 +22,7 @@
 
 (for [xyz (range 4)]
   (for [lsd (range 3)]
-    (print (+ lsd " " xyz))))
+    (print xyz)))
 
 ; SET
 (print x)

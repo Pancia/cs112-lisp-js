@@ -28,4 +28,5 @@
 (for [xyz (range 4)]
   (for [abc (range 7)]
     (for [lskdfjl (range 2)]
-	   (print xyz)))))
+	   (print xyz)
+     (print abc)))))

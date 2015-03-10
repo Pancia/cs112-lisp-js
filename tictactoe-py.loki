@@ -14,12 +14,12 @@
             (currentPlayer (new NumericProperty 1))
             (super TicTacToeGrid *args **kwargs)
             (set (. cols self) 3)
-            (for [row (range 3)
-                  col (range 3)]
-                 (set gridEntry (new GridEntry **{"coords": [row,column]}))
-                 (. bind gridEntry **{"on_release": (. buttonPressed self)})
-                 (. add_widget self gridEntry)))
-                
+            (for [row (range 3)]
+              (for [col (range 3)]
+                (set gridEntry (new GridEntry **{"coords": [row,column]}))
+                (. bind gridEntry **{"on_release": (. buttonPressed self)})
+                (. add_widget self gridEntry))))
+                    
      (def buttonPressed
           (fn [self button]
                (set player {1: "X" -1: "0"})
