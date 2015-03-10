@@ -106,6 +106,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (Classfn _ s p b) -> JsClassFn s p (translate b)
                            (Classvar _ s b) -> JsClassVar s (translate b)
                            (Dot _ fp on ps) -> JsObjCall fp (translate on) (translate <$> ps)
+                           (Tuple{}) -> error "can't convert a tuple"
                            (Map _ ks vs) -> JsMap ks (translate <$> vs)
     where
         translateProp :: (String, LokiVal) -> (String, JsVal)

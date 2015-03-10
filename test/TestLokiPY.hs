@@ -15,7 +15,7 @@ import qualified Utils as U
 
 test_toPY :: IO ()
 test_toPY = void $ mapM testToPY ["def+fn","class-object","helpers"
-                                 ,"primitives","specials"]
+                                 ,"primitives","specials", "literals"]
     where
         testToPY testName = do
             lisp <- liftM (TU.readExpr "py") $ readFile inFile

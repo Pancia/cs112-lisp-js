@@ -19,7 +19,7 @@ infix 0 >?>
 parseExpr :: Parser [LokiVal]
 parseExpr = many (parseExpr1 <* spaces)
 
--- LokiVals that are valid in the top level
+-- eg: LokiVals that are valid in the top level
 parseExpr1 :: Parser LokiVal
 parseExpr1 = do void $ many comment
                 extra <- getMetaData
@@ -29,7 +29,7 @@ parseExpr1 = do void $ many comment
                 void $ many comment
                 return (lispVal {getMeta=extra}) >?> "1-expr"
 
--- LokiVals that are valid in a Def
+-- eg: LokiVals that are valid in a Def
 parseBasicExpr1 :: Parser LokiVal
 parseBasicExpr1 = do void $ many comment
                      extra <- getMetaData
@@ -44,11 +44,12 @@ parseBasicExpr1 = do void $ many comment
                      void $ many comment
                      return (lispVal {getMeta=extra}) >?> "1-basic-expr"
 
--- LokiVals that are valid in a Map
+-- eg: LokiVals that are valid in a Map
 parseLiteralExpr1 :: Parser LokiVal
 parseLiteralExpr1 = do void $ many comment
                        extra <- getMetaData
                        lispVal <- choice [parseAtom
+                                         ,parseTuple
                                          ,parseKeyword
                                          ,parseString
                                          ,parseNumber]
@@ -203,6 +204,12 @@ parseArray = do s <- getState
                                 (manyTill (parseExpr1 <* spacesInLiteral)
                                           (lookAhead (char ']')))
 
+parseTuple :: Parser LokiVal
+parseTuple = inLitExpr "^{" "}" $ do
+    vals <- many (parseLiteralExpr1 <* spaces)
+    s <- getState
+    return $ Tuple (newMeta s) vals
+
 parseMap :: Parser LokiVal
 parseMap = between (char '{' >> spacesInLiteral) (char '}') $ do
     keyVals <- manyTill (spacesInLiteral >> parseKeyVal)
@@ -233,8 +240,8 @@ inLispExpr_ :: Parser a -> Parser a
 inLispExpr_ = between (char '(') (char ')')
 
 inLitExpr :: String -> String -> Parser a -> Parser a
-inLitExpr x y = between (string x <* spaces)
-                        (string y <* spaces)
+inLitExpr x y = between (string x <* spacesInLiteral)
+                        (string y <* spacesInLiteral)
 
 parseArgs :: Parser [String]
 parseArgs = between (char '[') (char ']')

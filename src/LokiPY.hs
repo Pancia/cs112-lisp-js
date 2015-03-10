@@ -78,6 +78,7 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyStr String                      -- "..."
            | PyBool Bool                       -- true|false
            | PyNum Integer                     -- ..-1,0,1..
+           | PyTuple [PyVal]
            | PyId String                       -- x, foo, ...
            | PyList [PyVal]                    -- [...]
            | PyMap [String] [PyVal]            -- {x : y, ..}
@@ -98,7 +99,8 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                   then PyPleaseIgnore
                   else case v of
                       (Atom _ a)               -> PyId a
-                      (Keyword _ k)            -> PyStr k --TODO: Could be wrong
+                      (Keyword _ k)            -> PyStr k
+                      (Tuple {getTuple=t})     -> PyTuple (translate <$> t)
                       (Number _ n)             -> PyNum n
                       (String _ s)             -> PyStr s
                       (Bool _ b)               -> PyBool b
@@ -132,6 +134,7 @@ toPY n pv = case pv of
               (PyNum n1)            -> show n1
               (PyStr s)             -> "\"" ++ s ++ "\""
               (PyBool b)            -> show b
+              (PyTuple t)           -> "(" ++ L.intercalate "," (toPY 0 <$> (t ?> "tuple")) ++ ")"
               l@(PyList{})          -> list2py n l
               (PyVar n1 b@(PyFn{})) -> fn2py n n1 b
               (PyVar n1 b)          -> n1 ++ " = " ++ toPY n b
