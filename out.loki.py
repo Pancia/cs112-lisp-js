@@ -82,35 +82,38 @@ from kivy.uix.modalview import ModalView
 class GridEntry(Button):
     coords = ListProperty([0, 0])
 
-def t1 (self):
+def _buttonPressed_helper (self):
     Loki.assoc(self-status, statusIndex, (self.currentPlayer() if callable(self.currentPlayer) else self.currentPlayer))
     button.text = Loki.get(player, (self.currentPlayer() if callable(self.currentPlayer) else self.currentPlayer))
     button.background_color = Loki.get(colors, (self.currentPlayer() if callable(self.currentPlayer) else self.currentPlayer))
     self.currentPlayer = Loki.mult((self.currentPlayer() if callable(self.currentPlayer) else self.currentPlayer), -1)
     return False
-def t2 (self):
+def _reset (self):
     self.status = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     for child in (self.children() if callable(self.children) else self.children):
         child.text = ""
     self.currentPlayer = 1
     return None
-def t3 (self, button):
+def _buttonPressed (self, button):
     player = {-1 : "0", 1 : "X"}
     colors = {-1 : (0,0,0,0), 1 : (0,0,0,0)}
-    row = Loki.get(button, Loki.get(coords, 0))
-    column = Loki.get(button, Loki.get(coords, 1))
-    statusIndex = Loki.plus(Loki.mult(Loki.get(row, 3)), column)
-    alreadyPlayed = Loki.get(self, Loki.get(status, statusIndex))
-    return (t1(self) if Loki.not_(alreadyPlayed) else None)
-def t4 (self, instance, newVal):
+    row = Loki.get(button.coords, 0)
+    column = Loki.get(button.coords, 1)
+    Loki.printf(self)
+    _self_status = self.status
+    Loki.printf(_self_status)
+    statusIndex = Loki.plus(Loki.mult(row, 3), column)
+    alreadyPlayed = Loki.get(_self_status, statusIndex)
+    return (_buttonPressed_helper(self) if Loki.not_(alreadyPlayed) else None)
+def _on_status (self, instance, newVal):
     status = newVal
     sums = [Loki.plus(Loki.sc(0, 3)), Loki.plus(Loki.sc(3, 6)), Loki.plus(Loki.sc(6, 9)), Loki.plus(Loki.dc(0, 3)), Loki.plus(Loki.dc(1, 4)), Loki.plus(Loki.dc(2, 3)), Loki.plus(Loki.dc(0, 4)), Loki.plus(Loki.dcm(2, -2, 2))]
     winner = ""
     winner = ("Xs win!" if Loki.in_(3, sums) else None)
     winner = ("Os win!" if Loki.in_(-3, sums) else None)
     winner = ("Draw!" if Loki.not_(Loki.in_(0, (self.status() if callable(self.status) else self.status))) else None)
-    return (t5() if Loki.neq(winner, "") else None)
-def t5 ():
+    return (_on_status_helper() if Loki.neq(winner, "") else None)
+def _on_status_helper ():
     _size_hunt = {"size_hunt" : [Loki.div(3, 4), Loki.div(1, 2)]}
     popup = ModalView(**_size_hunt)
     _victory_label = {"font_size" : 50, "text" : winner}
@@ -134,13 +137,13 @@ class TicTacToeGrid(GridLayout):
                     (gridEntry.bind(**_on_release) if callable(gridEntry.bind) else gridEntry.bind)
                     (self.add_widget(gridEntry) if callable(self.add_widget) else self.add_widget)
     def buttonPressed (self, button):
-        return t3(self, button)
+        return _buttonPressed(self, button)
 
     def reset (self):
-        return t2(self)
+        return _reset(self)
 
     def on_status (self, instance, newVal):
-        return t4(self, instance, newVal)
+        return _on_status(self, instance, newVal)
 
 
 class TicTacToeApp(App):

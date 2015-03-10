@@ -9,15 +9,16 @@
 (defclass GridEntry [Button]
      (coords (new ListProperty [0,0])))
 
-(def t1
+(def _buttonPressed_helper
   (fn [self]
+    ;TODO -> (setp self [status statusIndex] ...)
     (assoc self-status statusIndex (. currentPlayer self))
     (setp button text (get player (. currentPlayer self)))
     (setp button background_color (get colors (. currentPlayer self)))
     (setp self currentPlayer (* (. currentPlayer self) -1))
     false))
 
-(def t2
+(def _reset
   (fn [self]
        (setp self status [0, 0, 0, 0, 0, 0, 0, 0, 0])
        (for [child (. children self)]
@@ -25,18 +26,21 @@
        (setp self currentPlayer 1)
        None))
 
-(def t3
+(def _buttonPressed
   (fn [self button]
     (set player {1 "X" -1 "0"})
-      (set colors {1 ^{0 0 0 0} -1 ^{0 0 0 0}})
-      (set row (get button (get coords 0)))
-      (set column (get button (get coords 1)))
-      (set statusIndex (+ (* (get row 3)) column))
-      (set alreadyPlayed (get self (get status statusIndex)))
-      (if (not alreadyPlayed)
-        (t1 self))))
+    (set colors {1 ^{0 0 0 0} -1 ^{0 0 0 0}})
+    (set row (get (.- coords button) 0))
+    (set column (get (.- coords button) 1))
+    (print self)
+    (set _self_status (.- status self))
+    (print _self_status)
+    (set statusIndex (+ (* row 3) column))
+    (set alreadyPlayed (get _self_status statusIndex))
+    (if (not alreadyPlayed)
+      (_buttonPressed_helper self))))
 
-(def t4
+(def _on_status
   (fn [self instance newVal]
     (set status newVal)
         (set sums [(+ (sc 0 3))
@@ -54,9 +58,9 @@
           (if (not (in 0 (. status self)))
                   "Draw!"))
         (if (!= winner "")
-          (t5))))
+          (_on_status_helper))))
 
-(def t5
+(def _on_status_helper
   (fn []
     (set _size_hunt {"size_hunt": [(/ 3 4) , (/ 1 2)]})
     (set popup (new ModalView **_size_hunt))
@@ -84,15 +88,15 @@
 
   (buttonPressed
     [button]
-    (t3 self button))
+    (_buttonPressed self button))
 
   (reset
     []
-    (t2 self))
+    (_reset self))
 
   (on_status
     [instance newVal]
-    (t4 self instance newVal)))
+    (_on_status self instance newVal)))
 
 (defclass TicTacToeApp [App]
  (build []

@@ -129,7 +129,7 @@ parseVars = inLispExpr_ $ do
 parseConst :: Parser LokiVal
 parseConst = inLispExpr_ $ do
     params <- parseArgs <* spaces >?> "constr-paramters"
-    body <- many ((parseEval <|> parseProp) <* spaces) >?> "constr-body"
+    body <- many ((parseEval <|> parseConstrProp) <* spaces) >?> "constr-body"
     s <- getState
     return $ Constr (newMeta s) params body
     where
@@ -138,8 +138,8 @@ parseConst = inLispExpr_ $ do
                         expr <- many (parseBasicExpr1 <* spaces) >?> "eval-expr"
                         s <- getState
                         return ("eval", List (newMeta s) expr))
-        parseProp :: Parser (String, LokiVal)
-        parseProp = try (inLispExpr "super" $ do
+        parseConstrProp :: Parser (String, LokiVal)
+        parseConstrProp = try (inLispExpr "super" $ do
                         superName <- ident <* spaces1 >?> "super-name"
                         args <- many (parseBasicExpr1 <* spaces) >?> "super-args"
                         s <- getState
