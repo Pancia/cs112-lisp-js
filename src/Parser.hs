@@ -67,7 +67,7 @@ parseDot = inLispExpr "." $ do
 
 parseNew :: Parser LokiVal
 parseNew = inLispExpr "new" $ do
-    className <- ident <* spaces1 >?> "class-name"
+    className <- ident <* spaces >?> "class-name"
     body <- many (parseBasicExpr1 <* spaces) >?> "body"
     s <- getState
     return $ New (newMeta s) className body
