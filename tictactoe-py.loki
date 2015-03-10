@@ -7,7 +7,7 @@
 (import :NumericProperty :from :kivy.properties)
 (import :ModalView :from :kivy.uix.modalview)
 (defclass GridEntry [Button]
-     ([] (coords (new ListProperty [0,0]))))
+     (coords (new ListProperty [0,0])))
 
 (def t1
   (fn [self]
@@ -26,7 +26,7 @@
        None))
 
 (def t3
-  (fn [self]
+  (fn [self button]
     (set player {1 "X" -1 "0"})
       (set colors {1 ^{0 0 0 0} -1 ^{0 0 0 0}})
       (set row (get button (get coords 0)))
@@ -58,15 +58,18 @@
 
 (def t5
   (fn []
-    (set popup (new ModalView **{"size_hunt": [(/ 3 4) , (/ 1 2)]}))
-    (set victoryLabel (new Label **{"text": winner, "font_size": 50}))
+    (set _size_hunt {"size_hunt": [(/ 3 4) , (/ 1 2)]})
+    (set popup (new ModalView **_size_hunt))
+    (set _victory_label {"text": winner, "font_size": 50})
+    (set victoryLabel (new Label **_victory_label))
     (. add_widget popup victoryLabel)
-    (. bind popup **{"on_dismiss": (. reset self)})
+    (set _on_dismiss {"on_dismiss": (. reset self)})
+    (. bind popup **_on_dismiss)
     (. open popup)))
 
 (defclass TicTacToeGrid [GridLayout]
   ([*args **kwargs]
-   (super TicTacToeGrid *args **kwargs)
+   (super GridLayout *args **kwargs)
    (status (new ListProperty [0, 0, 0, 0, 0, 0, 0, 0, 0]))
    (currentPlayer (new NumericProperty 1))
    (cols 3)
@@ -74,14 +77,14 @@
        (for [col (range 3)]
          (set _coords {"coords" : ^{row col}})
          (set gridEntry (new GridEntry **_coords))
-         (set _button_pressed (. buttonPressed self))
+         (set _button_pressed (.- buttonPressed self))
          (set _on_release {"on_release": _button_pressed})
          (. bind gridEntry **_on_release)
          (. add_widget self gridEntry)))))
 
   (buttonPressed
     [button]
-    (t3 self))
+    (t3 self button))
 
   (reset
     []
@@ -91,9 +94,9 @@
     [instance newVal]
     (t4 self instance newVal)))
 
-(defclass TicTacToeApp [app]
- (build [self]
+(defclass TicTacToeApp [App]
+ (build []
    (new TicTacToeGrid)))
 
-(if (= (__name__ "__main__"))
+(if (= __name__ "__main__")
   (. run (TicTacToeApp)))

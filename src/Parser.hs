@@ -34,6 +34,7 @@ parseBasicExpr1 :: Parser LokiVal
 parseBasicExpr1 = do void $ many comment
                      extra <- getMetaData
                      lispVal <- choice [parseQuoted
+                                       ,try parseProp
                                        ,parseDot
                                        ,parseFn
                                        ,parseNew
@@ -57,6 +58,13 @@ parseLiteralExpr1 = do void $ many comment
                        return (lispVal {getMeta=extra}) >?> "1-literal-expr"
 
 -- PARSE OO RELATED
+parseProp :: Parser LokiVal
+parseProp = inLispExpr ".-" $ do
+    propName <- ident <* spaces1 >?> "prop-name"
+    objName <- ident <* spaces >?> "prop-obj-name"
+    s <- getState
+    return $ Prop (newMeta s) propName objName
+
 parseDot :: Parser LokiVal
 parseDot = inLispExpr "." $ do
     funcName <- ident <* spaces1 >?> "dot-func-name"

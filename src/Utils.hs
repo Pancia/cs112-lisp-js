@@ -41,6 +41,9 @@ data LokiVal = Atom    { getMeta :: Meta, getAtom :: String }
              | New     { getMeta :: Meta
                        , getNewClass :: String
                        , getNewArgs :: [LokiVal] }
+             | Prop    { getMeta :: Meta
+                       , getPropName :: String
+                       , getPropObj :: String }
              | Dot     { getMeta :: Meta
                        , getDotObj :: String
                        , getDotProp :: LokiVal

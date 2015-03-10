@@ -80,9 +80,7 @@ from kivy.properties import ListProperty
 from kivy.properties import NumericProperty
 from kivy.uix.modalview import ModalView
 class GridEntry(Button):
-    def __init__(self):
-        self.coords = ListProperty([0, 0])
-
+    coords = ListProperty([0, 0])
 
 def t1 (self):
     Loki.assoc(self-status, statusIndex, (self.currentPlayer() if callable(self.currentPlayer) else self.currentPlayer))
@@ -96,7 +94,7 @@ def t2 (self):
         child.text = ""
     self.currentPlayer = 1
     return None
-def t3 (self):
+def t3 (self, button):
     player = {-1 : "0", 1 : "X"}
     colors = {-1 : (0,0,0,0), 1 : (0,0,0,0)}
     row = Loki.get(button, Loki.get(coords, 0))
@@ -113,14 +111,17 @@ def t4 (self, instance, newVal):
     winner = ("Draw!" if Loki.not_(Loki.in_(0, (self.status() if callable(self.status) else self.status))) else None)
     return (t5() if Loki.neq(winner, "") else None)
 def t5 ():
-    popup = ModalView(**, {"size_hunt" : [Loki.div(3, 4), Loki.div(1, 2)]})
-    victoryLabel = Label(**, {"font_size" : 50, "text" : winner})
+    _size_hunt = {"size_hunt" : [Loki.div(3, 4), Loki.div(1, 2)]}
+    popup = ModalView(**_size_hunt)
+    _victory_label = {"font_size" : 50, "text" : winner}
+    victoryLabel = Label(**_victory_label)
     (popup.add_widget(victoryLabel) if callable(popup.add_widget) else popup.add_widget)
-    (popup.bind(**, {"on_dismiss" : (self.reset() if callable(self.reset) else self.reset)}) if callable(popup.bind) else popup.bind)
+    _on_dismiss = {"on_dismiss" : (self.reset() if callable(self.reset) else self.reset)}
+    (popup.bind(**_on_dismiss) if callable(popup.bind) else popup.bind)
     return (popup.open() if callable(popup.open) else popup.open)
 class TicTacToeGrid(GridLayout):
     def __init__(self, *args, **kwargs):
-        TicTacToeGrid.__init__(self,*args,**kwargs)
+        GridLayout.__init__(self,*args,**kwargs)
         self.status = ListProperty([0, 0, 0, 0, 0, 0, 0, 0, 0])
         self.currentPlayer = NumericProperty(1)
         self.cols = 3
@@ -128,12 +129,12 @@ class TicTacToeGrid(GridLayout):
                 for col in Loki.range(3):
                     _coords = {"coords" : (row,col)}
                     gridEntry = GridEntry(**_coords)
-                    _button_pressed = (self.buttonPressed() if callable(self.buttonPressed) else self.buttonPressed)
+                    _button_pressed = self.buttonPressed
                     _on_release = {"on_release" : _button_pressed}
                     (gridEntry.bind(**_on_release) if callable(gridEntry.bind) else gridEntry.bind)
                     (self.add_widget(gridEntry) if callable(self.add_widget) else self.add_widget)
     def buttonPressed (self, button):
-        return t3(self)
+        return t3(self, button)
 
     def reset (self):
         return t2(self)
@@ -142,9 +143,9 @@ class TicTacToeGrid(GridLayout):
         return t4(self, instance, newVal)
 
 
-class TicTacToeApp(app):
-    def build (self, self):
+class TicTacToeApp(App):
+    def build (self):
         return TicTacToeGrid()
 
 
-((TicTacToeApp().run() if callable(TicTacToeApp().run) else TicTacToeApp().run) if Loki.eq(__name__("__main__")) else None)
+((TicTacToeApp().run() if callable(TicTacToeApp().run) else TicTacToeApp().run) if Loki.eq(__name__, "__main__") else None)

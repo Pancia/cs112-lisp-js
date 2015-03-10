@@ -82,6 +82,7 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyId String                       -- x, foo, ...
            | PyList [PyVal]                    -- [...]
            | PyMap [String] [PyVal]            -- {x : y, ..}
+           | PyProp String String
            | PyObjCall String PyVal [PyVal]    -- x.foo.bar(...)
            | PyFnCall String [PyVal]           -- f(...)
            | PyNewObj String [PyVal]           -- Foo(..)
@@ -115,7 +116,8 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (Classvar _ s b)         -> PyClassVar s (translate b)
                       l@(List{})               -> list2pyVal l
                       (Array {getArray=a})     -> PyList (translate <$> a)
-                      (Dot _ fp on ps)         -> PyObjCall fp (translate on) (translate <$> ps)
+                      (Prop _ prop obj) -> PyProp prop obj
+                      (Dot _ fnProp objName args) -> PyObjCall fnProp (translate objName) (translate <$> args)
                       (Map _ ks vs)            -> PyMap ks (translate <$> vs)
                       (LkiNothing _)           -> PyThing "" --TODO: change to PyPleaseIgnore
       where
@@ -140,6 +142,7 @@ toPY n pv = case pv of
               (PyVar n1 b)          -> n1 ++ " = " ++ toPY n b
               f@(PyFn{})            -> lfn2py n f
               o@(PyNewObj{})        -> new2py n o
+              d@(PyProp{})          -> dot2py n d
               d@(PyObjCall{})       -> dot2py n d
               d@(PyDefClass{})      -> defclass2py n d
               m@(PyMap{})           -> map2py n m
@@ -235,10 +238,11 @@ lfn2py _ (PyFn params body) = printf "(lambda %s : [%s])" params' body'
 lfn2py _ x = catch .throwError . TypeMismatch "PyFn" $ show x
 
 dot2py :: Int -> PyVal -> String
-dot2py n (PyObjCall fp on ps) = printf "(%s.%s(%s) if callable(%s.%s) else %s.%s)"
-                                      (toPY n on) fp params' (toPY n on) fp (toPY n on) fp
+dot2py n (PyProp prop obj) = printf "%s%s.%s" (addSpacing n) obj prop
+dot2py n (PyObjCall fnProp objName args) = printf "(%s.%s(%s) if callable(%s.%s) else %s.%s)"
+                                      (toPY n objName) fnProp params' (toPY n objName) fnProp (toPY n objName) fnProp
       where
-        params' = L.intercalate ", " $ toPY n <$> ps
+        params' = L.intercalate ", " $ toPY n <$> args
 dot2py _ x = catch . throwError . TypeMismatch "PyObjCall" $ show x
 
 --Use for: if, for, while, class creation, anything else. Make sure to pass
