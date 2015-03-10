@@ -60,8 +60,8 @@ specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
         for_ n' (PyList [id_, expr_] : body_) = do
             let id_'   = toPY 0 id_
                 expr_' = toPY 0 expr_
-                body_' = L.intercalate ("\n" ++ addSpacing (n' + 1)) $ toPY (n' + 1) <$> body_
-            printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing (n' + 1)) body_'
+                body_' = L.intercalate ("\n" ++ addSpacing (n' + 2)) $ toPY (n' + 1) <$> body_
+            printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing (n' + 2)) body_'
         for_ _ x = error $ (show x ?> "for-x") ++ "wrong args to for"
 
 lookupFn :: String -> String
@@ -154,10 +154,6 @@ fnCall2py n (PyFnCall fn args)
     where args' = L.intercalate ", " . filter (/= "") $ toPY n <$> args
           specForm = lookupSpecForm n fn
 fnCall2py _ x = catch . throwError . TypeMismatch "PyFnCall" $ show x
-
---(for [row (range 3)
---          col (range 3)]
---        (set gridEntry (new GridEntry (set coords row col)))))
 
 map2py :: Int -> PyVal -> String
 map2py n (PyMap ks vs) = printf "{%s}" kvs
