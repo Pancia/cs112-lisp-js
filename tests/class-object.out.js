@@ -138,3 +138,11 @@ loki.print((typeof r.fuel === "function" ? r.fuel() : r.fuel));
 (typeof r.lift_off === "function" ? r.lift_off() : r.lift_off);
 loki.print((typeof r.get_obj === "function" ? r.get_obj() : r.get_obj));
 loki.print((typeof r.thing === "function" ? r.thing() : r.thing));
+NoConstrOrSuperClasses.prototype.constructor = NoConstrOrSuperClasses;
+function NoConstrOrSuperClasses() {
+this.nope = "nope";
+
+};
+;
+var no = new NoConstrOrSuperClasses();
+loki.print((typeof no.nope === "function" ? no.nope() : no.nope));

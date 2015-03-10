@@ -3,7 +3,7 @@ class MyObject():
         self.obj = x
 
     def get_obj (self):
-        return self.obj() if callable(self.obj) else self.obj
+        return (self.obj() if callable(self.obj) else self.obj)
 
 
 class MyThing():
@@ -11,7 +11,7 @@ class MyThing():
         self.thing = x
 
     def get_thing (self):
-        return self.thing() if callable(self.thing) else self.thing
+        return (self.thing() if callable(self.thing) else self.thing)
 
 
 class Rocket(MyObject, MyThing):
@@ -26,18 +26,23 @@ class Rocket(MyObject, MyThing):
     color = "red"
     fuel = 7
     def lift_off (self):
-        return Loki.printf(Loki.plus("I'm flying @ ", self.speed() if callable(self.speed) else self.speed, " speed"))
+        return Loki.printf(Loki.plus("I'm flying @ ", (self.speed() if callable(self.speed) else self.speed), " speed"))
 
     def toString (self):
-        return Loki.plus("I'm a ", self.color() if callable(self.color) else self.color, " rocket")
+        return Loki.plus("I'm a ", (self.color() if callable(self.color) else self.color), " rocket")
 
 
 r = Rocket("5")
-Loki.printf(r.foo() if callable(r.foo) else r.foo)
-Loki.printf(r.color() if callable(r.color) else r.color)
-Loki.printf(r.speed() if callable(r.speed) else r.speed)
-Loki.printf(r.toString() if callable(r.toString) else r.toString)
-Loki.printf(r.fuel() if callable(r.fuel) else r.fuel)
-r.lift_off() if callable(r.lift_off) else r.lift_off
-Loki.printf(r.get_obj() if callable(r.get_obj) else r.get_obj)
-Loki.printf(r.thing() if callable(r.thing) else r.thing)
+Loki.printf((r.foo() if callable(r.foo) else r.foo))
+Loki.printf((r.color() if callable(r.color) else r.color))
+Loki.printf((r.speed() if callable(r.speed) else r.speed))
+Loki.printf((r.toString() if callable(r.toString) else r.toString))
+Loki.printf((r.fuel() if callable(r.fuel) else r.fuel))
+(r.lift_off() if callable(r.lift_off) else r.lift_off)
+Loki.printf((r.get_obj() if callable(r.get_obj) else r.get_obj))
+Loki.printf((r.thing() if callable(r.thing) else r.thing))
+
+class NoConstrOrSuperClasses():
+    nope = "nope"
+no = NoConstrOrSuperClasses()
+Loki.printf((no.nope() if callable(no.nope) else no.nope))

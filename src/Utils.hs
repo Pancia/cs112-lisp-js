@@ -48,7 +48,7 @@ data LokiVal = Atom    { getMeta :: Meta, getAtom :: String }
              | DefClass { getMeta :: Meta
                         , getClassName :: String
                         , getSuperClasses :: [String]
-                        , getClassConstr :: LokiVal
+                        , getClassConstr :: Maybe LokiVal
                         , getClassFns :: [LokiVal]
                         , getClassVars :: [LokiVal] }
              -- TODO: Rename to ClassConstr

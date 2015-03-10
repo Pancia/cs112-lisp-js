@@ -32,7 +32,7 @@ keywords = M.fromList [("this", "self")]
 type SpecialForm = [PyVal] -> String
 specialForms :: Int -> M.Map String SpecialForm
 specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
-                          ,("for", for_ n),("import", import_)]
+                            ,("for", for_ n),("import", import_)]
     where
         import_ :: SpecialForm
         import_ [PyStr importMe] = printf "import %s" importMe
@@ -53,7 +53,7 @@ specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
             let cond_' = toPY 0 cond_
                 then_' = toPY 0 then_
                 else_' = toPY 0 else_
-            printf "%s if %s else %s" then_' cond_' else_'
+            printf "(%s if %s else %s)" then_' cond_' else_'
         if_ [cond_, then_] = if_ [cond_, then_, PyId "None"]
         if_ _ = error "wrong args to if"
         for_ :: Int -> SpecialForm
@@ -108,7 +108,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (Def _ n b)              -> PyVar n (translate b)
                       (Fn _ xs b)              -> PyFn xs (translate <$> b)
                       (New _ s l)              -> PyNewObj s (translate <$> l)
-                      (DefClass _ n s c lf lv) -> PyDefClass n s (translate c) (translate <$> lf) (translate <$> lv)
+                      (DefClass _ n s c lf lv) -> PyDefClass n s (maybe PyPleaseIgnore translate c) (translate <$> lf) (translate <$> lv)
                       (Constr _ s b)           -> PyConst s (translateProp <$> b)
                       (ClassSuper _ n as)      -> PyClassSuper n (translate <$> as)
                       (Classfn _ s p b)        -> PyClassFn s p (translate b)
@@ -117,7 +117,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (Array {getArray=a})     -> PyList (translate <$> a)
                       (Dot _ fp on ps)         -> PyObjCall fp (translate on) (translate <$> ps)
                       (Map _ ks vs)            -> PyMap ks (translate <$> vs)
-                      (LkiNothing _)           -> PyThing ""
+                      (LkiNothing _)           -> PyThing "" --TODO: change to PyPleaseIgnore
       where
           translateProp :: (String, LokiVal) -> (String, PyVal)
           translateProp (s, l) = (s, translate l)
@@ -134,7 +134,7 @@ toPY n pv = case pv of
               (PyNum n1)            -> show n1
               (PyStr s)             -> "\"" ++ s ++ "\""
               (PyBool b)            -> show b
-              (PyTuple t)           -> "(" ++ L.intercalate "," (toPY 0 <$> (t ?> "tuple")) ++ ")"
+              (PyTuple t)           -> "(" ++ L.intercalate "," (toPY 0 <$> t) ++ ")"
               l@(PyList{})          -> list2py n l
               (PyVar n1 b@(PyFn{})) -> fn2py n n1 b
               (PyVar n1 b)          -> n1 ++ " = " ++ toPY n b
@@ -170,13 +170,20 @@ new2py n (PyNewObj className args) = printf "%s(%s)" className args'
 new2py _ x = catch . throwError . TypeMismatch "PyNewObj" $ show x
 
 defclass2py :: Int -> PyVal -> String
-defclass2py n (PyDefClass name superClasses (PyConst args cbody) fs vars) =
-                printf "class %s(%s):\n%sdef __init__(self%s):\n%s%s%s"
-                name superClasses' (addSpacing (n + 1)) args' addCons addVars (fns2py (n + 1) fs)
+defclass2py n (PyDefClass name superClasses constr fs vars) =
+                printf "class %s(%s):\n%s%s%s"
+                name superClasses' constr' addVars (fns2py (n + 1) fs)
             where
                 superClasses' = L.intercalate ", " superClasses
-                args' = if null args then ""
-                                     else ", " ++ L.intercalate ", " args
+                constr' = case constr of
+                              PyPleaseIgnore -> ""
+                              (PyConst args cbody) -> printf "%sdef __init__(self%s):\n%s" (addSpacing (n + 1)) (args' args) (addCons n cbody)
+                              x -> catch . throwError . TypeMismatch "PyConst" $ show x
+                args' args = if null args then ""
+                                          else ", " ++ L.intercalate ", " args
+                addCons n' body = (++ "\n") . concat $ body2py (n' + 2) body
+                body2py :: Int -> [(String, PyVal)] -> [String]
+                body2py n' = fmap (propVal2js n')
                 propVal2js :: Int -> (String, PyVal) -> String
                 propVal2js n' ("eval",PyList evalMe) =
                     (addSpacing n' ++) . L.intercalate ("\n" ++ addSpacing n')
@@ -186,13 +193,12 @@ defclass2py n (PyDefClass name superClasses (PyConst args cbody) fs vars) =
                         superArgs'' = if null superArgs' then "" else "," ++ superArgs'
                     in printf "%s%s.__init__(self%s)\n" (addSpacing n') superName superArgs''
                 propVal2js n' (p,v) = printf "%sself.%s = %s\n" (addSpacing n') p (toPY 0 v)
-                body2py :: Int -> [(String, PyVal)] -> [String]
-                body2py n' = fmap (propVal2js n')
-                addCons = (++ "\n") . concat $ body2py (n + 2) cbody
+
                 addVars = vars2py (n + 1) vars
                 vars2py :: Int -> [PyVal] -> String
                 vars2py n' = concat . fmap (\(PyClassVar varName x) ->
                     printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
+
                 fn2py_ :: Int -> PyVal -> String
                 fn2py_ n' (PyClassFn fn pms body) =
                     printf "%sdef %s (%s):\n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++
@@ -233,7 +239,7 @@ lfn2py _ (PyFn params body) = printf "(lambda %s : [%s])" params' body'
 lfn2py _ x = catch .throwError . TypeMismatch "PyFn" $ show x
 
 dot2py :: Int -> PyVal -> String
-dot2py n (PyObjCall fp on ps) = printf "%s.%s(%s) if callable(%s.%s) else %s.%s"
+dot2py n (PyObjCall fp on ps) = printf "(%s.%s(%s) if callable(%s.%s) else %s.%s)"
                                       (toPY n on) fp params' (toPY n on) fp (toPY n on) fp
       where
         params' = L.intercalate ", " $ toPY n <$> ps

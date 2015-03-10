@@ -37,3 +37,9 @@
 (. lift_off r)
 (print (. get_obj r))
 (print (. thing r))
+
+(defclass NoConstrOrSuperClasses
+  (nope "nope"))
+
+(def no (new NoConstrOrSuperClasses ))
+(print (. nope no))

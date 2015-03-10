@@ -95,9 +95,11 @@ parseClass = inLispExpr "defclass" $ do
     className <- ident <* spaces1 >?> "class-name"
     superClasses <- liftM (fromMaybe []) . optionMaybe
                     $ (inLitExpr "[" "]" . many $ ident <* spaces) <* spaces
-    cnstr <- parseConst <* spaces >?> "class-constructor"
-    classFns <- many (try $ parseClassFn <* spaces) >?> "class-functions"
-    classVars <- many (try $ parseVars <* spaces) >?> "class-vars"
+    cnstr <- optionMaybe $ try (parseConst <* spaces >?> "class-constructor")
+    classFns <- liftM (fromMaybe []) . optionMaybe
+                $ (many (try $ parseClassFn <* spaces) >?> "class-functions")
+    classVars <- liftM (fromMaybe []) . optionMaybe
+                $ (many (try $ parseVars <* spaces) >?> "class-vars")
     s <- getState
     return $ DefClass (newMeta s) className superClasses cnstr classFns classVars
 

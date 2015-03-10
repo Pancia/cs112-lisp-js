@@ -93,49 +93,56 @@ var loki = (function (){
 })();
 //END LOKI HELPER FUNCTIONS
 MyObject.prototype.constructor = MyObject;
-function MyObject() {
+function MyObject(x) {
 ;
-this.obj = 5
+this.obj = x
 };
-MyObject.prototype.get_object = function() {
- return "object"
+MyObject.prototype.get_obj = function() {
+ return (typeof this.obj === "function" ? this.obj() : this.obj)
 };;
-var o = new MyObject();
-loki.print((typeof o.get_object === "function" ? o.get_object() : o.get_object));
-Thing.prototype.constructor = Thing;
-function Thing() {
+MyThing.prototype.constructor = MyThing;
+function MyThing(x) {
 ;
-this.thing = 5
+this.thing = x
 };
-Thing.prototype.get_thing = function() {
- return "thing"
+MyThing.prototype.get_thing = function() {
+ return (typeof this.thing === "function" ? this.thing() : this.thing)
 };;
-var t = new Thing();
-loki.print((typeof t.get_thing === "function" ? t.get_thing() : t.get_thing));
 loki.extend(Rocket.prototype, MyObject.prototype);
-loki.extend(Rocket.prototype, Thing.prototype);
+loki.extend(Rocket.prototype, MyThing.prototype);
 Rocket.prototype.constructor = Rocket;
 function Rocket(x) {
-this.speed = 5;
-this.p = x;
-this.f = 0
+this.color = "red";
+this.fuel = 7;
+MyObject.call(this,"obj");
+MyThing.call(this,"thing");
+this.speed = x;
+loki.print("eval-in-constr");
+this.foo = "foo";
+for (x in loki.range(10)){
+loki.print(x)
+}
 };
-Rocket.prototype.fe = function() {
- return loki.print("ehhhh")
+Rocket.prototype.lift_off = function() {
+ return loki.print(loki.plus("I'm flying @ ", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))
 };
-Rocket.prototype.funct = function(x, y) {
- return loki.print(loki.plus(x, y))
+Rocket.prototype.toString = function() {
+ return loki.plus("I'm a ", (typeof this.color === "function" ? this.color() : this.color), " rocket")
 };;
-var r = new Rocket(5);
-loki.print((typeof r.f === "function" ? r.f() : r.f));
-loki.print((typeof r.get_object === "function" ? r.get_object() : r.get_object));
-loki.print((typeof r.get_thing === "function" ? r.get_thing() : r.get_thing));
-for (lskdfjk in loki.range(2)){
-for (xyz in loki.range(4)){
-for (abc in loki.range(7)){
-for (lskdfjl in loki.range(2)){
-loki.print(xyz)
-}
-}
-}
+var r = new Rocket("5");
+loki.print((typeof r.foo === "function" ? r.foo() : r.foo));
+loki.print((typeof r.color === "function" ? r.color() : r.color));
+loki.print((typeof r.speed === "function" ? r.speed() : r.speed));
+loki.print((typeof r.toString === "function" ? r.toString() : r.toString));
+loki.print((typeof r.fuel === "function" ? r.fuel() : r.fuel));
+(typeof r.lift_off === "function" ? r.lift_off() : r.lift_off);
+loki.print((typeof r.get_obj === "function" ? r.get_obj() : r.get_obj));
+loki.print((typeof r.thing === "function" ? r.thing() : r.thing));
+NoConstrOrSuperClasses.prototype.constructor = NoConstrOrSuperClasses;
+function NoConstrOrSuperClasses() {
+this.nope = "nope";
+
 };
+;
+var no = new NoConstrOrSuperClasses();
+loki.print((typeof no.nope === "function" ? no.nope() : no.nope));

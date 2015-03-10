@@ -100,7 +100,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (Number _ n) -> JsNum n
                            (String _ s) -> JsStr s
                            (New _ s l) -> JsNewObj s (translate <$> l)
-                           (DefClass _ n s c lf lv) -> JsDefClass n s (translate c) (translate <$> lf) (translate <$> lv)
+                           (DefClass _ n s c lf lv) -> JsDefClass n s (maybe JsNothing translate c) (translate <$> lf) (translate <$> lv)
                            (Constr _ s b) -> JsConst s (translateProp <$> b)
                            (ClassSuper _ n as) -> JsClassSuper n (translate <$> as)
                            (Classfn _ s p b) -> JsClassFn s p (translate b)
@@ -151,43 +151,48 @@ map2js (JsMap ks vs) = do let kvs = zipWith (\k v -> liftM (printf "%s:%s" k)
 map2js x = catch . throwError . TypeMismatch "JsMap" $ show x
 
 defclass2js :: JsVal -> Maybe String
-defclass2js (JsDefClass name superClasses (JsConst args ret) fns vars) = do
-        vars' <- classVars2js vars
-        ret' <- ret2js ret
-        fns' <- fns2js fns
-        return $ concatMap (\super -> printf "loki.extend(%s.prototype, %s.prototype);\n" name super) superClasses
-                 ++ printf "%s.prototype.constructor = %s;\n" name name ++
-                 printf "function %s(%s) {\n%s;\n%s\n};\n%s"
-                 name params vars' ret' fns'
-    where params = L.intercalate ", " args
-          propVal2js :: (String, JsVal) -> Maybe String
-          propVal2js ("eval", JsList evalMe) = do
-              liftM (L.intercalate ";\n") . sequence $ map toJS evalMe
-          propVal2js (_,JsClassSuper superClass superArgs) = do
-              superArgs' <- liftM ("," ++) . liftM (L.intercalate ",") $ (sequence $ map toJS superArgs)
-              return $ printf "%s.call(this%s)" superClass superArgs'
-          propVal2js (k,v) = do v' <- toJS v
-                                return $ printf "this.%s = %s" k v'
-          ret2js :: [(String, JsVal)] -> Maybe String
-          ret2js [] = Nothing
-          ret2js propVals = do let pvs = mapMaybe propVal2js propVals
-                               return $ L.intercalate ";\n" pvs
-          classVar2js :: JsVal -> Maybe String
-          classVar2js (JsClassVar s b) = do b' <- toJS b
-                                            return $ printf "this.%s = %s" s b'
-          classVar2js x = catch . throwError . TypeMismatch "JsClassVar" $ show x
-          classVars2js :: [JsVal] -> Maybe String
-          classVars2js vs = do let vs' = mapMaybe classVar2js vs
-                               return $ L.intercalate ";\n" vs'
-          fn2js_ :: JsVal -> Maybe String
-          fn2js_ (JsClassFn fn pms ob) = do
-              ob' <- toJS ob
-              return $ printf "%s.prototype.%s = function(%s) {\n return %s"
-                name fn (L.intercalate ", " pms) ob'
-          fn2js_ x = catch . throwError . TypeMismatch "JsClassFn" $ show x
-          fns2js :: [JsVal] -> Maybe String
-          fns2js [] = Nothing
-          fns2js l = Just $ (++ "\n};") . L.intercalate "\n};\n" . catMaybes $ map fn2js_ l
+defclass2js (JsDefClass name superClasses constr fns vars) = do
+        let vars' = fromMaybe "" $ classVars2js vars
+            fns' = fromMaybe "" $ fns2js fns
+        return $ concatMap superToExtend superClasses ++ addCons constr vars' fns'
+    where
+        superToExtend = printf "loki.extend(%s.prototype, %s.prototype);\n" name
+        addCons :: JsVal -> String -> String -> String
+        addCons c vs fs =
+           let (args, ret) = fromMaybe ([""], "") $ ret2js c
+           in printf "%s.prototype.constructor = %s;\n" name name
+              ++ printf "function %s(%s) {\n%s;\n%s\n};\n%s"
+                 name (addParams args) vs ret fs
+        addParams args = L.intercalate ", " args
+        propVal2js :: (String, JsVal) -> Maybe String
+        propVal2js ("eval", JsList evalMe) = do
+            liftM (L.intercalate ";\n") . sequence $ map toJS evalMe
+        propVal2js (_,JsClassSuper superClass superArgs) = do
+            superArgs' <- liftM ("," ++) . liftM (L.intercalate ",") $ (sequence $ map toJS superArgs)
+            return $ printf "%s.call(this%s)" superClass superArgs'
+        propVal2js (k,v) = do v' <- toJS v
+                              return $ printf "this.%s = %s" k v'
+        ret2js :: JsVal -> Maybe ([String], String)
+        ret2js JsNothing = Nothing
+        ret2js (JsConst args propVals) = do let pvs = mapMaybe propVal2js propVals
+                                            return (args, L.intercalate ";\n" pvs)
+        ret2js x = catch . throwError . TypeMismatch "JsConst" $ show x
+        classVar2js :: JsVal -> Maybe String
+        classVar2js (JsClassVar s b) = do b' <- toJS b
+                                          return $ printf "this.%s = %s" s b'
+        classVar2js x = catch . throwError . TypeMismatch "JsClassVar" $ show x
+        classVars2js :: [JsVal] -> Maybe String
+        classVars2js vs = do let vs' = mapMaybe classVar2js vs
+                             return $ L.intercalate ";\n" vs'
+        fn2js_ :: JsVal -> Maybe String
+        fn2js_ (JsClassFn fn pms ob) = do
+            ob' <- toJS ob
+            return $ printf "%s.prototype.%s = function(%s) {\n return %s"
+              name fn (L.intercalate ", " pms) ob'
+        fn2js_ x = catch . throwError . TypeMismatch "JsClassFn" $ show x
+        fns2js :: [JsVal] -> Maybe String
+        fns2js [] = Nothing
+        fns2js l = Just $ (++ "\n};") . L.intercalate "\n};\n" . catMaybes $ map fn2js_ l
 defclass2js x = catch . throwError . TypeMismatch "JsDefClass" $ show x
 
 fnCall2js :: JsVal -> Maybe String

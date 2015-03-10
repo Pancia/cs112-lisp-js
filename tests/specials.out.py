@@ -75,9 +75,9 @@ Loki.printf("TODO QUOTED")
 
 Loki.printf("py")
 
-Loki.printf("print this!") if Loki.lt(1, 2) else Loki.printf("do not print this!")
+(Loki.printf("print this!") if Loki.lt(1, 2) else Loki.printf("do not print this!"))
 x = 5
-Loki.printf("this is wrong") if Loki.gt(x, 10) else Loki.printf("this is right")
+(Loki.printf("this is wrong") if Loki.gt(x, 10) else Loki.printf("this is right"))
 for x in Loki.range(3):
     Loki.printf(x)
 for x in Loki.range(3):
@@ -96,13 +96,13 @@ class Rocket():
     color = "red"
     fuel = 7
     def lift_off (self):
-        return Loki.printf(Loki.plus("I'm flying @ ", self.speed() if callable(self.speed) else self.speed, " speed"))
+        return Loki.printf(Loki.plus("I'm flying @ ", (self.speed() if callable(self.speed) else self.speed), " speed"))
 
     def toString (self):
-        return Loki.plus("I'm a ", self.color() if callable(self.color) else self.color, " rocket")
+        return Loki.plus("I'm a ", (self.color() if callable(self.color) else self.color), " rocket")
 
 
 r = Rocket(7)
-Loki.printf(r.speed() if callable(r.speed) else r.speed)
+Loki.printf((r.speed() if callable(r.speed) else r.speed))
 r.speed = 10
-Loki.printf(r.speed() if callable(r.speed) else r.speed)
+Loki.printf((r.speed() if callable(r.speed) else r.speed))
