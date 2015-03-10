@@ -75,16 +75,16 @@ class MyObject():
     def __init__(self, x):
         self.obj = x
 
-    def get_obj (self): 
-        return self.obj() if callable(self.obj) else self.obj 
+    def get_obj (self):
+        return self.obj() if callable(self.obj) else self.obj
 
 
 class MyThing():
     def __init__(self, x):
         self.thing = x
 
-    def get_thing (self): 
-        return self.thing() if callable(self.thing) else self.thing 
+    def get_thing (self):
+        return self.thing() if callable(self.thing) else self.thing
 
 
 class Rocket(MyObject, MyThing):
@@ -92,17 +92,21 @@ class Rocket(MyObject, MyThing):
         MyObject.__init__(self,"obj")
         MyThing.__init__(self,"thing")
         self.speed = x
-
+        Loki.printf("eval-in-constr")
+        self.foo = "foo"
+        for x in Loki.range(10):
+            Loki.printf(x)
     color = "red"
     fuel = 7
-    def lift_off (self): 
-        return Loki.printf(Loki.plus("I'm flying @ ", self.speed() if callable(self.speed) else self.speed, " speed")) 
+    def lift_off (self):
+        return Loki.printf(Loki.plus("I'm flying @ ", self.speed() if callable(self.speed) else self.speed, " speed"))
 
-    def toString (self): 
-        return Loki.plus("I'm a ", self.color() if callable(self.color) else self.color, " rocket") 
+    def toString (self):
+        return Loki.plus("I'm a ", self.color() if callable(self.color) else self.color, " rocket")
 
 
 r = Rocket("5")
+Loki.printf(r.foo() if callable(r.foo) else r.foo)
 Loki.printf(r.color() if callable(r.color) else r.color)
 Loki.printf(r.speed() if callable(r.speed) else r.speed)
 Loki.printf(r.toString() if callable(r.toString) else r.toString)

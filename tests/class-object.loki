@@ -12,7 +12,11 @@
   [MyObject MyThing]
   ([x] (super MyObject "obj")
        (super MyThing "thing")
-       (speed x))
+       (speed x)
+       &((print "eval-in-constr")
+         (setp this foo "foo")
+         (for [x (range 10)]
+           (print x))))
   (lift_off []
     (print (+ "I'm flying @ "
               (. speed this)
@@ -25,6 +29,7 @@
   (fuel 7))
 
 (def r (new Rocket "5"))
+(print (. foo r))
 (print (. color r))
 (print (. speed r))
 (print (. toString r))

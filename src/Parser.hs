@@ -93,7 +93,7 @@ parseClass :: Parser LokiVal
 parseClass = inLispExpr "defclass" $ do
     className <- ident <* spaces1 >?> "class-name"
     superClasses <- liftM (fromMaybe []) . optionMaybe
-                    $ (inLitExpr "[]" . many $ ident <* spaces) <* spaces
+                    $ (inLitExpr "[" "]" . many $ ident <* spaces) <* spaces
     cnstr <- parseConst <* spaces >?> "class-constructor"
     classFns <- many (try $ parseClassFn <* spaces) >?> "class-functions"
     classVars <- many (try $ parseVars <* spaces) >?> "class-vars"
@@ -118,10 +118,15 @@ parseVars = inLispExpr_ $ do
 parseConst :: Parser LokiVal
 parseConst = inLispExpr_ $ do
     params <- parseArgs <* spaces >?> "constr-paramters"
-    body <- many (parseProp <* spaces) >?> "constr-body"
+    body <- many ((parseEval <|> parseProp) <* spaces) >?> "constr-body"
     s <- getState
     return $ Constr (newMeta s) params body
     where
+        parseEval :: Parser (String, LokiVal)
+        parseEval = try (inLitExpr "&(" ")" $ do
+                        expr <- many $ parseBasicExpr1 <* spaces
+                        s <- getState
+                        return ("eval", List (newMeta s) expr))
         parseProp :: Parser (String, LokiVal)
         parseProp = try (inLispExpr "super" $ do
                         superName <- ident <* spaces1
@@ -227,9 +232,9 @@ inLispExpr start = between (try (char '(' >> spaces
 inLispExpr_ :: Parser a -> Parser a
 inLispExpr_ = between (char '(') (char ')')
 
-inLitExpr :: String -> Parser a -> Parser a
-inLitExpr [x,y] = between (char x) (char y)
-inLitExpr x = error $ "expected string of length 2, got \"" ++ x ++ "\" instead"
+inLitExpr :: String -> String -> Parser a -> Parser a
+inLitExpr x y = between (string x <* spaces)
+                        (string y <* spaces)
 
 parseArgs :: Parser [String]
 parseArgs = between (char '[') (char ']')

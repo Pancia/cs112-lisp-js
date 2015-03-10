@@ -92,11 +92,11 @@ class Rocket():
 
     color = "red"
     fuel = 7
-    def lift_off (self): 
-        return Loki.printf(Loki.plus("I'm flying @ ", self.speed() if callable(self.speed) else self.speed, " speed")) 
+    def lift_off (self):
+        return Loki.printf(Loki.plus("I'm flying @ ", self.speed() if callable(self.speed) else self.speed, " speed"))
 
-    def toString (self): 
-        return Loki.plus("I'm a ", self.color() if callable(self.color) else self.color, " rocket") 
+    def toString (self):
+        return Loki.plus("I'm a ", self.color() if callable(self.color) else self.color, " rocket")
 
 
 r = Rocket(7)

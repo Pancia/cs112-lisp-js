@@ -18,7 +18,12 @@ this.color = "red";
 this.fuel = 7;
 MyObject.call(this,"obj");
 MyThing.call(this,"thing");
-this.speed = x
+this.speed = x;
+loki.print("eval-in-constr")
+this.foo = "foo"
+for (x in loki.range(10)){
+loki.print(x)
+}
 };
 Rocket.prototype.lift_off = function() {
  return loki.print(loki.plus("I'm flying @ ", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))
@@ -27,6 +32,7 @@ Rocket.prototype.toString = function() {
  return loki.plus("I'm a ", (typeof this.color === "function" ? this.color() : this.color), " rocket")
 };
 var r = new Rocket("5")
+loki.print((typeof r.foo === "function" ? r.foo() : r.foo))
 loki.print((typeof r.color === "function" ? r.color() : r.color))
 loki.print((typeof r.speed === "function" ? r.speed() : r.speed))
 loki.print((typeof r.toString === "function" ? r.toString() : r.toString))

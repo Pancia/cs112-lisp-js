@@ -160,6 +160,8 @@ defclass2js (JsDefClass name superClasses (JsConst args ret) fns vars) = do
                  name params vars' ret' fns'
     where params = L.intercalate ", " args
           propVal2js :: (String, JsVal) -> Maybe String
+          propVal2js ("eval", JsList evalMe) = do
+              liftM (L.intercalate "\n") . sequence $ map toJS evalMe
           propVal2js (_,JsClassSuper superClass superArgs) = do
               superArgs' <- liftM ("," ++) . liftM (L.intercalate ",") $ (sequence $ map toJS superArgs)
               return $ printf "%s.call(this%s)" superClass superArgs'

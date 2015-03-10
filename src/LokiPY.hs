@@ -41,7 +41,8 @@ specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
         import_ x = error $ (show x ?> "import_") ++ "wrong args to import_"
         setp :: SpecialForm
         setp [PyId var, PyId prop, val] = let val' = toPY 0 val
-                                          in printf "%s.%s = %s" var prop val'
+                                              var' = lookupKeyword var
+                                          in printf "%s.%s = %s" var' prop val'
         setp _ = error "wrong args to setp"
         set :: SpecialForm
         set [PyId var, val] = let val' = toPY 0 val
@@ -56,11 +57,11 @@ specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
         if_ [cond_, then_] = if_ [cond_, then_, PyId "None"]
         if_ _ = error "wrong args to if"
         for_ :: Int -> SpecialForm
-        for_ n [PyList [id_, expr_], body_] = do
+        for_ n' [PyList [id_, expr_], body_] = do
             let id_'   = toPY 0 id_
                 expr_' = toPY 0 expr_
-                body_' = toPY (n + 1) body_
-            printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing (n + 1)) body_'
+                body_' = toPY (n' + 1) body_
+            printf "for %s in %s:\n%s%s" id_' expr_' (addSpacing (n' + 1)) body_'
         for_ _ x = error $ (show x ?> "for-x") ++ "wrong args to for"
 
 lookupFn :: String -> String
@@ -174,6 +175,9 @@ defclass2py n (PyDefClass name superClasses (PyConst args cbody) fs vars) =
                 args' = if null args then ""
                                      else ", " ++ L.intercalate ", " args
                 propVal2js :: Int -> (String, PyVal) -> String
+                propVal2js n' ("eval",PyList evalMe) =
+                    (addSpacing n' ++) . L.intercalate ("\n" ++ addSpacing n')
+                    $ toPY n' <$> evalMe
                 propVal2js n' (_,PyClassSuper superName superArgs) =
                     let superArgs' = L.intercalate "," $ toPY 0 <$> superArgs
                         superArgs'' = if null superArgs' then "" else "," ++ superArgs'
@@ -188,8 +192,8 @@ defclass2py n (PyDefClass name superClasses (PyConst args cbody) fs vars) =
                     printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
                 fn2py_ :: Int -> PyVal -> String
                 fn2py_ n' (PyClassFn fn pms body) =
-                    printf "%sdef %s (%s): \n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++
-                    printf "%sreturn %s \n" (addSpacing (n'+ 1)) (toPY n' body)
+                    printf "%sdef %s (%s):\n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++
+                    printf "%sreturn %s\n" (addSpacing (n' + 1)) (toPY n' body)
                 fn2py_ _ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
                 fns2py :: Int -> [PyVal] -> String
                 fns2py _ [] = []
