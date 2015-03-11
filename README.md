@@ -5,6 +5,7 @@ Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation
 [Trello Scrum Board](https://trello.com/b/xjlNNkQT/cs112-loki-scrum-board)
 
 ## Links & Resources
+[Presentation Slides](http://goo.gl/AE8GXn)
 
 ### Python Game Engines
 * [Pygame] (http://www.pygame.org/news.html)
