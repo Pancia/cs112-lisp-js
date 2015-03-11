@@ -14,14 +14,19 @@
         (set content [])
         (set winningCombos [[0,1,2],[3,4,5],[6,7,8],[0,3,6],
                             [1,4,7],[2,5,8],[0,4,8],[2,4,6]])
+        (. appendTo
+           ($ "<h1>Tic Tac Toe</h1>")
+           "body")
         (. forEach (range 9)
            (fn [l]
              (. appendTo
-                ($ "<canvas/>" {:id (+ "canvas" (+ l 1))
-                                :width "50"
-                                :height "50"
-                                :style "border:1px solid black"
-                                :onclick (+ "canvasClicked(" (+ l 1) ")")})
+                (. attr
+                   (. attr
+                      ($ "<canvas/>" {:id (+ "canvas" (+ l 1))
+                                      :onclick (+ "canvasClicked(" (+ l 1) ")")
+                                      :style "border:1px solid black"})
+                      "width" "50")
+                   "height" "50")
                 "body")
              (if (or (= l 2)
                      (= l 5))
@@ -71,8 +76,8 @@
     (set theCanvas (+ "canvas" cn))
     (set c (. getElementById document theCanvas))
     (set cxt (. getContext c "2d"))
-    (if (= (get painted (- cn 1)) false)
-      (if (= (mod turn 2) 0)
+    (if #{painted[cn - 1] === false}
+      (if #{0 === turn % 2}
         (movePlayer cn)
         (moveComputer cn))
       (print "Invalid move!"))))
@@ -82,7 +87,6 @@
     (print (+ sym " won!"))
     (playAgain)))
 
-;How to access 2D array?
 (def checkForWinners
   (fn [sym]
     (. forEach (range (. length winningCombos))
