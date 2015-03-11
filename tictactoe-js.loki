@@ -16,6 +16,18 @@
                             [1,4,7],[2,5,8],[0,4,8],[2,4,6]])
         (. forEach (range 9)
            (fn [l]
+             (. appendTo
+                ($ "<canvas/>" {:id (+ "canvas" (+ l 1))
+                                :width "50"
+                                :height "50"
+                                :style "border:1px solid black"
+                                :onclick (+ "canvasClicked(" (+ l 1) ")")})
+                "body")
+             (if (or (= l 2)
+                     (= l 5))
+               (. appendTo
+                  ($ "<br>")
+                  "body"))
              (assoc painted l false)
              (assoc content l "")))))
 

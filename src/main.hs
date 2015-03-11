@@ -94,7 +94,7 @@ main = do args <- getArgs
           --If HTML, write js first, then html
           --else write file
           outSrc <- if outType == HTML
-                        then do let outFileJs = optOutput opts ++ ".loki.js"
+                        then do let outFileJs = outFile ++ ".js"
                                 writeFile outFileJs src
                                 return $ formatHtml outFileJs
                         else return src
