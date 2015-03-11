@@ -1,18 +1,3 @@
-# -*- coding: utf-8 -*-
-
-"""
-References:
-  http://kivy.org/docs/examples/gen__application__app_with_kv__py.html
-  http://kivy.org/docs/api-kivy.core.text.html
-  http://www.linuxuser.co.uk/tutorials/build-tic-tac-toe-with-kivy
-
-  TO RUN: kivy tictactoe.py
-"""
-
-import kivy
-kivy.require('1.0.7')
-
-
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
@@ -24,10 +9,10 @@ from kivy.uix.modalview import ModalView
 class GridEntry(Button):
     coords = ListProperty([0, 0])
 
-
 class TicTacToeGrid(GridLayout):
     status = ListProperty([0, 0, 0, 0, 0, 0, 0, 0, 0])
     current_player = NumericProperty(1)
+
     def __init__(self, *args, **kwargs):
         super(TicTacToeGrid, self).__init__(*args, **kwargs)
         for row in range(3):
@@ -37,15 +22,14 @@ class TicTacToeGrid(GridLayout):
                 self.add_widget(grid_entry)
 
     def button_pressed(self, button):
-        # Create player symbol and colour lookups
         player = {1: 'O', -1: 'X'}
         colours = {1: (1, 0, 0, 1), -1: (0, 1, 0, 1)}
-        row, column = button.coords # The pressed button is arg
 
-        # update status
+        row = button.coords[0]
+        column = button.coords[1]
+
         status_index = 3 * row + column
         already_played = self.status[status_index]
-        #print (row , column)
         on_status(self,"",self.status)
 
         # If nobody has played

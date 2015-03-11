@@ -70,8 +70,9 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsFn [String] [JsVal]                   -- function(..){..}
            | JsStr String                            -- ".."
            | JsBool Bool                             -- true|false
-           | JsNum Integer                           -- ..-1,0,1..
+           | JsNum String                            -- ..-1,0,1..
            | JsId String                             -- x, foo, ..
+           | JsProp String String
            | JsObjCall String JsVal [JsVal]          -- .function objname parameters*
            | JsMap [String] [JsVal]                  -- {x : y, ..}
            | JsFnCall String [JsVal]                 -- foo(..)
@@ -82,6 +83,7 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsClassFn String [String] [JsVal]         -- Class.prototype.fn = function(..){..}
            | JsClassVar String JsVal                 -- Class(..) {this.var = val}
            | JsList [JsVal]                          -- [] | [x,..]
+           | JsThing String
            | JsNothing
            deriving (Eq, Show)
 
@@ -90,6 +92,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                   then JsNothing
                   else case v of
                            (LkiNothing _) -> JsNothing
+                           (Thing _ x) -> JsThing x
                            (Atom _ a) -> JsId a
                            (Keyword _ k) -> JsStr k
                            (Bool _ b) -> JsBool b
@@ -105,6 +108,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (ClassSuper _ n as) -> JsClassSuper n (translate <$> as)
                            (Classfn _ s p b) -> JsClassFn s p (translate <$> b)
                            (Classvar _ s b) -> JsClassVar s (translate b)
+                           (Prop _ n o) -> JsProp n o
                            (Dot _ fp on ps) -> JsObjCall fp (translate on) (translate <$> ps)
                            (Tuple{}) -> error "can't convert a tuple"
                            (Map _ ks vs) -> JsMap ks (translate <$> vs)
@@ -123,9 +127,9 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
 toJS :: JsVal -> Maybe String
 toJS jv = case jv of
               a@(JsId{})       -> id2js a
-              (JsNum n)        -> Just $ show n
-              (JsStr s)        -> Just $ "\"" ++ s ++ "\""
-              (JsBool x)       -> Just $ toLower <$> show x
+              (JsNum n)        -> return n
+              (JsStr s)        -> return $ "\"" ++ s ++ "\""
+              (JsBool x)       -> return $ toLower <$> show x
               l@(JsList{})     -> list2js l
               v@(JsVar{})      -> var2js v
               f@(JsFn{})       -> fn2js f
@@ -134,6 +138,7 @@ toJS jv = case jv of
               n@(JsNewObj{})   -> new2js n
               d@(JsDefClass{}) -> defclass2js d
               m@(JsMap{})      -> map2js m
+              (JsThing x)      -> return x
               JsNothing        -> Nothing
               x -> error $ "JsVal=(" ++ show x ++ ") should not be toJS'ed"
 
@@ -204,6 +209,7 @@ fnCall2js (JsFnCall fn args)
 fnCall2js x = catch . throwError . TypeMismatch "JsFnCall" $ show x
 
 dot2js :: JsVal -> Maybe String
+dot2js (JsProp prop obj) = return $ printf "%s.%s" prop obj
 dot2js (JsObjCall fp on args) = do
         on' <- toJS on
         return $ printf "(typeof %s.%s === \"function\" ? %s.%s(%s) : %s.%s)"

@@ -77,7 +77,7 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyFn [String] [PyVal]             -- function(...){...}
            | PyStr String                      -- "..."
            | PyBool Bool                       -- true|false
-           | PyNum Integer                     -- ..-1,0,1..
+           | PyNum String                      -- ..-1,0,1..
            | PyTuple [PyVal]
            | PyId String                       -- x, foo, ...
            | PyList [PyVal]                    -- [...]
@@ -134,7 +134,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
 toPY :: Int -> PyVal -> String
 toPY n pv = case pv of
               a@(PyId{})            -> id2py n a
-              (PyNum n1)            -> show n1
+              (PyNum n')            -> n'
               (PyStr s)             -> "\"" ++ s ++ "\""
               (PyBool b)            -> show b
               (PyTuple t)           -> "(" ++ L.intercalate "," (toPY 0 <$> t) ++ ")"

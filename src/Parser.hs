@@ -192,7 +192,10 @@ parseString = do void $ char '"'
 
 parseNumber :: Parser LokiVal
 parseNumber = do s <- getState
-                 liftM (Number (newMeta s) . read) $ many1 digit
+                 digits <- many1 digit
+                 decimals <- liftM (fromMaybe "")
+                    . optionMaybe $ try ((:) <$> char '.' <*> many1 digit)
+                 return $ Number (newMeta s) (digits ++ decimals)
 
 parseKeyword :: Parser LokiVal
 parseKeyword = do void $ char ':'
@@ -237,7 +240,7 @@ parseMap = between (char '{' >> spacesInLiteral) (char '}') $ do
 
 parseKeyVal :: Parser (String, LokiVal)
 parseKeyVal = liftM2 (,) (choice [try ident
-                                 ,return . show . getNumber =<< parseNumber
+                                 ,return . getNumber =<< parseNumber
                                  ,return . pad "\"" . getString =<< parseString]
                                  <* spaces1InLiteral >?> "key")
                          (parseBasicExpr1 <* spacesInLiteral)

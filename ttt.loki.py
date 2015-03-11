@@ -89,8 +89,8 @@ def _buttonPressed_helper (self, button, statusIndex, player, colors):
     self.currentPlayer = Loki.mult(self.currentPlayer, -1)
     return False
 def on_win (self, winner):
-    _size_hunt = {"size_hunt" : [Loki.div(3, 4), Loki.div(1, 2)]}
-    popup = ModalView(**_size_hunt)
+    _size_hint = {"size_hint" : [0.75, 0.5]}
+    popup = ModalView(**_size_hint)
     _victory_label = {"font_size" : 50, "text" : winner}
     victoryLabel = Label(**_victory_label)
     (popup.add_widget(victoryLabel) if callable(popup.add_widget) else popup.add_widget)
@@ -111,28 +111,26 @@ class TicTacToeGrid(GridLayout):
     status = ListProperty([0, 0, 0, 0, 0, 0, 0, 0, 0])
     currentPlayer = NumericProperty(1)
     def buttonPressed (self, button):
-        player = {-1 : "0", 1 : "X"}
-        colors = {-1 : (0,0,0,0), 1 : (0,0,0,0)}
+        player = {1 : "X", -1 : "0"}
+        colors = {-1 : (0,0,1,0.8), 1 : (1,0,0,0.8)}
         row = Loki.get(button.coords, 0)
         column = Loki.get(button.coords, 1)
-        _self_status = self.status
         statusIndex = Loki.plus(Loki.mult(row, 3), column)
+        _self_status = self.status
         alreadyPlayed = Loki.get(_self_status, statusIndex)
         return (_buttonPressed_helper(self, button, statusIndex, player, colors) if Loki.not_(alreadyPlayed) else None)
 
-    def reset (self):
+    def reset (self, *args):
         self.status = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-        for child in (self.children() if callable(self.children) else self.children):
+        for child in self.children:
             child.text = ""
         self.currentPlayer = 1
         return None
 
     def on_status (self, instance, newVal):
         status = newVal
-        sums = [sum(Loki.sc(status, 0, 3)), sum(Loki.sc(status, 3, 6)), sum(Loki.sc(status, 6, 9)), sum(Loki.dc(status, 0, 3)), sum(Loki.dc(status, 1, 4)), sum(Loki.dc(status, 2, 3)), sum(Loki.dc(status, 0, 4)), sum(Loki.dcm(status, 2, -2, 2))]
-        Loki.printf(sums)
+        sums = [sum(Loki.sc(status, 0, 3)), sum(Loki.sc(status, 3, 6)), sum(Loki.sc(status, 6, 9)), sum(Loki.dc(status, 0, 3)), sum(Loki.dc(status, 1, 3)), sum(Loki.dc(status, 2, 3)), sum(Loki.dc(status, 0, 4)), sum(Loki.dcm(status, 2, -2, 2))]
         winner = ("Xs win!" if Loki.in_(3, sums) else ("Os win!" if Loki.in_(-3, sums) else ("Draw!" if Loki.not_(Loki.in_(0, self.status)) else None)))
-        Loki.printf(winner)
         return (on_win(self, winner) if winner else None)
 
 

@@ -22,7 +22,7 @@ data LokiVal = Atom    { getMeta :: Meta, getAtom :: String }
              | Tuple   { getMeta :: Meta
                        , getTuple :: [LokiVal] }
              | Number  { getMeta :: Meta
-                       , getNumber :: Integer }
+                       , getNumber :: String }
              | String  { getMeta :: Meta
                        , getString :: String }
              | Keyword { getMeta :: Meta

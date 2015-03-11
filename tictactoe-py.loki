@@ -19,8 +19,8 @@
 
 (def on_win
   (fn [self winner]
-    (set _size_hunt {"size_hunt": [(/ 3 4) , (/ 1 2)]})
-    (set popup (new ModalView **_size_hunt))
+    (set _size_hint {"size_hint": [0.75 0.5]})
+    (set popup (new ModalView **_size_hint))
     (set _victory_label {"text": winner, "font_size": 50})
     (set victoryLabel (new Label **_victory_label))
     (. add_widget popup victoryLabel)
@@ -31,7 +31,6 @@
 (defclass TicTacToeGrid [GridLayout]
   ([*args **kwargs]
    (super GridLayout *args **kwargs)
-   ;(cols 3) ;TODO what is this?
    &((for [row (range 3)]
        (for [col (range 3)]
          (set _coords {"coords" : ^{row col}})
@@ -43,20 +42,20 @@
 
   (buttonPressed
     [button]
-    (set player {1 "X" -1 "0"})
-    (set colors {1 ^{0 0 0 0} -1 ^{0 0 0 0}})
+    (set player {-1 "0" 1 "X"})
+    (set colors {1 ^{1 0 0 0.8} -1 ^{0 0 1 0.8}})
     (set row (get (.- coords button) 0))
     (set column (get (.- coords button) 1))
-    (set _self_status (.- status self))
     (set statusIndex (+ (* row 3) column))
+    (set _self_status (.- status self))
     (set alreadyPlayed (get _self_status statusIndex))
     (if (not alreadyPlayed)
       (_buttonPressed_helper self button statusIndex player colors)))
 
   (reset
-    []
+    [*args]
     (setp self status [0, 0, 0, 0, 0, 0, 0, 0, 0])
-    (for [child (. children self)]
+    (for [child (.- children self)]
       (setp child text ""))
     (setp self currentPlayer 1)
     None)
@@ -66,9 +65,9 @@
     (set status newVal)
     (set sums [(sum (sc status 0 3)) (sum (sc status 3 6))
                (sum (sc status 6 9)) (sum (dc status 0 3))
-               (sum (dc status 1 4)) (sum (dc status 2 3))
+               (sum (dc status 1 3)) (sum (dc status 2 3))
                (sum (dc status 0 4)) (sum (dcm status 2 -2 2))])
-    (print sums)
+
     (set winner
          (if (in 3 sums)
            "Xs win!"
@@ -77,7 +76,7 @@
              (if (not (in 0 (.- status self)))
                "Draw!"
                None))))
-    (print winner)
+
     (if winner
       (on_win self winner)))
 
