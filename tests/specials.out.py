@@ -79,13 +79,13 @@ Loki.printf("py")
 x = 5
 (Loki.printf("this is wrong") if Loki.gt(x, 10) else Loki.printf("this is right"))
 for x in Loki.range(3):
-    Loki.printf(x)
+        Loki.printf(x)
 for x in Loki.range(3):
-    Loki.printf("x")
-    Loki.printf(x)
-    for y in Loki.range(3):
-        Loki.printf("y")
-        Loki.printf(y)
+        Loki.printf("x")
+        Loki.printf(x)
+        for y in Loki.range(3):
+            Loki.printf("y")
+            Loki.printf(y)
 Loki.printf(x)
 x = 7
 Loki.printf(x)

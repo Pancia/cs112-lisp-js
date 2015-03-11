@@ -18,6 +18,7 @@
          (for [x (range 10)]
            (print x))))
   (lift_off []
+    (print "lifting off!")
     (print (+ "I'm flying @ "
               (. speed this)
               " speed")))

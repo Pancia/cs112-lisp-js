@@ -53,9 +53,16 @@ parseLiteralExpr1 = do void $ many comment
                                          ,parseTuple
                                          ,parseKeyword
                                          ,parseString
-                                         ,parseNumber]
+                                         ,parseNumber
+                                         ,parseThing]
                        void $ many comment
                        return (lispVal {getMeta=extra}) >?> "1-literal-expr"
+
+parseThing :: Parser LokiVal
+parseThing = inLitExpr "#{" "}" $ do
+    x <- many $ noneOf "}"
+    s <- getState
+    return $ Thing (newMeta s) x
 
 -- PARSE OO RELATED
 parseProp :: Parser LokiVal
@@ -115,14 +122,14 @@ parseClassFn :: Parser LokiVal
 parseClassFn = inLispExpr_ $ do
     fnName <- ident <* spaces1 >?> "class-fn-name"
     args <- parseArgs <* spaces >?> "class-fn-params"
-    body <- parseExpr1 >?> "class-fn-body"
+    body <- many (parseBasicExpr1 <* spaces) >?> "class-fn-body"
     s <- getState
     return $ Classfn (newMeta s) fnName args body
 
 parseVars :: Parser LokiVal
 parseVars = inLispExpr_ $ do
     varName <- ident <* spaces1 >?> "class-var-name"
-    body <- parseExpr1 >?> "class-var-body"
+    body <- parseBasicExpr1 <* spaces >?> "class-var-body"
     s <- getState
     return $ Classvar (newMeta s) varName body
 
@@ -161,7 +168,7 @@ parseQuoted = do void $ char '\''
                  return $ List m [Atom (newMeta s) "quote", toQuote']
 
 getMetaData :: Parser Meta
-getMetaData =  do tag <- optionMaybe parseAnnotation
+getMetaData =  do tag <- optionMaybe $ try parseAnnotation
                   s <- getState
                   return . fromMaybe (newMeta s) $ newMeta <$> tag
 

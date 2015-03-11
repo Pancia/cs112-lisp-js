@@ -79,7 +79,7 @@ data JsVal = JsVar String JsVal                      -- var x = ..
            | JsDefClass String [String] JsVal [JsVal] [JsVal] -- function Class(..) {..}
            | JsConst [String] [(String, JsVal)]      -- Class(..) {..}
            | JsClassSuper String [JsVal]
-           | JsClassFn String [String] JsVal         -- Class.prototype.fn = function(..){..}
+           | JsClassFn String [String] [JsVal]         -- Class.prototype.fn = function(..){..}
            | JsClassVar String JsVal                 -- Class(..) {this.var = val}
            | JsList [JsVal]                          -- [] | [x,..]
            | JsNothing
@@ -103,7 +103,7 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= JS
                            (DefClass _ n s c lf lv) -> JsDefClass n s (maybe JsNothing translate c) (translate <$> lf) (translate <$> lv)
                            (Constr _ s b) -> JsConst s (translateProp <$> b)
                            (ClassSuper _ n as) -> JsClassSuper n (translate <$> as)
-                           (Classfn _ s p b) -> JsClassFn s p (translate b)
+                           (Classfn _ s p b) -> JsClassFn s p (translate <$> b)
                            (Classvar _ s b) -> JsClassVar s (translate b)
                            (Dot _ fp on ps) -> JsObjCall fp (translate on) (translate <$> ps)
                            (Tuple{}) -> error "can't convert a tuple"
@@ -151,18 +151,18 @@ map2js (JsMap ks vs) = do let kvs = zipWith (\k v -> liftM (printf "%s:%s" k)
 map2js x = catch . throwError . TypeMismatch "JsMap" $ show x
 
 defclass2js :: JsVal -> Maybe String
-defclass2js (JsDefClass name superClasses constr fns vars) = do
+defclass2js (JsDefClass cName superClasses constr fns vars) = do
         let vars' = fromMaybe "" $ classVars2js vars
             fns' = fromMaybe "" $ fns2js fns
         return $ concatMap superToExtend superClasses ++ addCons constr vars' fns'
     where
-        superToExtend = printf "loki.extend(%s.prototype, %s.prototype);\n" name
+        superToExtend = printf "loki.extend(%s.prototype, %s.prototype);\n" cName
         addCons :: JsVal -> String -> String -> String
         addCons c vs fs =
            let (args, ret) = fromMaybe ([""], "") $ ret2js c
-           in printf "%s.prototype.constructor = %s;\n" name name
+           in printf "%s.prototype.constructor = %s;\n" cName cName
               ++ printf "function %s(%s) {\n%s;\n%s\n};\n%s"
-                 name (addParams args) vs ret fs
+                 cName (addParams args) vs ret fs
         addParams args = L.intercalate ", " args
         propVal2js :: (String, JsVal) -> Maybe String
         propVal2js ("eval", JsList evalMe) = do
@@ -185,10 +185,10 @@ defclass2js (JsDefClass name superClasses constr fns vars) = do
         classVars2js vs = do let vs' = mapMaybe classVar2js vs
                              return $ L.intercalate ";\n" vs'
         fn2js_ :: JsVal -> Maybe String
-        fn2js_ (JsClassFn fn pms ob) = do
-            ob' <- toJS ob
-            return $ printf "%s.prototype.%s = function(%s) {\n return %s"
-              name fn (L.intercalate ", " pms) ob'
+        fn2js_ (JsClassFn fName params body) = do
+            body' <- liftM (L.intercalate "\n") . sequence . map toJS $ init body
+            return $ printf "%s.prototype.%s = function(%s) {\n%s\nreturn %s"
+                     cName fName (L.intercalate ", " params) body' (fromJust . toJS $ last body)
         fn2js_ x = catch . throwError . TypeMismatch "JsClassFn" $ show x
         fns2js :: [JsVal] -> Maybe String
         fns2js [] = Nothing

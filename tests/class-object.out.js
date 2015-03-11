@@ -98,7 +98,8 @@ function MyObject(x) {
 this.obj = x
 };
 MyObject.prototype.get_obj = function() {
- return (typeof this.obj === "function" ? this.obj() : this.obj)
+
+return (typeof this.obj === "function" ? this.obj() : this.obj)
 };;
 MyThing.prototype.constructor = MyThing;
 function MyThing(x) {
@@ -106,7 +107,8 @@ function MyThing(x) {
 this.thing = x
 };
 MyThing.prototype.get_thing = function() {
- return (typeof this.thing === "function" ? this.thing() : this.thing)
+
+return (typeof this.thing === "function" ? this.thing() : this.thing)
 };;
 loki.extend(Rocket.prototype, MyObject.prototype);
 loki.extend(Rocket.prototype, MyThing.prototype);
@@ -124,10 +126,12 @@ loki.print(x)
 }
 };
 Rocket.prototype.lift_off = function() {
- return loki.print(loki.plus("I'm flying @ ", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))
+loki.print("lifting off!")
+return loki.print(loki.plus("I'm flying @ ", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))
 };
 Rocket.prototype.toString = function() {
- return loki.plus("I'm a ", (typeof this.color === "function" ? this.color() : this.color), " rocket")
+
+return loki.plus("I'm a ", (typeof this.color === "function" ? this.color() : this.color), " rocket")
 };;
 var r = new Rocket("5");
 loki.print((typeof r.foo === "function" ? r.foo() : r.foo));

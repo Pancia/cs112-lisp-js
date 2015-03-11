@@ -64,11 +64,13 @@ data LokiVal = Atom    { getMeta :: Meta, getAtom :: String }
              | Classfn  { getMeta :: Meta
                         , getClassFnName :: String
                         , getClassFnParams :: [String]
-                        , getClassFnBody :: LokiVal }
+                        , getClassFnBody :: [LokiVal] }
              | Classvar { getMeta :: Meta
                         , getClassVarName :: String
                         , getClassVarBody :: LokiVal }
              | LkiNothing { getMeta :: Meta }
+             | Thing { getMeta :: Meta
+                     , getThing :: String }
              deriving (Eq, Show)
 
 data OutputType = JS | PY | HTML

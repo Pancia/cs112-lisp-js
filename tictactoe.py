@@ -44,8 +44,6 @@ class TicTacToeGrid(GridLayout):
 
         # update status
         status_index = 3 * row + column
-        print self
-        print self.status
         already_played = self.status[status_index]
         #print (row , column)
         on_status(self,"",self.status)

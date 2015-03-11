@@ -89,7 +89,7 @@ data PyVal = PyVar String PyVal                -- x = ...
            | PyDefClass String [String] PyVal [PyVal] [PyVal]
            | PyConst [String] [(String, PyVal)]
            | PyClassSuper String [PyVal]
-           | PyClassFn String [String] PyVal
+           | PyClassFn String [String] [PyVal]
            | PyClassVar String PyVal
            | PyPleaseIgnore -- ignore
            | PyThing String -- ???
@@ -112,14 +112,15 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (DefClass _ n s c lf lv) -> PyDefClass n s (maybe PyPleaseIgnore translate c) (translate <$> lf) (translate <$> lv)
                       (Constr _ s b)           -> PyConst s (translateProp <$> b)
                       (ClassSuper _ n as)      -> PyClassSuper n (translate <$> as)
-                      (Classfn _ s p b)        -> PyClassFn s p (translate b)
+                      (Classfn _ s p b)        -> PyClassFn s p (translate <$> b)
                       (Classvar _ s b)         -> PyClassVar s (translate b)
                       l@(List{})               -> list2pyVal l
                       (Array {getArray=a})     -> PyList (translate <$> a)
                       (Prop _ prop obj) -> PyProp prop obj
                       (Dot _ fnProp objName args) -> PyObjCall fnProp (translate objName) (translate <$> args)
                       (Map _ ks vs)            -> PyMap ks (translate <$> vs)
-                      (LkiNothing _)           -> PyThing "" --TODO: change to PyPleaseIgnore
+                      (Thing _ x)              -> PyThing x
+                      (LkiNothing _)           -> PyPleaseIgnore
       where
           translateProp :: (String, LokiVal) -> (String, PyVal)
           translateProp (s, l) = (s, translate l)
@@ -148,6 +149,7 @@ toPY n pv = case pv of
               m@(PyMap{})           -> map2py n m
               PyPleaseIgnore        -> ""
               f@(PyFnCall{})        -> fnCall2py n f
+              (PyThing x)           -> x
               x -> error $ "PyVal=(" ++ show x ++ ") should not be toPY'ed"
 
 fnCall2py :: Int -> PyVal -> String
@@ -176,10 +178,9 @@ defclass2py n (PyDefClass name superClasses constr fs vars) =
                 superClasses' = L.intercalate ", " superClasses
                 constr' = case constr of
                               PyPleaseIgnore -> ""
-                              (PyConst args cbody) -> printf "%sdef __init__(self%s):\n%s" (addSpacing (n + 1)) (args' args) (addCons n cbody)
+                              (PyConst args cbody) -> printf "%sdef __init__(%s):\n%s" (addSpacing (n + 1)) (addArgs args) (addCons n cbody)
                               x -> catch . throwError . TypeMismatch "PyConst" $ show x
-                args' args = if null args then ""
-                                          else ", " ++ L.intercalate ", " args
+                addArgs args = L.intercalate ", " ("self":args)
                 addCons n' body = (++ "\n") . concat $ body2py (n' + 2) body
                 body2py :: Int -> [(String, PyVal)] -> [String]
                 body2py n' = fmap (propVal2js n')
@@ -200,8 +201,12 @@ defclass2py n (PyDefClass name superClasses constr fs vars) =
 
                 fn2py_ :: Int -> PyVal -> String
                 fn2py_ n' (PyClassFn fn pms body) =
-                    printf "%sdef %s (%s):\n" (addSpacing n') fn (L.intercalate ", " ("self":pms)) ++
-                    printf "%sreturn %s\n" (addSpacing (n' + 1)) (toPY n' body)
+                    printf "%sdef %s (%s):\n"
+                    (addSpacing n') fn (L.intercalate ", " ("self":pms))
+                    ++ (if null (init body)
+                            then ""
+                            else addSpacing (n'+1) ++ L.intercalate ("\n" ++ (addSpacing (n'+1))) (toPY n' <$> (init body)) ++ "\n")
+                    ++ printf "%sreturn %s\n" (addSpacing (n'+1)) (toPY n' (last body))
                 fn2py_ _ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
                 fns2py :: Int -> [PyVal] -> String
                 fns2py _ [] = []

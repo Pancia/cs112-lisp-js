@@ -95,10 +95,11 @@ class Rocket(MyObject, MyThing):
         Loki.printf("eval-in-constr")
         self.foo = "foo"
         for x in Loki.range(10):
-            Loki.printf(x)
+                Loki.printf(x)
     color = "red"
     fuel = 7
     def lift_off (self):
+        Loki.printf("lifting off!")
         return Loki.printf(Loki.plus("I'm flying @ ", (self.speed() if callable(self.speed) else self.speed), " speed"))
 
     def toString (self):

@@ -119,10 +119,12 @@ this.fuel = 7;
 this.speed = x
 };
 Rocket.prototype.lift_off = function() {
- return loki.print(loki.plus("I'm flying @ ", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))
+
+return loki.print(loki.plus("I'm flying @ ", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))
 };
 Rocket.prototype.toString = function() {
- return loki.plus("I'm a ", (typeof this.color === "function" ? this.color() : this.color), " rocket")
+
+return loki.plus("I'm a ", (typeof this.color === "function" ? this.color() : this.color), " rocket")
 };;
 var r = new Rocket(7);
 loki.print((typeof r.speed === "function" ? r.speed() : r.speed));
