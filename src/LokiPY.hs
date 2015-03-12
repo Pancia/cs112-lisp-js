@@ -10,6 +10,8 @@ import Text.Printf (printf)
 
 import Utils
 
+-- Contains code that converts symbols from their lisp form
+-- to their equivalent name in helperFunctions.py
 formatPy :: [String] -> IO String
 formatPy py = do helperFns <- readFile "src/helperFunctions.py"
                  let py' = L.intercalate "\n" py
@@ -26,9 +28,12 @@ primitives = M.fromList $ fmap addLokiPrefix $
         addLokiPrefix (q,s) = (q,"Loki." ++ s)
         dupl x = (x,x)
 
-keywords :: M.Map String String
-keywords = M.fromList [("this", "self")]
+aliases :: M.Map String String
+aliases = M.fromList [("this", "self")]
 
+-- Contains that will expand special forms from lisp to PY
+-- for usage temporarily in place of macros
+--      (ie where functions would not suffice)
 type SpecialForm = [PyVal] -> String
 specialForms :: Int -> M.Map String SpecialForm
 specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
@@ -41,7 +46,7 @@ specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
         import_ x = error $ (show x ?> "import_") ++ "wrong args to import_"
         setp :: SpecialForm
         setp [PyId var, PyId prop, val] = let val' = toPY 0 val
-                                              var' = lookupKeyword var
+                                              var' = lookupID var
                                           in printf "%s.%s = %s" var' prop val'
         setp _ = error "wrong args to setp"
         set :: SpecialForm
@@ -67,32 +72,32 @@ specialForms n = M.fromList [("if", if_),("set", set),("setp", setp)
 lookupFn :: String -> String
 lookupFn f = fromMaybe f $ M.lookup f primitives
 
-lookupKeyword :: String -> String
-lookupKeyword k = fromMaybe k $ M.lookup k keywords
+lookupID :: String -> String
+lookupID k = fromMaybe k $ M.lookup k aliases
 
 lookupSpecForm :: Int -> String -> Maybe SpecialForm
 lookupSpecForm n s = M.lookup s (specialForms n)
 
-data PyVal = PyVar String PyVal                -- x = ...
-           | PyFn [String] [PyVal]             -- function(...){...}
-           | PyStr String                      -- "..."
-           | PyBool Bool                       -- true|false
-           | PyNum String                      -- ..-1,0,1..
+data PyVal = PyVar String PyVal
+           | PyFn [String] [PyVal]
+           | PyStr String
+           | PyBool Bool
+           | PyNum String
            | PyTuple [PyVal]
-           | PyId String                       -- x, foo, ...
-           | PyList [PyVal]                    -- [...]
-           | PyMap [String] [PyVal]            -- {x : y, ..}
+           | PyId String
+           | PyList [PyVal]
+           | PyMap [String] [PyVal]
            | PyProp String String
-           | PyObjCall String PyVal [PyVal]    -- x.foo.bar(...)
-           | PyFnCall String [PyVal]           -- f(...)
-           | PyNewObj String [PyVal]           -- Foo(..)
+           | PyObjCall String PyVal [PyVal]
+           | PyFnCall String [PyVal]
+           | PyNewObj String [PyVal]
            | PyDefClass String [String] PyVal [PyVal] [PyVal]
            | PyConst [String] [(String, PyVal)]
            | PyClassSuper String [PyVal]
            | PyClassFn String [String] [PyVal]
            | PyClassVar String PyVal
-           | PyPleaseIgnore -- ignore
-           | PyThing String -- ???
+           | PyPleaseIgnore
+           | PyThing String
            deriving (Eq, Show)
 
 translate :: LokiVal -> PyVal
@@ -121,15 +126,15 @@ translate v = if read (fromJust (M.lookup "fileType" (getMeta v))) /= PY
                       (Map _ ks vs)            -> PyMap ks (translate <$> vs)
                       (Thing _ x)              -> PyThing x
                       (LkiNothing _)           -> PyPleaseIgnore
-      where
-          translateProp :: (String, LokiVal) -> (String, PyVal)
-          translateProp (s, l) = (s, translate l)
-          list2pyVal :: LokiVal -> PyVal
-          list2pyVal l = case l of
-                             (List _ (Atom _ a:args)) -> PyFnCall a $ translate <$> args
-                             (List _ (f@(Fn{}):args)) -> PyFnCall (toPY 0 (translate f)) $ translate <$> args
-                             (List _ xs) -> PyList (translate <$> xs)
-                             x -> catch . throwError . TypeMismatch "List" $ show x
+    where
+        translateProp :: (String, LokiVal) -> (String, PyVal)
+        translateProp (s, l) = (s, translate l)
+        list2pyVal :: LokiVal -> PyVal
+        list2pyVal l = case l of
+                           (List _ (Atom _ a:args)) -> PyFnCall a $ translate <$> args
+                           (List _ (f@(Fn{}):args)) -> PyFnCall (toPY 0 (translate f)) $ translate <$> args
+                           (List _ xs) -> PyList (translate <$> xs)
+                           x -> catch . throwError . TypeMismatch "List" $ show x
 
 toPY :: Int -> PyVal -> String
 toPY n pv = case pv of
@@ -174,43 +179,46 @@ defclass2py :: Int -> PyVal -> String
 defclass2py n (PyDefClass name superClasses constr fs vars) =
                 printf "class %s(%s):\n%s%s%s"
                 name superClasses' constr' addVars (fns2py (n + 1) fs)
-            where
-                superClasses' = L.intercalate ", " superClasses
-                constr' = case constr of
-                              PyPleaseIgnore -> ""
-                              (PyConst args cbody) -> printf "%sdef __init__(%s):\n%s" (addSpacing (n + 1)) (addArgs args) (addCons n cbody)
-                              x -> catch . throwError . TypeMismatch "PyConst" $ show x
-                addArgs args = L.intercalate ", " ("self":args)
-                addCons n' body = (++ "\n") . concat $ body2py (n' + 2) body
-                body2py :: Int -> [(String, PyVal)] -> [String]
-                body2py n' = fmap (propVal2js n')
-                propVal2js :: Int -> (String, PyVal) -> String
-                propVal2js n' ("eval",PyList evalMe) =
-                    (addSpacing n' ++) . L.intercalate ("\n" ++ addSpacing n')
-                    $ toPY n' <$> evalMe
-                propVal2js n' (_,PyClassSuper superName superArgs) =
-                    let superArgs' = L.intercalate "," $ toPY 0 <$> superArgs
-                        superArgs'' = if null superArgs' then "" else "," ++ superArgs'
-                    in printf "%s%s.__init__(self%s)\n" (addSpacing n') superName superArgs''
-                propVal2js n' (p,v) = printf "%sself.%s = %s\n" (addSpacing n') p (toPY 0 v)
+    where
+        superClasses' = L.intercalate ", " superClasses
+        constr' = case constr of
+                      PyPleaseIgnore -> ""
+                      (PyConst args cbody) -> printf "%sdef __init__(%s):\n%s" (addSpacing (n + 1)) (addArgs args) (addCons n cbody)
+                      x -> catch . throwError . TypeMismatch "PyConst" $ show x
+        addArgs args = L.intercalate ", " ("self":args)
+        addCons n' body = (++ "\n") . concat $ body2py (n' + 2) body
+        body2py :: Int -> [(String, PyVal)] -> [String]
+        body2py n' = fmap (propVal2js n')
+        propVal2js :: Int -> (String, PyVal) -> String
+        propVal2js n' ("eval",PyList evalMe) =
+            (addSpacing n' ++) . L.intercalate ("\n" ++ addSpacing n')
+            $ toPY n' <$> evalMe
+        propVal2js n' (_,PyClassSuper superName superArgs) =
+            let superArgs' = L.intercalate "," $ toPY 0 <$> superArgs
+                superArgs'' = if null superArgs' then "" else "," ++ superArgs'
+            in printf "%s%s.__init__(self%s)\n" (addSpacing n') superName superArgs''
+        propVal2js n' (p,v) = printf "%sself.%s = %s\n" (addSpacing n') p (toPY 0 v)
 
-                addVars = vars2py (n + 1) vars
-                vars2py :: Int -> [PyVal] -> String
-                vars2py n' = concat . fmap (\(PyClassVar varName x) ->
-                    printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
+        addVars = vars2py (n + 1) vars
+        vars2py :: Int -> [PyVal] -> String
+        vars2py n' = concat . fmap (\(PyClassVar varName x) ->
+            printf (addSpacing n' ++ "%s = %s\n") varName (toPY 0 x))
 
-                fn2py_ :: Int -> PyVal -> String
-                fn2py_ n' (PyClassFn fn pms body) =
-                    printf "%sdef %s (%s):\n"
-                    (addSpacing n') fn (L.intercalate ", " ("self":pms))
-                    ++ (if null (init body)
-                            then ""
-                            else addSpacing (n'+1) ++ L.intercalate ("\n" ++ (addSpacing (n'+1))) (toPY n' <$> (init body)) ++ "\n")
-                    ++ printf "%sreturn %s\n" (addSpacing (n'+1)) (toPY n' (last body))
-                fn2py_ _ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
-                fns2py :: Int -> [PyVal] -> String
-                fns2py _ [] = []
-                fns2py n' l = (++ "\n") . L.intercalate "\n" $ map (fn2py_ n') l
+        fn2py_ :: Int -> PyVal -> String
+        fn2py_ n' (PyClassFn fn pms body) =
+            printf "%sdef %s (%s):\n"
+            (addSpacing n') fn (L.intercalate ", " ("self":pms))
+            ++ (if null (init body)
+                    then ""
+                    else addSpacing (n'+1)
+                         ++ L.intercalate ("\n" ++ (addSpacing (n'+1)))
+                                     (toPY n' <$> (init body))
+                         ++ "\n")
+            ++ printf "%sreturn %s\n" (addSpacing (n'+1)) (toPY n' (last body))
+        fn2py_ _ x = catch . throwError . TypeMismatch "PyClassFn" $ show x
+        fns2py :: Int -> [PyVal] -> String
+        fns2py _ [] = []
+        fns2py n' l = (++ "\n") . L.intercalate "\n" $ map (fn2py_ n') l
 defclass2py _ x = catch . throwError . TypeMismatch "PyDefClass" $ show x
 
 list2py :: Int -> PyVal -> String
@@ -220,12 +228,12 @@ list2py n l = case l of
               x -> catch . throwError . TypeMismatch "PyList" $ show x
 
 id2py :: Int -> PyVal -> String
-id2py _ (PyId pv) = lookupKeyword pv
+id2py _ (PyId pv) = lookupID pv
 id2py _ x = catch . throwError . TypeMismatch "PyId" $ show x
 
 fn2py :: Int -> String -> PyVal -> String
 fn2py n n1 (PyFn params body) = printf "def %s (%s):\n%s" n1 params' body'
-      where
+    where
         params' = L.intercalate ", " params
         body' = addSpacing (n + 1) ++ showBody body
         showBody [] = []
@@ -237,20 +245,19 @@ fn2py _ _ x = catch . throwError . TypeMismatch "PyFn" $ show x
 
 lfn2py :: Int -> PyVal -> String
 lfn2py _ (PyFn params body) = printf "(lambda %s : [%s])" params' body'
-      where
+    where
         params' = L.intercalate ", " params
         body' = L.intercalate ", " $ toPY 0 <$> body
 lfn2py _ x = catch .throwError . TypeMismatch "PyFn" $ show x
 
 dot2py :: Int -> PyVal -> String
 dot2py n (PyProp prop obj) = printf "%s%s.%s" (addSpacing n) obj prop
-dot2py n (PyObjCall fnProp objName args) = printf "(%s.%s(%s) if callable(%s.%s) else %s.%s)"
-                                      (toPY n objName) fnProp params' (toPY n objName) fnProp (toPY n objName) fnProp
-      where
+dot2py n (PyObjCall fnProp objName args) =
+        printf "(%s.%s(%s) if callable(%s.%s) else %s.%s)"
+        (toPY n objName) fnProp params' (toPY n objName) fnProp (toPY n objName) fnProp
+    where
         params' = L.intercalate ", " $ toPY n <$> args
 dot2py _ x = catch . throwError . TypeMismatch "PyObjCall" $ show x
 
---Use for: if, for, while, class creation, anything else. Make sure to pass
---around a weight and increment and decrement accordingly
 addSpacing :: Int -> String
 addSpacing weight = replicate (weight * 4) ' '

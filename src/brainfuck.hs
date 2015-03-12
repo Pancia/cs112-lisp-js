@@ -1,3 +1,7 @@
+-- NOTE: Not actually used by Loki,
+-- merely here as a test compiler,
+-- will move out to separate project.
+
 import Data.Char
 import qualified Data.Map as M
 import Text.Read (readMaybe)
@@ -9,10 +13,6 @@ import Text.Parsec
 import Data.Functor.Identity (Identity)
 import Control.Applicative hiding ((<|>), many)
 
---TODO: 5+^> => put 5 in c[0], get its value and moveRight that many times
---      arg syntax, eg: "#(do:[>&1<-]) 3+(do!nl)",
---          will execute &1 (1st arg) c[p] (eg: 3) times
---      stdlib?
 data BFCmd = GoRight Int           -- >
            | GoLeft Int            -- <
            | Inc Int               -- +
@@ -45,12 +45,15 @@ testBFInput = "#(hello:72.101.108+..111.58.[-]) {def hello => prints out 'Hello:
               ">10+< {set c[1] to \n, goto c[0]} " ++
               "+[,.  {enter echo loop} " ++
               ">.<]  {print newline after each echo} "
+
+-- ENTRY POINTS
 main :: IO Cells
 main = doBF testBFInput
 
 doBF :: String -> IO Cells
 doBF = runBF . parseBF
 
+-- PARSER
 type Parser a = ParsecT String () Identity a
 parseBF :: String -> BFSrc
 parseBF []    = []
@@ -60,7 +63,6 @@ parseBF input =
         where
             bfTokens :: Parser BFSrc
             bfTokens = spaces *> many (bfToken <|> bfDefnToken <|> bfFnToken)
-            --numsAndChar :: Parser String
             numsAndChar c = do n <- many digit
                                _ <- char c
                                spaces
@@ -94,6 +96,7 @@ parseBF input =
                   <|> Comment <$> between (char ';') newline
                                   (manyTill anyChar $ lookAhead newline)
 
+-- EVALUATORS
 runBF :: BFSrc -> IO Cells
 runBF = run initFnState emptyTape . bfSource2Tape
         where bfSource2Tape [] = error "empty prg tape"
@@ -106,14 +109,14 @@ emptyTape = Tape [] 0 zeros
 moveRight :: Int -> Tape a -> Tape a
 moveRight _ tape@(Tape _ _ []) = tape
 moveRight n tape@(Tape ls p (r:rs))
-        | n < 1  = tape--error "moveRight: cant move tape non-positive amount"
+        | n < 1  = tape
         | n == 1 = Tape (p:ls) r rs
         | otherwise = moveRight (n-1) $ Tape (p:ls) r rs
 
 moveLeft :: Int -> Tape a -> Tape a
 moveLeft _ tape@(Tape [] _ _) = tape
 moveLeft n tape@(Tape (l:ls) p rs)
-        | n < 1  = tape--error "moveLeft: cant move tape non-positive amount"
+        | n < 1  = tape
         | n == 1 = Tape ls l (p:rs)
         | otherwise = moveLeft (n-1) $ Tape ls l (p:rs)
 

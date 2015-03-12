@@ -27,7 +27,6 @@ data Options = Options {
     optHelp :: Bool
     } deriving (Show)
 
-
 defaultOptions :: Options
 defaultOptions = Options {
     optInput  = "in.loki",
@@ -119,10 +118,12 @@ execSrc outType file = do let exe = case outType of
                           (_, Just hout, _, _) <- createProcess $ (proc exe [file]) { std_out = CreatePipe }
                           hGetContents hout
 
+-- Use to parse a String with a given outType
 readExpr :: OutputType -> String -> Either U.CompilerError [U.LokiVal]
-readExpr outType input = case runParser P.parseExpr (show outType) "lisp-js" input of
+readExpr outType input = case runParser P.parseExpr outType' ("lisp-" ++ outType') input of
                              Left err -> throwError $ U.ParserErr err
                              Right val -> return val
+    where outType' = show outType
 
 printDivider :: IO ()
 printDivider = putStrLn . take 60 $ repeat '#'

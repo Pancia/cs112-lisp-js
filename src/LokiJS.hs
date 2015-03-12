@@ -11,6 +11,8 @@ import Text.Printf (printf)
 
 import Utils
 
+-- Contains code that converts symbols from their lisp form
+-- to their equivalent name in helperFunctions.js
 primitives :: M.Map String String
 primitives = M.fromList $ fmap addLokiPrefix $
         [("+", "plus"),("-", "minus"),("*", "mult"),("/", "div"),("=", "eq")
@@ -20,6 +22,9 @@ primitives = M.fromList $ fmap addLokiPrefix $
         addLokiPrefix (q,s) = (q,"loki." ++ s)
         dupl x = (x,x)
 
+-- Contains that will expand special forms from lisp to JS
+-- for usage temporarily in place of macros
+--      (ie where functions would not suffice)
 type SpecialForm = [JsVal] -> String
 specialForms :: M.Map String SpecialForm
 specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
