@@ -11,14 +11,17 @@ import Utils
 
 type Parser a = ParsecT String String Identity a
 
+-- Use instead of `parser <?> "expected"`
+-- prepends "loki-" to the parser error message
 infix 0 >?>
 (>?>) :: Parser a -> String -> Parser a
 (>?>) x y = x <?> "loki-" ++ y
 
--- TOP LEVEL PARSERS
+-- MAIN PARSER
 parseExpr :: Parser [LokiVal]
 parseExpr = many (parseExpr1 <* spaces)
 
+-- TOP LEVEL PARSERS
 -- eg: LokiVals that are valid in the top level
 parseExpr1 :: Parser LokiVal
 parseExpr1 = do void $ many comment
@@ -58,6 +61,10 @@ parseLiteralExpr1 = do void $ many comment
                        void $ many comment
                        return (lispVal {getMeta=extra}) >?> "1-literal-expr"
 
+-- Syntactic form that lets you write py|js code
+-- without having to write in lisp form,
+-- BEWARE: Use sparingly, in conjuction with #+type annotations, and only
+-- when the equivalent lisp form isn't available
 parseThing :: Parser LokiVal
 parseThing = inLitExpr "#{" "}" $ do
     x <- many $ noneOf "}"
@@ -65,13 +72,11 @@ parseThing = inLitExpr "#{" "}" $ do
     return $ Thing (newMeta s) x
 
 -- PARSE OO RELATED
-parseProp :: Parser LokiVal
-parseProp = inLispExpr ".-" $ do
-    propName <- ident <* spaces1 >?> "prop-name"
-    objName <- ident <* spaces >?> "prop-obj-name"
-    s <- getState
-    return $ Prop (newMeta s) propName objName
 
+-- Parse property accessing `(. propertyName objectName args*)`
+-- This however cannot distinguish between calling a zero arg function
+--      and a property, but js|py will add extra code to call the property
+--      if its a function
 parseDot :: Parser LokiVal
 parseDot = inLispExpr "." $ do
     funcName <- ident <* spaces1 >?> "dot-func-name"
@@ -80,6 +85,17 @@ parseDot = inLispExpr "." $ do
     s <- getState
     return $ Dot (newMeta s) funcName objName args
 
+-- Parse property accessing `(.- propertyName objectName)`
+-- Use instead of `.` when you know you want a property and not a zero arg
+-- function.
+parseProp :: Parser LokiVal
+parseProp = inLispExpr ".-" $ do
+    propName <- ident <* spaces1 >?> "prop-name"
+    objName <- ident <* spaces >?> "prop-obj-name"
+    s <- getState
+    return $ Prop (newMeta s) propName objName
+
+-- Parse a form to create a new object
 parseNew :: Parser LokiVal
 parseNew = inLispExpr "new" $ do
     className <- ident <* spaces >?> "class-name"
@@ -88,6 +104,10 @@ parseNew = inLispExpr "new" $ do
     return $ New (newMeta s) className body
 
 -- PARSE DEF & FN
+
+-- Parse a function
+-- The implementation varies on whether it is contained in a Def or not
+--      eg: is either a `def func: ...` or a `(lambda ...)`
 parseFn :: Parser LokiVal
 parseFn = inLispExpr "fn" $ do
     params <- parseArgs <* spaces >?> "param-list"
@@ -95,6 +115,10 @@ parseFn = inLispExpr "fn" $ do
     s <- getState
     return $ Fn (newMeta s) params body
 
+-- Parse variable assignment
+--      while python has no distiction between `var x = ...` and `x = ...`
+--      JavaScript does, and as such Def's are limited to only the top
+--      level scope
 parseDef :: Parser LokiVal
 parseDef = inLispExpr "def" $ do
     name <- ident <* spaces >?> "def-name"
@@ -105,6 +129,11 @@ parseDef = inLispExpr "def" $ do
     return $ Def (newMeta s) name body
 
 -- PARSE DEFCLASS
+--
+-- Parse a declaration of a new class
+--      It can have super classes, a constructor, instance level
+--      functions/properties and static properties.
+--      Currently NOT supporting static functions.
 parseClass :: Parser LokiVal
 parseClass = inLispExpr "defclass" $ do
     className <- ident <* spaces1 >?> "class-name"
@@ -118,6 +147,7 @@ parseClass = inLispExpr "defclass" $ do
     s <- getState
     return $ DefClass (newMeta s) className superClasses cnstr classFns classVars
 
+-- Parse a class function, will be instance level and public
 parseClassFn :: Parser LokiVal
 parseClassFn = inLispExpr_ $ do
     fnName <- ident <* spaces1 >?> "class-fn-name"
@@ -126,6 +156,7 @@ parseClassFn = inLispExpr_ $ do
     s <- getState
     return $ Classfn (newMeta s) fnName args body
 
+-- Parse a class property, will be instance level and public
 parseVars :: Parser LokiVal
 parseVars = inLispExpr_ $ do
     varName <- ident <* spaces1 >?> "class-var-name"
@@ -133,6 +164,12 @@ parseVars = inLispExpr_ $ do
     s <- getState
     return $ Classvar (newMeta s) varName body
 
+-- Parse a constructor:
+--Currently limited to parsing `(prop val)`'s inside it, with two exceptions:
+--      Calling a super classes constructor should be written as follows:
+--          `(super SuperClass args*)
+--      Use code inside a `&(...)` to run any non `prop = val` code
+--          inside the constructor
 parseConst :: Parser LokiVal
 parseConst = inLispExpr_ $ do
     params <- parseArgs <* spaces >?> "constr-paramters"
@@ -166,14 +203,6 @@ parseQuoted = do void $ char '\''
                               x -> x
                  s <- getState
                  return $ List m [Atom (newMeta s) "quote", toQuote']
-
-getMetaData :: Parser Meta
-getMetaData =  do tag <- optionMaybe $ try parseAnnotation
-                  s <- getState
-                  return . fromMaybe (newMeta s) $ newMeta <$> tag
-
-parseAnnotation :: Parser String
-parseAnnotation = string "#+" >> many1 letter <* spaces
 
 -- PARSE PRIMITIVES
 parseAtom :: Parser LokiVal
@@ -246,11 +275,19 @@ parseKeyVal = liftM2 (,) (choice [try ident
                          (parseBasicExpr1 <* spacesInLiteral)
     where pad x = (x ++) . (++ x)
 
----------HELPERS--------
+---------META HELPERS--------
 newMeta :: String -> Meta
 newMeta = M.singleton "fileType"
 
------HELPER PARSERS-----
+getMetaData :: Parser Meta
+getMetaData =  do tag <- optionMaybe $ try parseAnnotation
+                  s <- getState
+                  return . fromMaybe (newMeta s) $ newMeta <$> tag
+
+parseAnnotation :: Parser String
+parseAnnotation = string "#+" >> many1 letter <* spaces
+
+-----GENERAL HELPER PARSERS-----
 inLispExpr :: String -> Parser a -> Parser a
 inLispExpr start = between (try (char '(' >> spaces
                                 >> string start <* spaces1)
