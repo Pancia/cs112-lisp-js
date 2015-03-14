@@ -2,7 +2,7 @@
 Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation of a lisp that compiles down to javascript, python, and maybe more.
 
 ## Note for Graders
-* Check out the wiki for instructions on how to install and run
+* Check out the [wiki](https://github.com/Pancia/loki-lang/wiki) for instructions on how to install and run
 * The folders ttt-loki-[js|py] contain the tictactoe implementations in both pure js|py and loki
 * The file marked as ttt-base.[js|py] is the game written in js|py
 * The file marked as ttt-[js|py].loki is the game in loki, and has been compiled down to ttt-*.loki.[html|html.js|py]
