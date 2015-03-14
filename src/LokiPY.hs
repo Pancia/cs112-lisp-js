@@ -18,13 +18,14 @@ formatPy py = do helperFns <- readFile "src/helperFunctions.py"
                  return $ helperFns ++ py'
 
 primitives :: M.Map String String
-primitives = M.fromList $ fmap addLokiPrefix $
+primitives = M.fromList $ fmap addLokiPrefix $ fmap encodeID'
         [("+", "plus"),("-", "minus"),("*", "mult"),("/", "div"),("=", "eq")
         ,("!=", "neq"),("<", "lt"),("<=", "lte"),(">", "gt"),(">=", "gte")
         ,("print", "printf"),("and", "and_"),("or", "or_"),("sc","sc")
         ,("dc","dc"),("in", "in_"), ("dcm", "dcm"),("not","not_")]
         ++ (dupl <$> ["mod","assoc","set","range","get"])
     where
+        encodeID' (s,_q) = (encodeID s,_q)
         addLokiPrefix (q,s) = (q,"Loki." ++ s)
         dupl x = (x,x)
 

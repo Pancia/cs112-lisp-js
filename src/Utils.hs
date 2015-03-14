@@ -5,8 +5,9 @@ import Control.Monad.Except
 import Control.Applicative
 
 import System.Info (os)
-import Data.Map as M
+import qualified Data.Map as M
 import Data.Char (toLower)
+import Data.Maybe
 
 import Debug.Trace
 
@@ -119,3 +120,15 @@ catch = either (error . show) id
 
 caseOS :: a -> a -> a
 caseOS windows other = if os == "mingw32" then windows else other
+
+encodingTable :: [(Char, String)]
+encodingTable = [('!',"_EXC_"),('$',"_DLR_"),('%',"_PRC_")
+                ,('&',"_AMP_"),('*',"_AST_"),('-',"_DSH_")
+                ,('+',"_PLS_"),('=',"_EQL_"),('<',"_LT_")
+                ,('>',"_GT_"),('/',"_SLH_"),('?',"_QST_")]
+
+encodeID :: String -> String
+encodeID identifier = concatMap encode identifier
+    where
+        encode :: Char -> String
+        encode c = fromMaybe [c] $ lookup c encodingTable

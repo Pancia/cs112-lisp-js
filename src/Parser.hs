@@ -313,7 +313,7 @@ ident :: Parser String
 ident = do identifier <- (:) <$> first <*> many rest
            if identifier `elem` reserved
                then unexpected $ "reserved word " ++ show identifier
-               else return identifier
+               else return $ encodeID identifier
     where symbol = oneOf "!$%&*-_+=<>/?"
           first = letter <|> symbol >?> "start-ident"
           rest  = letter <|> digit <|> symbol >?> "rest-ident"

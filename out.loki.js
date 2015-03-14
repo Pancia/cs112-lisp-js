@@ -92,57 +92,7 @@ var loki = (function (){
     return loki;
 })();
 //END LOKI HELPER FUNCTIONS
-MyObject.prototype.constructor = MyObject;
-function MyObject(x) {
-;
-this.obj = x
-};
-MyObject.prototype.get_obj = function() {
- return (typeof this.obj === "function" ? this.obj() : this.obj)
-};;
-MyThing.prototype.constructor = MyThing;
-function MyThing(x) {
-;
-this.thing = x
-};
-MyThing.prototype.get_thing = function() {
- return (typeof this.thing === "function" ? this.thing() : this.thing)
-};;
-loki.extend(Rocket.prototype, MyObject.prototype);
-loki.extend(Rocket.prototype, MyThing.prototype);
-Rocket.prototype.constructor = Rocket;
-function Rocket(x) {
-this.color = "red";
-this.fuel = 7;
-MyObject.call(this,"obj");
-MyThing.call(this,"thing");
-this.speed = x;
-loki.print("eval-in-constr");
-this.foo = "foo";
-for (x in loki.range(10)){
-loki.print(x)
-}
-};
-Rocket.prototype.lift_off = function() {
- return loki.print(loki.plus("I'm flying @ ", (typeof this.speed === "function" ? this.speed() : this.speed), " speed"))
-};
-Rocket.prototype.toString = function() {
- return loki.plus("I'm a ", (typeof this.color === "function" ? this.color() : this.color), " rocket")
-};;
-var r = new Rocket("5");
-loki.print((typeof r.foo === "function" ? r.foo() : r.foo));
-loki.print((typeof r.color === "function" ? r.color() : r.color));
-loki.print((typeof r.speed === "function" ? r.speed() : r.speed));
-loki.print((typeof r.toString === "function" ? r.toString() : r.toString));
-loki.print((typeof r.fuel === "function" ? r.fuel() : r.fuel));
-(typeof r.lift_off === "function" ? r.lift_off() : r.lift_off);
-loki.print((typeof r.get_obj === "function" ? r.get_obj() : r.get_obj));
-loki.print((typeof r.thing === "function" ? r.thing() : r.thing));
-NoConstrOrSuperClasses.prototype.constructor = NoConstrOrSuperClasses;
-function NoConstrOrSuperClasses() {
-this.nope = "nope";
-
-};
-;
-var no = new NoConstrOrSuperClasses();
-loki.print((typeof no.nope === "function" ? no.nope() : no.nope));
+var foo = 5;
+var bar = 3;
+var foo_DSH__GT_bar = 9999999;
+loki.print(foo_DSH__GT_bar);

@@ -8,10 +8,12 @@ import Utils (LokiVal)
 import qualified Parser as P
 import qualified Utils as U
 
-readExpr :: String -> String -> Either U.CompilerError [LokiVal]
-readExpr type_ input = case runParser P.parseExpr type_ ("loki-" ++ type_) input of
-                          Left err -> throwError $ U.ParserErr err
-                          Right val -> return val
+readExpr :: String -> String -> String -> Either U.CompilerError [LokiVal]
+readExpr type_ tag input = case runParser P.parseExpr type_ tag' input of
+                               Left err -> throwError $ U.ParserErr err
+                               Right val -> return val
+    where
+        tag' = "loki-" ++ type_ ++ "-" ++ tag
 
 getInFile :: String -> String
 getInFile testName = printf "tests/%s.loki" testName

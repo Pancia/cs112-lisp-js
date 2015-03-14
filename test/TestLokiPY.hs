@@ -18,7 +18,7 @@ test_toPY = void $ mapM testToPY ["def+fn","class-object","helpers"
                                  ,"primitives","specials", "literals"]
     where
         testToPY testName = do
-            lisp <- liftM (TU.readExpr "py") $ readFile inFile
+            lisp <- liftM (TU.readExpr "py" testName) $ readFile inFile
             let translated'' = U.catch . liftM (PY.translate <$>) $ lisp
                 translated' = concat . fmap (PY.toPY 0) $ translated''
                 translated = TU.clean translated'
@@ -33,7 +33,7 @@ test_execPY = void $ mapM testExecPY ["def+fn","class-object","helpers"
                                      ,"literals","primitives","specials"]
     where
         testExecPY testName = do
-            lisp <- liftM (TU.readExpr "py") $ readFile inFile
+            lisp <- liftM (TU.readExpr "py" testName) $ readFile inFile
             py <- PY.formatPy . fmap (PY.toPY 0) . U.catch
                   . liftM (PY.translate <$>) $ lisp
             writeFile outFile py

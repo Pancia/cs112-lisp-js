@@ -19,7 +19,7 @@ test_toJS = void $ mapM testToJS ["class-object","specials","helpers"
                                  ,"def+fn","literals","primitives"]
     where
         testToJS testName = do
-            lisp <- liftM (TU.readExpr "js") $ readFile inFile
+            lisp <- liftM (TU.readExpr "js" testName) $ readFile inFile
             let translated'' = U.catch . liftM (JS.translate <$>) $ lisp
                 translated' = concat . mapMaybe JS.toJS $ translated''
                 translated = TU.clean translated'
@@ -34,7 +34,7 @@ test_execJS = void $ mapM testExecJS ["class-object","def+fn","helpers"
                                      ,"specials","primitives","literals"]
     where
         testExecJS testName = do
-            lisp <- liftM (TU.readExpr "js") $ readFile inFile
+            lisp <- liftM (TU.readExpr "js" testName) $ readFile inFile
             js <- JS.formatJs . fmap JS.toJS . U.catch
                   . liftM (JS.translate <$>) $ lisp
             writeFile outFile js

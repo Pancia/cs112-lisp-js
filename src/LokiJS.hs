@@ -14,13 +14,17 @@ import Utils
 -- Contains code that converts symbols from their lisp form
 -- to their equivalent name in helperFunctions.js
 primitives :: M.Map String String
-primitives = M.fromList $ fmap addLokiPrefix $
+primitives = M.fromList $ fmap addLokiPrefix $ fmap encodeID'
         [("+", "plus"),("-", "minus"),("*", "mult"),("/", "div"),("=", "eq")
         ,("!=", "neq"),("<", "lt"),("<=", "lte"),(">", "gt"),(">=", "gte")]
         ++ (dupl <$> ["print","mod","assoc","range","get","and","or"])
     where
-        addLokiPrefix (q,s) = (q,"loki." ++ s)
+        encodeID' (s,_q) = (encodeID s,_q)
+        addLokiPrefix (_q,s) = (_q,"loki." ++ s)
         dupl x = (x,x)
+
+lookupFn :: String -> String
+lookupFn f = fromMaybe f $ M.lookup f primitives
 
 -- Contains that will expand special forms from lisp to JS
 -- for usage temporarily in place of macros
@@ -58,36 +62,34 @@ specialForms = M.fromList [("if", if_),("set", set),("setp", setp)
                 body_' = fromJust . liftM (L.intercalate ";\n") . sequence $ toJS <$> body_
             printf "for (%s in %s){\n%s\n}" id_' expr_' body_'
         for_ x = error $ (show x ?> "for-x") ++ "wrong args to for"
-        --for format wrong for JS
-
-lookupFn :: String -> String
-lookupFn f = fromMaybe f $ M.lookup f primitives
 
 lookupSpecForm :: String -> Maybe SpecialForm
 lookupSpecForm s = M.lookup s specialForms
 
+-- Adds helper functions,
+-- and converts from [Maybe String] to just one String separed by ;'s and \n's
 formatJs :: [Maybe String] -> IO String
 formatJs js = do helperFns <- readFile "src/helperFunctions.js"
                  let js' = (++ ";") . L.intercalate ";\n" $ catMaybes js
                  return $ helperFns ++ js'
 
-data JsVal = JsVar String JsVal                      -- var x = ..
-           | JsFn [String] [JsVal]                   -- function(..){..}
-           | JsStr String                            -- ".."
-           | JsBool Bool                             -- true|false
-           | JsNum String                            -- ..-1,0,1..
-           | JsId String                             -- x, foo, ..
+data JsVal = JsVar String JsVal
+           | JsFn [String] [JsVal]
+           | JsStr String
+           | JsBool Bool
+           | JsNum String
+           | JsId String
            | JsProp String String
-           | JsObjCall String JsVal [JsVal]          -- .function objname parameters*
-           | JsMap [String] [JsVal]                  -- {x : y, ..}
-           | JsFnCall String [JsVal]                 -- foo(..)
-           | JsNewObj String [JsVal]                 -- new Foo (..)
-           | JsDefClass String [String] JsVal [JsVal] [JsVal] -- function Class(..) {..}
-           | JsConst [String] [(String, JsVal)]      -- Class(..) {..}
+           | JsObjCall String JsVal [JsVal]
+           | JsMap [String] [JsVal]
+           | JsFnCall String [JsVal]
+           | JsNewObj String [JsVal]
+           | JsDefClass String [String] JsVal [JsVal] [JsVal]
+           | JsConst [String] [(String, JsVal)]
            | JsClassSuper String [JsVal]
-           | JsClassFn String [String] [JsVal]         -- Class.prototype.fn = function(..){..}
-           | JsClassVar String JsVal                 -- Class(..) {this.var = val}
-           | JsList [JsVal]                          -- [] | [x,..]
+           | JsClassFn String [String] [JsVal]
+           | JsClassVar String JsVal
+           | JsList [JsVal]
            | JsThing String
            | JsNothing
            deriving (Eq, Show)
