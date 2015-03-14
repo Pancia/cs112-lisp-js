@@ -109,7 +109,6 @@ main = do args <- getArgs
                                             (printAfterHelperFns fileName)
         prefix = ">>"
 
---TODO: try just printing, ie no `-> IO String`
 execSrc :: OutputType -> String -> IO String
 execSrc outType file = do let exe = case outType of
                                      JS -> "node"

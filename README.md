@@ -25,24 +25,4 @@ Public repo for ucsc's winter 2015 CMPS 112 class project involving the creation
 * [Intro to cabal sandboxes](https://www.fpcomplete.com/school/to-infinity-and-beyond/older-but-still-interesting/an-introduction-to-cabal-sandboxes-copy)
 * [Cabal sandbox workflow](http://chromaticleaves.com/posts/cabal-sandbox-workflow.html)
 * TLDR: `>? cabal sandbox init` -> `>? cabal install` -> `>? cabal run -- $args`
-* See src/Main.hs options for flags and their description. 
-
-### Proposed Class and Object Design
-```Clojure
-(defclass SuperClass/Name
-  ([params*]
-    {var val
-    ,var2 val2}) ;Constructor must be first
-  (fnName [args*]
-    (body)) ;function declaration
-  ^(fnName [args*] 
-    (body)) ;static function declaration
-  (varName val) ;var declaration
-  ^(varName val)) ;static var declaration
-  
-  (def objName (new className params*)) ;makes new object, objName, of type className
-  (.method-or-prop objName args*)
-  
-  Class/prop
-  (Class/method args*)
-```
+* See src/Main.hs options for flags and their description.
